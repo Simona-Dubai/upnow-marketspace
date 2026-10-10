@@ -6,9 +6,7 @@
    shape the category's title, card and detail code expect — so the real search card draws a listing as it is typed.
    Submitting never publishes: a listing waits for its category licence ("Add later" in onboarding), then for the
    provider's verification, then the team reviews it (Live · Changes requested · Not approved).
-   Every control carries a data-ln-* attribute so it never collides with the host page's own handlers.
-   Class names: written with the onboarding's names; a page whose onboarding uses the short "ob-" names calls
-   UPLF.useClasses('ob') and they are mapped on the way out. */
+   Every control carries a data-ln-* attribute so it never collides with the host page's own handlers. */
 (function () {
   const { VERTICALS, offerOf, areaName, AREAS } = UP;
   const U = UPUI, { ico, esc, toast, auth, store } = U;
@@ -43,7 +41,8 @@
   const MAX_PHOTOS = 12;
   // fields that belong with the price rather than the details
   const PRICE_IDS = ['term', 'billing', 'cheques', 'minNights', 'cancellation', 'deductible', 'copay'];
-  const SKIP = ['price', 'rating', 'listedBy', 'verified'];
+  // not facts about a listing: the listing page doesn't show them (search-only time of day, derived or platform values)
+  const SKIP = ['price', 'rating', 'listedBy', 'verified', 'time'];
   const OPTIONAL_IDS = ['amenities', 'equipment', 'facilities', 'food', 'activities', 'classes', 'insurance', 'meals'];
   function fieldOf(d) {
     const key = d.field || d.id;
@@ -152,33 +151,29 @@
     if (moved) save();
   }
 
-  /* ---------- class names: the onboarding's, or its short "ob-" names ---------- */
-  const OB = { error: 'err', field: 'field', hint: 'hint', section: 'sec', 'section-header': 'sec-h', 'segmented-control': 'seg-ctl', categories: 'cats', chip: 'chip', tick: 'tick',
-    dropzone: 'drop', 'dropzone-empty': 'drop-empty', about: 'about', 'about-footer': 'about-foot', 'magic-write': 'magic', count: 'count', 'business-only': 'only', private: 'private', hours: 'hours', date: 'date' };
-  let short = false;
-  const cx = html => short ? html.replace(/onboarding-([a-z]+(?:-[a-z]+)*)/g, (m, k) => OB[k] ? 'ob-' + OB[k] : m) : html;
-
   /* ---------- builders (onboarding's classes) ---------- */
   let E = {};
   const err = k => E[k] ? `<span class="onboarding-error">${ico('x')}${esc(E[k])}</span>` : '';
-  const tip = text => short ? '' : ` <span class="onboarding-tip" tabindex="0" role="button" aria-label="More info"><i>${ico('spark')}</i><span role="tooltip"><b>${ico('spark')}Good to know</b>${esc(text)}</span></span>`;
+  const tip = text => ` <span class="onboarding-tip" tabindex="0" role="button" aria-label="More info"><i>${ico('spark')}</i><span role="tooltip"><b>${ico('spark')}Good to know</b>${esc(text)}</span></span>`;
   const field = (k, label, input, hint = '') => `<div class="field onboarding-field ${E[k] ? 'has-error' : ''}" data-f="${k}"><label for="ln-${k}">${label}</label>${input}${hint && !E[k] ? `<small class="onboarding-hint">${esc(hint)}</small>` : ''}${err(k)}</div>`;
   // the host's section builder (it handles the reveal motion), or a plain one
   let SEC = (id, title, body, aside = '') => `<section class="onboarding-section" data-sec="${id}">${title || aside ? `<div class="onboarding-section-header"><h2>${title}</h2>${aside}</div>` : ''}${body}</section>`;
   const use = ctx => { E = (ctx && ctx.errors) || {}; if (ctx && ctx.sec) SEC = ctx.sec; };
 
-  function control(L, f) {
-    const v = L.a[f.key], k = 'a_' + f.key;
-    if (f.kind === 'number') return field(k, esc(f.label) + (f.unit ? ` <small>(${f.unit})</small>` : ''), `<input id="ln-${k}" type="number" inputmode="numeric" min="0" data-ln-num="${f.key}" value="${v === undefined || v === '' ? '' : esc(v)}" placeholder="0">`);
-    if (f.kind === 'bool') return `<label class="toggle listing-toggle"><span><b>${esc(f.label)}</b></span><input type="checkbox" data-ln-bool="${f.key}" ${v ? 'checked' : ''}><i></i></label>`;
-    const opts = f.d.options || [];
-    if (f.kind === 'one') {
-      const cur = f.arr ? [].concat(v || [])[0] : v;
-      const inner = opts.map(o => `<button type="button" class="${String(cur) === o.v && cur !== '' && cur !== undefined ? 'is-active' : ''}" data-ln-one="${f.key}" data-v="${esc(o.v)}">${esc(o.l)}</button>`).join('');
-      return `<div class="listing-q ${E[k] ? 'has-error' : ''}" data-f="${k}"><span>${esc(f.label)}</span><div class="onboarding-segmented-control">${inner}</div>${err(k)}</div>`;
+  // one field. Choices are chips (the onboarding's "What do you offer?" style); counts get − / + ; sizes an inline unit.
+  // titled: the field sits in its own section whose heading is the label, so it isn't repeated
+  function control(L, f, titled) {
+    const v = L.a[f.key], k = 'a_' + f.key, label = esc(f.label);
+    if (f.kind === 'number') {
+      const val = v === undefined || v === '' ? '' : esc(v), input = `<input id="ln-${k}" type="number" inputmode="numeric" min="0" data-ln-num="${f.key}" value="${val}" placeholder="${f.unit ? 'e.g. 1,200' : ''}">`;
+      return field(k, label, f.unit || f.d.type === 'range' ? `<div class="listing-unit">${input}${f.unit ? `<span>${f.unit}</span>` : ''}</div>`
+        : `<div class="listing-stepper"><button type="button" data-ln-step="${f.key}" data-d="-1" aria-label="Fewer">−</button>${input}<button type="button" data-ln-step="${f.key}" data-d="1" aria-label="More">+</button></div>`);
     }
-    const cur = [].concat(v || []).map(String);
-    return `<div class="listing-q is-many ${E[k] ? 'has-error' : ''}" data-f="${k}"><span>${esc(f.label)}${f.req ? '' : ' <small>optional</small>'}</span><div class="onboarding-categories listing-chips">${opts.map(o => `<button type="button" class="onboarding-chip ${cur.includes(o.v) ? 'is-active' : ''}" data-ln-many="${f.key}" data-v="${esc(o.v)}"><span>${esc(o.l)}</span><span class="onboarding-tick">${ico('check')}</span></button>`).join('')}</div>${err(k)}</div>`;
+    if (f.kind === 'bool') return `<label class="toggle listing-toggle"><span><b>${label}</b></span><input type="checkbox" data-ln-bool="${f.key}" ${v ? 'checked' : ''}><i></i></label>`;
+    const opts = f.d.options || [], one = f.kind === 'one';
+    const cur = one ? [String(f.arr ? [].concat(v || [])[0] : v)] : [].concat(v || []).map(String);
+    const chips = `<div class="onboarding-categories listing-chips ${E[k] ? 'has-error' : ''}" ${one ? 'role="radiogroup"' : ''}>${opts.map(o => `<button type="button" class="onboarding-chip ${cur.includes(o.v) && v !== '' && v !== undefined ? 'is-active' : ''}" data-ln-${one ? 'one' : 'many'}="${f.key}" data-v="${esc(o.v)}"><span>${esc(o.l)}</span><span class="onboarding-tick">${ico('check')}</span></button>`).join('')}</div>${err(k)}`;
+    return titled ? chips : `<div class="listing-q" data-f="${k}"><span>${label}${f.req ? '' : ' <small>optional</small>'}</span>${chips}</div>`;
   }
   function location(L) {
     const O = offerOf(L.v, L.cat), kind = locKind(O), n = noun(L.v, L.cat);
@@ -195,18 +190,18 @@
         ${lease ? field('unit', `Unit number <small>${ico('lock')}private</small>`, `<input id="ln-unit" data-ln-k="unit" value="${esc(L.unit)}" placeholder="e.g. 1204">`, 'Never shown on the listing — only shared when you choose') : ''}</div>${outside}`);
   }
   // the category's own questions, then where it is, then the optional extras
-  function details(L, ctx) { return cx(_details(L, ctx)); }
-  function _details(L, ctx) {
+  function details(L, ctx) {
     use(ctx);
     const O = offerOf(L.v, L.cat), F = detailFields(O);
-    const main = F.filter(f => f.req && f.kind !== 'many'), lists = F.filter(f => f.req && f.kind === 'many'), extra = F.filter(f => !f.req);
-    return `${main.length ? SEC('ln-basics', 'The basics', `<div class="listing-basics">${main.filter(f => f.kind !== 'number').map(f => control(L, f)).join('')}</div>${main.some(f => f.kind === 'number') ? `<div class="form-grid listing-grid">${main.filter(f => f.kind === 'number').map(f => control(L, f)).join('')}</div>` : ''}`) : ''}
-      ${lists.map(f => SEC('ln-m_' + f.key, '', control(L, f))).join('')}
+    const choices = F.filter(f => f.req && (f.kind === 'one' || f.kind === 'many')), nums = F.filter(f => f.req && f.kind === 'number'), extra = F.filter(f => !f.req);
+    return `${choices.map(f => SEC('ln-q_' + f.key, esc(f.label) + (f.kind === 'many' ? ' <small class="listing-hint">Choose all that apply</small>' : ''), control(L, f, true))).join('')}
+      ${nums.length ? SEC('ln-nums', L.v === 'spaces' ? 'Size and capacity' : 'Key numbers', `<div class="form-grid listing-grid">${nums.map(f => control(L, f)).join('')}</div>`) : ''}
       ${location(L)}
-      ${extra.length ? SEC('ln-extra', 'Extras', `${extra.filter(f => f.kind === 'many').map(f => control(L, f)).join('')}${extra.some(f => f.kind === 'bool') ? `<div class="listing-toggles">${extra.filter(f => f.kind === 'bool').map(f => control(L, f)).join('')}</div>` : ''}`, '<small>Optional — they help customers choose</small>') : ''}`;
+      ${extra.length ? (() => { const picked = extra.filter(f => f.kind === 'bool' ? L.a[f.key] : (L.a[f.key] || []).length).length;
+        return SEC('ln-extra', '', `<details class="listing-extras" ${picked ? 'open' : ''}><summary><b>Extras</b><small>${picked ? picked + ' added' : 'Optional — amenities and features customers filter by'}</small></summary>
+          ${extra.filter(f => f.kind === 'many').map(f => control(L, f)).join('')}${extra.some(f => f.kind === 'bool') ? `<div class="listing-toggles">${extra.filter(f => f.kind === 'bool').map(f => control(L, f)).join('')}</div>` : ''}</details>`); })() : ''}`;
   }
-  function photos(L, ctx) { return cx(_photos(L, ctx)); }
-  function _photos(L, ctx) {
+  function photos(L, ctx) {
     use(ctx);
     const O = offerOf(L.v, L.cat), min = minPhotos(L.v, O), count = L.img.length, ok = count >= min;
     const tips = { spaces: 'Bright photos of every room, the view and the building', services: 'Your finished work — real jobs, not stock photos', experiences: 'People enjoying it, the place, the details', memberships: 'The space, the equipment, a class in action', programs: 'Classrooms, facilities and activities — no children’s faces', health: 'Your facility and team — never patients', insurance: '' }[L.v];
@@ -216,8 +211,7 @@
         ${count < MAX_PHOTOS ? `<label class="onboarding-dropzone listing-photo-add"><input type="file" accept="image/jpeg,image/png,image/webp" multiple data-ln-photos hidden><span class="onboarding-dropzone-empty">${ico('upload')}<span><b>${count ? 'Add more' : 'Drag photos here or <u>browse</u>'}</b><small>${esc(tips)}</small></span></span></label>` : ''}
       </div>${err('photos')}<p class="listing-photo-count ${ok ? 'is-ok' : ''}">${ok ? `${ico('check')}${count} photos${count < min + 3 ? ` · listings like yours do best with ${min + 3} or more` : ''}` : `${count} of at least ${min}`}${count > 1 ? ' · drag to reorder' : ''}</p>`, `<small>The first one is the cover</small>`);
   }
-  function words(L, ctx) { return cx(_words(L, ctx)); }
-  function _words(L, ctx) {
+  function words(L, ctx) {
     use(ctx);
     const sug = suggestedTitle(L), t = L.title, d = L.desc;
     return `${SEC('ln-title', 'Title', `${field('title', 'Title', `<input id="ln-title" data-ln-k="title" maxlength="70" value="${esc(t)}" placeholder="${esc(sug || 'A short, clear title')}">`, 'Keep it short — under 50 characters shows in full on phones')}
@@ -227,8 +221,7 @@
           <div class="onboarding-about-footer"><button type="button" class="onboarding-magic-write" data-ln-act="writedesc">${ico('spark')}${d ? 'Rewrite it for me' : 'Write it for me'}</button><span class="onboarding-count ${d.trim().length >= 80 ? 'is-ok' : ''}" data-ln-count="desc">${d.length < 80 ? `${d.length}/80 min` : `${d.length}/2000`}</span></div>${err('desc')}</div>
         <small class="onboarding-hint listing-note">${ico('lock')}Don't add phone numbers or links — customers contact you through ${esc(SITE.name)}.</small>`)}`;
   }
-  function price(L, ctx) { return cx(_price(L, ctx)); }
-  function _price(L, ctx) {
+  function price(L, ctx) {
     use(ctx);
     const O = offerOf(L.v, L.cat), pf = priceFields(O), dd = dateDef(O), pm = permitOf(O), a = app() || {}, d = a.d || {};
     const term = termOf(L), basis = (O.unit(asListing(L), viewState(L)) || '').replace(/^\//, 'per '), pd = priceDef(O);
@@ -247,8 +240,7 @@
       ${lic ? `<p class="onboarding-private">${ico('shield')}<span>Your verified licence is attached automatically: <b>${esc(lic)}</b>.</span></p>` : ''}`;
   }
   // the provider's categories to choose from (only when they offer more than one)
-  function categories(a, cur, ctx) { return cx(_categories(a, cur, ctx)); }
-  function _categories(a, cur, ctx) {
+  function categories(a, cur, ctx) {
     use(ctx);
     const cats = (a.cats || []).filter(c => VERTICALS[a.v].offers.some(o => o.id === c));
     if (cats.length < 2) return '';
@@ -339,7 +331,7 @@
       else if (num) L.a[num] = t.value === '' ? '' : +t.value;
       else return;
       const ek = num ? 'a_' + num : k, errs = host.errors();
-      if (errs[ek]) { delete errs[ek]; const f = t.closest(cx('.onboarding-field, .onboarding-about')); if (f) { f.classList.remove('has-error'); const m = f.querySelector(cx('.onboarding-error')); if (m) m.remove(); } }
+      if (errs[ek]) { delete errs[ek]; const f = t.closest('.onboarding-field, .onboarding-about'); if (f) { f.classList.remove('has-error'); const m = f.querySelector('.onboarding-error'); if (m) m.remove(); } }
       L.updated = Date.now(); save(); host.saved(k);
       const count = (n, v, min, max) => { const c = root.querySelector(`[data-ln-count="${n}"]`); if (c) { c.textContent = min && v.length < min ? `${v.length}/${min} min` : `${v.length}/${max}`; c.classList.toggle('is-ok', min ? v.trim().length >= min : !!v.length); } };
       if (k === 'desc') { count('desc', t.value, 80, 2000); fit(); }
@@ -368,7 +360,7 @@
       const fieldBy = key => fieldsOf(offerOf(L.v, L.cat)).find(y => y.key === key);
       if ((x = b('[data-ln-act]'))) {
         if (x.dataset.lnAct === 'usetitle') { L.title = suggestedTitle(L); L.titled = false; clearErr('title'); touch(L); }
-        if (x.dataset.lnAct === 'writedesc') { L.desc = descStarter(L); clearErr('desc'); touch(L, cx('.onboarding-about')); }
+        if (x.dataset.lnAct === 'writedesc') { L.desc = descStarter(L); clearErr('desc'); touch(L, '.onboarding-about'); }
         return;
       }
       if ((x = b('[data-ln-one]'))) { const f = fieldBy(x.dataset.lnOne); if (!f) return; const v = f.num ? +x.dataset.v : x.dataset.v; L.a[f.key] = f.arr ? [v] : v; clearErr('a_' + f.key); touch(L, `[data-ln-one="${f.key}"][data-v="${x.dataset.v}"]`); return; }
@@ -378,6 +370,7 @@
         L.a[f.key] = list.some(y => String(y) === String(v)) ? list.filter(y => String(y) !== String(v)) : [...list, v];
         clearErr('a_' + f.key); touch(L, `[data-ln-many="${f.key}"][data-v="${x.dataset.v}"]`); return;
       }
+      if ((x = b('[data-ln-step]'))) { const key = x.dataset.lnStep; L.a[key] = Math.max(0, (+L.a[key] || 0) + +x.dataset.d); clearErr('a_' + key); touch(L); return; }
       if ((x = b('[data-ln-area]'))) { const id = x.dataset.lnArea; L.areas = L.areas.includes(id) ? L.areas.filter(y => y !== id) : [...L.areas, id]; clearErr('areas'); touch(L, `[data-ln-area="${id}"]`); return; }
       if ((x = b('[data-ln-day]'))) { const d = x.dataset.lnDay; L.days = L.days.includes(d) ? L.days.filter(y => y !== d) : DAYS.filter(y => y === d || L.days.includes(y)); clearErr('days'); touch(L, `[data-ln-day="${d}"]`); return; }
       if ((x = b('[data-ln-hours]'))) { L.hours = x.dataset.lnHours; touch(L); return; }
@@ -393,7 +386,6 @@
     noun, locKind, minPhotos, permitOf, dateDef, weekly, detailFields, priceFields, gateOf, gateName, GATE, DOC_NAME, STATUS, HOURS, DAYS,
     attrs, storedPrice, viewState, suggestedTitle, asListing, cardOf, factsOf, whereOf, titleOf, lowerFirst, optLabel, niceDate, started,
     nextStatus, setStatus, submit, settle,
-    categories, details, photos, words, price, validate, priceOdd, parts, bind, fit, tip,
-    useClasses: p => { short = p === 'ob'; }
+    categories, details, photos, words, price, validate, priceOdd, parts, bind, fit, tip
   };
 })();

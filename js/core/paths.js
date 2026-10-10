@@ -1,6 +1,6 @@
 /* Site paths. Load this first on every page.
    The site root is worked out from this file's own URL (…/js/core/paths.js), so pages work from any folder
-   (/, /pages/, /examples/) and when opened straight from disk. Every link and image URL is built from here. */
+   (/, /pages/) and when opened straight from disk. Every link and image URL is built from here. */
 (function () {
   const self = document.currentScript && document.currentScript.src;
   const root = self ? self.replace(/js\/core\/paths\.js(\?.*)?$/, '') : '';
@@ -14,6 +14,8 @@
       provider: page('provider.html'),
       agency: page('agency.html'),
       join: page('join.html'),
+      account: page('account.html'),
+      listingNew: page('listing-new.html'),
       dashboard: page('provider-dashboard/index.html')
     },
     asset: p => root + 'assets/' + p,

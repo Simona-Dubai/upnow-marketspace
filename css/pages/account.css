@@ -1,0 +1,6894 @@
+@charset "UTF-8";
+/* Customer account (pages/account.html): sidebar + one section at a time.
+   Desktop: 264px sidebar beside the section. Tablet: the sidebar becomes a row of tabs above it.
+   Phone: same tabs scroll sideways; tables turn into cards; dialogs open as bottom sheets. */
+
+.account-page {
+  background: var(--color-bg);
+}
+
+.account-dashboard {
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+  padding-top: 28px;
+  padding-bottom: 72px;
+  min-height: 70vh;
+}
+
+/* ---------- sidebar ---------- */
+.account-sidebar {
+  position: sticky;
+  top: 88px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.account-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.account-user b {
+  display: block;
+  font-size: 14.5px;
+  line-height: 1.3;
+}
+
+.account-user small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-primary-lighter);
+  font-weight: 700;
+}
+
+.account-user small .icon {
+  width: 13px;
+  height: 13px;
+}
+
+.account-avatar {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.account-avatar.is-sm {
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+}
+
+.account-avatar.is-xl {
+  width: 72px;
+  height: 72px;
+  font-size: 24px;
+}
+
+.account-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.account-nav a {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.account-nav a .icon {
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-muted);
+}
+
+.account-nav a span {
+  flex: 1;
+}
+
+.account-nav a:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.account-nav a.is-active {
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.account-nav a.is-active .icon {
+  color: var(--color-primary);
+}
+
+.account-nav em,
+.account-tabs em {
+  font-style: normal;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 99px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+}
+
+.account-nav em.is-hot {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+/* ---------- section ---------- */
+.account-main {
+  min-width: 0;
+}
+
+.account-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 0px;
+}
+
+.account-header h1 {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  line-height: 1.15;
+  color: var(--color-primary-darkest);
+}
+
+.account-header p {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+/* an empty section (Documents, My enquiries…): room between the title and the empty-state card */
+.account-header + .empty-state {
+  margin-top: 20px;
+}
+
+.account-header-actions {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+
+.account-box {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+
+.account-box h2 {
+  font-size: 17px;
+  margin-bottom: 16px;
+}
+
+.account-box h3 {
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.account-section {
+  margin-top: 30px;
+}
+
+.account-section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.account-section-header h2 {
+  font-size: 19px;
+  letter-spacing: -0.01em;
+}
+
+.account-section-header a {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--color-primary);
+}
+
+.account-section-header a .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.account-footer {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.account-footer .icon {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  margin-top: 1px;
+  color: var(--color-primary);
+}
+
+.account-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 44px 20px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text-muted);
+  font-size: 13.5px;
+}
+
+.account-empty > .icon {
+  width: 46px;
+  height: 46px;
+  padding: 12px;
+  border-radius: 50%;
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+  margin-bottom: 4px;
+}
+
+.account-empty b {
+  font-size: 16px;
+  color: var(--color-text);
+}
+
+.account-empty span {
+  max-width: 420px;
+  margin-bottom: 8px;
+}
+
+.account-empty .btn {
+  margin: 2px;
+}
+
+.account-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.account-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.account-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-bottom: 2.5px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.account-tabs button.is-active {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.account-tabs button.is-active em {
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+}
+
+.account-thumbnail {
+  width: 72px;
+  height: 56px;
+  flex: none;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--color-primary-tint-light);
+}
+
+.account-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.account-cell b {
+  display: block;
+  font-size: 13.5px;
+  line-height: 1.3;
+}
+
+.account-cell small {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ---------- overview ---------- */
+
+.account-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.account-table-wrap {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.account-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.account-table th {
+  text-align: left;
+  padding: 11px 16px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.account-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.account-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.account-table tbody tr {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.account-table tbody tr:hover {
+  background: #fbfcfb;
+}
+
+.account-table tr.is-hot td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-amber);
+}
+
+.account-table td:first-child .account-cell {
+  min-width: 220px;
+  max-width: 290px;
+}
+
+.account-table td:first-child b {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.account-table td:first-child small,
+.account-table td:nth-child(2) small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
+}
+
+.account-next {
+  display: block;
+  max-width: 210px;
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ---------- one enquiry ---------- */
+.account-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.account-breadcrumbs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.account-breadcrumbs a .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.account-tracking {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  align-items: start;
+}
+
+.account-tracking > .account-box {
+  padding: 22px;
+}
+
+.account-tracking-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.account-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.account-timeline li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 14px;
+  padding-bottom: 22px;
+}
+
+.account-timeline li::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 30px;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-border-strong);
+}
+
+.account-timeline li:last-child {
+  padding-bottom: 0;
+}
+
+.account-timeline li:last-child::before {
+  display: none;
+}
+
+.account-timeline li.is-done::before {
+  background: var(--color-primary);
+}
+
+.account-timeline li > i {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid var(--color-border-strong);
+  background: #fff;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.account-timeline li > i .icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.4;
+}
+
+.account-timeline li.is-done > i {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.account-timeline li.is-current > i {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: 0 0 0 5px var(--color-primary-tint-light);
+}
+
+.account-timeline li.is-after > i {
+  border-style: dashed;
+}
+
+/* no reply in time / no answer: the step that needs a nudge */
+.account-timeline li.is-warn > i {
+  border-color: var(--color-amber);
+  color: var(--color-amber);
+  box-shadow: 0 0 0 5px var(--color-warning-bg);
+}
+
+/* a step the enquiry never reached (closed before it) */
+.account-timeline li.is-skip {
+  opacity: 0.55;
+}
+
+.account-timeline b {
+  display: block;
+  font-size: 14.5px;
+  padding-top: 4px;
+}
+
+.account-timeline small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.account-timeline blockquote {
+  margin: 10px 0 0;
+  padding: 10px 13px;
+  border-radius: 14px 14px 14px 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.account-timeline li.is-current > div {
+  padding: 0 0 2px;
+}
+
+.account-timeline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.account-stars {
+  margin-top: 6px;
+  color: var(--color-rating-star);
+  letter-spacing: 1px;
+}
+
+.account-stars small {
+  display: inline;
+  letter-spacing: 0;
+  margin-left: 4px;
+}
+
+.account-button-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* the agent card: name, agency, rating — opens their profile */
+.account-agent {
+  margin: -4px;
+  padding: 4px;
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.account-agent > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-agent > .icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.account-agent:hover {
+  background: var(--color-bg);
+}
+
+/* ---------- dialogs (outcome, close, compare, small forms) ---------- */
+.modal.account-modal-wrap {
+  width: min(520px, 100%);
+}
+
+.modal.account-modal-wrap.is-wide {
+  width: min(860px, 100%);
+}
+
+.account-modal {
+  padding: 22px;
+}
+
+.account-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.account-modal-header h3 {
+  font-size: 19px;
+  letter-spacing: -0.01em;
+}
+
+.account-modal-header p {
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.account-modal .field {
+  margin-bottom: 12px;
+}
+
+.account-modal-submit {
+  width: 100%;
+  height: 48px;
+  margin-top: 6px;
+  font-size: 15px;
+}
+
+.account-modal-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.account-modal-footer {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.account-danger {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.account-radios button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.account-radios b {
+  display: block;
+  font-size: 13.5px;
+}
+
+.account-radios small {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.account-radios button.is-active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint-light);
+}
+
+.account-radios {
+  display: grid;
+  gap: 8px;
+}
+
+.account-radios button i {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+}
+
+.account-radios button i .icon {
+  width: 17px;
+  height: 17px;
+}
+
+.account-radios button span {
+  flex: 1;
+}
+
+.account-radios button em {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border-strong);
+  background: #fff;
+}
+
+.account-radios button.is-active i {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.account-radios button.is-active em {
+  border: 6px solid var(--color-primary);
+}
+
+.account-radios.is-plain button {
+  padding: 12px 14px;
+}
+
+.account-rate {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.account-rate > b {
+  display: block;
+  font-size: 13.5px;
+}
+
+.account-rate > div:first-of-type {
+  display: flex;
+  gap: 4px;
+  margin: 8px 0 4px;
+}
+
+.account-rate [data-rate] {
+  padding: 2px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.account-rate [data-rate] .icon {
+  width: 28px;
+  height: 28px;
+  stroke: var(--color-rating-star);
+  fill: none;
+}
+
+.account-rate [data-rate].is-on .icon {
+  fill: var(--color-rating-star);
+}
+
+/* compare */
+.account-compare {
+  display: grid;
+  grid-template-columns: 120px repeat(var(--n), minmax(0, 1fr));
+  font-size: 13px;
+}
+
+.account-compare > * {
+  padding: 10px;
+  border-bottom: 1px solid var(--color-border);
+  min-width: 0;
+}
+
+.account-compare small {
+  display: block;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+.account-compare .icon {
+  width: 13px;
+  height: 13px;
+  fill: var(--color-rating-star);
+  stroke: var(--color-rating-star);
+  vertical-align: -2px;
+}
+
+.account-compare-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.account-compare-header img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.account-compare-header b {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.account-compare .btn .icon {
+  fill: none;
+  stroke: currentColor;
+}
+
+.account-compare > .btn {
+  margin: 10px 6px 0;
+  border-bottom: 0;
+}
+
+/* ---------- saved ---------- */
+
+.account-grid.is-saved {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.account-saved {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.account-saved .card {
+  border-radius: 14px 14px 0 0;
+}
+
+.account-dropzone {
+  position: absolute;
+  z-index: 3;
+  left: 10px;
+  bottom: auto;
+  top: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.account-dropzone .icon {
+  width: 12px;
+  height: 12px;
+  transform: scaleY(-1);
+}
+
+/* saved listing with a viewing booked — links to its enquiry */
+.account-dropzone.is-view {
+  background: var(--color-primary);
+  text-decoration: none;
+}
+
+.account-dropzone.is-view .icon {
+  transform: none;
+}
+
+.account-agents {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.account-saved-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  background: #fff;
+  border: 1px solid #eeeeee;
+  border-top: 0;
+  border-radius: 0 0 14px 14px;
+}
+
+.account-saved-bar button,
+.account-compare-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.account-compare-pick {
+  margin-right: auto;
+}
+
+.account-compare-pick input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
+.account-saved-bar button .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.account-saved-bar button:hover,
+.account-compare-pick:hover {
+  background: var(--color-bg);
+}
+
+.account-gone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+  min-height: 280px;
+  padding: 20px;
+  text-align: center;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 14px;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+}
+
+.account-gone > .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.account-gone b {
+  color: var(--color-text);
+}
+
+.account-gone .btn {
+  margin-top: 6px;
+}
+
+.account-searches {
+  display: grid;
+  gap: 10px;
+}
+
+.account-search {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.account-search-icon {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+}
+
+.account-search-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-search-text b {
+  display: block;
+  font-size: 14px;
+}
+
+.account-search-text small {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.account-select {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: none;
+}
+
+.account-select span {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.account-select select {
+  height: 36px;
+  padding: 0 10px;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.account-search-open {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+/* ---------- alerts ---------- */
+.account-alerts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 20px;
+  align-items: start;
+}
+
+.account-feed {
+  padding: 0;
+  overflow: hidden;
+}
+
+.account-notification {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.account-notification:last-child {
+  border-bottom: 0;
+}
+
+.account-notification:hover {
+  background: #fbfcfb;
+}
+
+.account-notification.is-unread {
+  background: #fbfdfb;
+}
+
+.account-notification.is-unread::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 30px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+.account-notification > i {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+}
+
+.account-notification > i .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.account-notification > i.is-ok {
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+}
+
+.account-notification > i.is-info {
+  background: #e3eef8;
+  color: #1f5a8c;
+}
+
+.account-notification > i.is-amber {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.account-notification > i.is-red {
+  background: #fbeceb;
+  color: var(--color-danger);
+}
+
+.account-notification span {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-notification b {
+  display: block;
+  font-size: 13.5px;
+}
+
+.account-notification.is-unread b {
+  font-weight: 800;
+}
+
+.account-notification small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+}
+
+.account-notification em {
+  flex: none;
+  font-style: normal;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+.account-preferences {
+  position: sticky;
+  top: 88px;
+}
+
+.account-quiet-hours {
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* ---------- profile ---------- */
+
+.account-box .toggle {
+  padding: 12px 0 2px;
+}
+
+.account-shared {
+  margin-top: 10px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
+  font-size: 13px;
+}
+
+.account-shared summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.account-shared summary::-webkit-details-marker {
+  display: none;
+}
+
+.account-shared summary .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-muted);
+}
+
+.account-shared summary em {
+  font-style: normal;
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.account-shared > div,
+.account-shared > p {
+  padding: 8px 0 0 24px;
+}
+
+.account-shared b {
+  display: block;
+  font-size: 13px;
+}
+
+.account-shared small {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+/* ---------- signed out ---------- */
+/* ---------- tablet ---------- */
+@media (max-width: 1100px) {
+  .account-dashboard {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    padding-top: 18px;
+  }
+
+  .account-sidebar {
+    position: static;
+  }
+
+  .account-user {
+    display: none;
+  }
+
+  .account-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 4px;
+  }
+
+  .account-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .account-nav a {
+    flex: none;
+    height: 40px;
+  }
+
+  .account-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .account-grid.is-saved {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .account-tracking,
+  .account-alerts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .account-preferences {
+    position: static;
+  }
+
+  /* the enquiry table needs desktop width — tablets and phones get the cards */
+  .account-table-wrap {
+    display: none;
+  }
+}
+
+/* ---------- phone ---------- */
+@media (max-width: 700px) {
+  .account-dashboard {
+    padding-top: 12px;
+    padding-bottom: 32px;
+  }
+
+  .account-nav {
+    margin: 0 -16px;
+    padding: 4px 16px;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .account-nav a {
+    padding: 0 10px;
+    font-size: 13.5px;
+  }
+
+  .account-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .account-header h1 {
+    font-size: 26px;
+  }
+
+  .account-grid.is-saved {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* overview rows (saved, recently viewed, new matches) scroll sideways */
+  .account-grid:not(.is-saved) {
+    display: flex;
+    gap: 12px;
+    margin: 0 -16px;
+    padding: 0 16px 4px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 16px;
+    scrollbar-width: none;
+  }
+
+  .account-grid:not(.is-saved)::-webkit-scrollbar {
+    display: none;
+  }
+
+  .account-grid:not(.is-saved) > .card {
+    flex: 0 0 76%;
+    scroll-snap-align: start;
+  }
+
+  .account-tracking > .account-box {
+    padding: 16px;
+  }
+
+  .account-search {
+    flex-wrap: wrap;
+  }
+
+  .account-search-text {
+    flex-basis: calc(100% - 54px);
+  }
+
+  .account-select {
+    flex: 1;
+  }
+
+  /* dialogs become bottom sheets */
+  .scrim:has(.account-modal-wrap) {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal.account-modal-wrap,
+  .modal.account-modal-wrap.is-wide {
+    width: 100%;
+    max-height: 90vh;
+    border-radius: 22px 22px 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .account-modal {
+    padding: 20px 16px;
+  }
+
+  .account-compare {
+    grid-template-columns: 84px repeat(var(--n), minmax(120px, 1fr));
+    overflow-x: auto;
+  }
+}
+
+/* ---------- enquiries as leads — the provider dashboard's Leads board, from the customer's side ---------- */
+.lead-avatar {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.lead-avatar.sm {
+  width: 28px;
+  height: 28px;
+  font-size: 10.5px;
+}
+
+.lead-avatar.is-lg {
+  width: 48px;
+  height: 48px;
+  font-size: 15px;
+}
+
+.lead-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.lead-source i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--c);
+}
+
+.lead-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.lead-bar .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lead-bar .chip em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.lead-bar .chip.is-active em {
+  color: inherit;
+  opacity: 0.75;
+}
+
+.lead-view-switch {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 99px;
+  background: #fff;
+}
+
+.lead-view-switch button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 99px;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.lead-view-switch button .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.lead-view-switch button.is-on {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.lead-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(172px, 1fr));
+  gap: 10px;
+  align-items: start;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.lead-column {
+  min-width: 0;
+  min-height: 160px;
+  padding: 8px;
+  border-radius: 14px;
+  background: #eef2ef;
+}
+
+.lead-column-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 10px;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.lead-column-header span {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.lead-column-empty {
+  padding: 18px 0;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.lead-card {
+  display: block;
+  margin-bottom: 8px;
+  padding: 11px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgba(15, 40, 28, 0.04);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.lead-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md, 0 6px 18px rgba(15, 40, 28, 0.08));
+}
+
+.lead-card.is-hot {
+  box-shadow: inset 3px 0 0 var(--color-amber);
+}
+
+.lead-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+.lead-title b {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lead-tag {
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: #fde6d8;
+  color: #a64a14;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.lead-listing {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin-bottom: 6px;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+.lead-listing .icon {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  margin-top: 2px;
+}
+
+.lead-card p {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.lead-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+.lead-footer .spacer {
+  flex: 1;
+}
+
+.lead-footer .late {
+  color: var(--color-danger);
+  font-weight: 800;
+}
+
+.lead-status {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 99px;
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lead-status.is-mute {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+
+.lead-cell-text {
+  display: block;
+  max-width: 240px;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* the listing page's agent card, inside the side column */
+.account-tracking-side .agent-card {
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .lead-board {
+    grid-template-columns: repeat(5, 78vw);
+    scroll-snap-type: x mandatory;
+  }
+
+  .lead-column {
+    scroll-snap-align: start;
+  }
+}
+
+/* =====================================================================
+   Sidebar look, Home discover blocks, Messages and Documents
+   ===================================================================== */
+
+/* sidebar: solid active item, red message badge, "Explore marketplace" at the bottom */
+.account-nav a.is-active {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.account-nav a.is-active .icon {
+  color: #fff;
+}
+
+.account-nav a.is-active em {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.account-nav em.is-red {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.account-explore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 46px;
+  border: 1.5px dashed var(--color-primary);
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-primary);
+}
+
+.account-explore:hover {
+  background: var(--color-primary-tint-light);
+}
+
+.account-explore .icon {
+  width: 17px;
+  height: 17px;
+}
+
+/* ---------- Home: Book again or discover ---------- */
+
+/* ---------- Home: Explore more on UpNow ---------- */
+
+/* ---------- Messages ---------- */
+.message-wrap {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  min-height: 640px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.message-rows {
+  border-right: 1px solid var(--color-border);
+  overflow-y: auto;
+  max-height: 760px;
+}
+
+.message-row {
+  display: flex;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.message-row:hover {
+  background: var(--color-bg);
+}
+
+.message-row.is-on {
+  background: var(--color-primary-tint-light);
+}
+
+.message-row .lead-avatar,
+.message-pane-header .lead-avatar {
+  flex: none;
+}
+
+.message-row > span:not(.message-avatar) {
+  flex: 1;
+  min-width: 0;
+}
+
+.message-row-text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.message-row-text b {
+  flex: 1;
+  min-width: 0;
+  font-size: 14.5px;
+}
+
+.message-row-text em {
+  flex: none;
+  font-style: normal;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.message-row-text i {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  align-self: center;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+.message-row small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.message-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.message-pane.is-empty {
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--color-text-muted);
+}
+
+.message-pane.is-empty .icon {
+  width: 28px;
+  height: 28px;
+  color: var(--color-primary);
+}
+
+.message-pane-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.message-pane-header > span:not(.message-avatar) {
+  flex: 1;
+  min-width: 0;
+}
+
+.message-pane-header b {
+  display: block;
+  font-size: 15.5px;
+}
+
+.message-pane-header small {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.message-back {
+  display: none;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  margin-left: -8px;
+  color: var(--color-text);
+}
+
+.message-context {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 18px 0;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  color: var(--color-text);
+}
+
+.message-context:hover {
+  border-color: var(--color-primary-lighter);
+}
+
+.message-context i {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+}
+
+.message-context span {
+  flex: 1;
+  min-width: 0;
+}
+
+.message-context b {
+  display: block;
+  font-size: 14px;
+}
+
+.message-context small {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.message-context > .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.message-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  overflow-y: auto;
+  max-height: 480px;
+}
+
+.message-bubble {
+  max-width: 76%;
+  align-self: flex-start;
+  padding: 11px 14px;
+  border-radius: 14px;
+  background: var(--color-bg);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.message-bubble.is-out {
+  align-self: flex-end;
+  background: var(--color-primary-tint-light);
+}
+
+.message-bubble small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+.message-quick {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 0 18px 12px;
+}
+
+.message-compose {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--color-border);
+}
+
+.message-plus {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--color-text-secondary);
+}
+
+.message-compose input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 16px;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 99px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.message-compose input:focus {
+  outline: 0;
+  border-color: var(--color-primary);
+}
+
+.message-send {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  cursor: pointer;
+}
+
+.message-closed {
+  padding: 14px 18px;
+  border-top: 1px solid var(--color-border);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* ---------- tablet ---------- */
+@media (max-width: 1100px) {
+  .account-explore {
+    display: none;
+  }
+
+  .message-wrap {
+    grid-template-columns: 280px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+  /* messages: the list, then one conversation full width */
+  .message-wrap {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .message-wrap.has-current .message-rows,
+  .message-wrap:not(.has-current) .message-pane {
+    display: none;
+  }
+
+  .message-rows {
+    border-right: 0;
+    max-height: none;
+  }
+
+  .message-back {
+    display: grid;
+  }
+
+  .message-list {
+    max-height: none;
+  }
+}
+
+/* ---------- phone ---------- */
+@media (max-width: 700px) {
+
+  .message-wrap {
+    margin: 0 -16px;
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+  }
+
+  .message-pane-header .btn span {
+    display: none;
+  }
+
+  .message-bubble {
+    max-width: 86%;
+  }
+}
+
+.status-pill.is-danger {
+  background: #fbeaea;
+  color: var(--color-danger);
+}
+
+/* =====================================================================
+   Home dashboard — glance tiles, what needs you beside what's next,
+   enquiries beside messages, then saved and discovery
+   ===================================================================== */
+.dashboard-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.dashboard-header h1 {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  line-height: 1.15;
+  color: var(--color-primary-darkest);
+}
+
+.dashboard-header p {
+  margin-top: 4px;
+  font-size: 14.5px;
+  color: var(--color-text-secondary);
+}
+
+.dashboard-action-link i,
+.dashboard-search > i  {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+}
+
+.dashboard-action-link i .icon,
+.dashboard-search > i .icon  {
+  width: 18px;
+  height: 18px;
+}
+
+.dashboard-panel {
+  padding: 18px 20px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.dashboard-panel.is-empty {
+  margin-top: 26px;
+}
+
+.dashboard-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.dashboard-panel-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+}
+
+.dashboard-panel-header h2 em {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 99px;
+  display: inline-grid;
+  place-items: center;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.dashboard-panel-header a {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.dashboard-panel-header a .icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* needs you: the question on the left, the answer buttons on the right */
+.dashboard-action {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dashboard-action:last-child {
+  border-bottom: 0;
+}
+
+.dashboard-action-link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-text);
+}
+
+.dashboard-action-link i {
+  width: 38px;
+  height: 38px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.dashboard-action-link span,
+.dashboard-enquiry > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-action-link b,
+.dashboard-enquiry b {
+  display: block;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-action-link small,
+.dashboard-enquiry small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-action-body {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+
+/* enquiries and messages */
+.dashboard-enquiry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.dashboard-enquiry:last-child {
+  border-bottom: 0;
+}
+
+.dashboard-enquiry .account-thumbnail {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.dashboard-enquiry .status-pill {
+  flex: none;
+}
+
+/* continue searching */
+.dashboard-search {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 4px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text);
+}
+
+.dashboard-search:hover {
+  border-color: var(--color-primary-lighter);
+}
+
+.dashboard-search > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-search small {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.dashboard-search b {
+  display: block;
+  font-size: 15px;
+}
+
+.dashboard-search em {
+  font-style: normal;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.dashboard-new {
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dashboard-search > .icon:last-child {
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-muted);
+}
+
+/* ---------- phone ---------- */
+@media (max-width: 700px) {
+  .dashboard-header h1 {
+    font-size: 25px;
+  }
+
+  .dashboard-header .btn {
+    display: none;
+  }
+
+  .dashboard-panel {
+    padding: 14px 16px;
+  }
+
+  .dashboard-action {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .dashboard-action-body {
+    width: 100%;
+    padding-left: 50px;
+  }
+
+  .dashboard-action-body .btn {
+    flex: 1;
+  }
+
+  .dashboard-enquiry .status-pill {
+    display: none;
+  }
+}
+
+/* ---------- Documents: onboarding's reader (join.css) inside the account ---------- */
+.account-id-documents {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.account-id-documents .onboarding-document {
+  margin: 0;
+}
+
+.account-id-document-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.account-id-document-footer .text-link {
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+}
+
+/* saved documents on the account page: the onboarding colours live under .onboarding-body, and its draw animation
+   cuts icon strokes short — so set both here (light tint + green tick; amber clock when it expires soon) */
+.account-id-documents .onboarding-document.is-compact .onboarding-document-header > i {
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+}
+
+.account-id-documents .onboarding-document-header i .icon {
+  stroke-dasharray: none;
+  stroke-width: 2.2;
+}
+
+.account-id-documents .onboarding-document.is-soon .onboarding-document-header > i {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.onboarding-document-header .account-document-expiry {
+  flex: none;
+  text-transform: none;
+  letter-spacing: 0;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.onboarding-document.is-compact .onboarding-document-header .text-link + .text-link {
+  margin-left: 4px;
+}
+
+.account-id-documents .onboarding-document.is-compact,
+.account-id-documents .onboarding-document.is-compact:focus-within {
+  border-color: var(--color-border);
+  box-shadow: none;
+}
+
+/* =====================================================================
+   Home v2 — decisions and enquiries in the main column, a side panel
+   with only what exists, one discovery section at the end
+   ===================================================================== */
+.dashboard-header p b {
+  color: var(--color-warning-text);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
+}
+
+.dashboard-main,
+.dashboard-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.dashboard-side {
+  position: sticky;
+  top: 88px;
+}
+
+.dashboard-panel-header small {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.dashboard-panel.is-need {
+  border-color: #f0dcbc;
+  box-shadow: inset 4px 0 0 var(--color-amber);
+}
+
+/* action icons by kind */
+.dashboard-action-link i.is-green {
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+}
+
+.dashboard-action-link i.is-amber {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.dashboard-action-link i.is-red {
+  background: #fbeaea;
+  color: var(--color-danger);
+}
+
+/* grouped follow-up: a small stack of agent avatars */
+.dashboard-stack {
+  flex: none !important;
+  display: flex;
+  padding-left: 8px;
+}
+
+.dashboard-stack .lead-avatar {
+  width: 32px;
+  height: 32px;
+  margin-left: -8px;
+  font-size: 11px;
+  border: 2px solid #fff;
+}
+
+/* saved, as a compact list in the side panel */
+.dashboard-saved-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.dashboard-saved-item:last-child {
+  border-bottom: 0;
+}
+
+.dashboard-saved-item img {
+  width: 56px;
+  height: 44px;
+  flex: none;
+  border-radius: 9px;
+  object-fit: cover;
+  background: var(--color-bg);
+}
+
+.dashboard-saved-item span {
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-saved-item b {
+  display: block;
+  font-size: 13.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-saved-item small {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-side .dashboard-search {
+  margin: 0;
+  padding: 14px 16px;
+}
+
+/* one discovery section: category tiles, then suggestions for you */
+.dashboard-discover {
+  margin-top: 34px;
+}
+
+.dashboard-suggestions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.dashboard-suggestions a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text);
+}
+
+.dashboard-suggestions a:hover {
+  border-color: var(--color-primary-lighter);
+}
+
+.dashboard-suggestions i {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+}
+
+.dashboard-suggestions i .icon {
+  width: 17px;
+  height: 17px;
+}
+
+.dashboard-suggestions span {
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-suggestions b {
+  display: block;
+  font-size: 14px;
+}
+
+.dashboard-suggestions small {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-suggestions a > .icon:last-child {
+  width: 15px;
+  height: 15px;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 1100px) {
+  .dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-side {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-suggestions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .dashboard-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-header p {
+    font-size: 13.5px;
+  }
+}
+
+@media (max-width: 700px) {
+  /* phones: one column in order of urgency — needs you, next viewing, enquiries, then the rest */
+  .dashboard-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .dashboard-main,
+  .dashboard-side {
+    display: contents;
+  }
+
+  .dashboard-panel.is-need {
+    order: 1;
+  }
+
+  .dashboard-panel.is-next {
+    order: 2;
+  }
+
+  .dashboard-panel.is-enquiry {
+    order: 3;
+  }
+
+  .dashboard-side > * {
+    order: 4;
+  }
+
+  .dashboard-side > .dashboard-panel.is-next {
+    order: 2;
+  }
+}
+
+@media (max-width: 700px) {
+  .dashboard-grid > *,
+  .dashboard-side > *,
+  .dashboard-main > * {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* =====================================================================
+   Empty states — title, why, three steps (step 2 shows a small sketch of
+   the real control), an onboarding-style illustration, where to start
+   ===================================================================== */
+.empty-state {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  grid-template-areas: "text art" "start start";
+  gap: 8px 32px;
+  align-items: center;
+  padding: 32px 36px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+}
+
+.empty-state-text {
+  grid-area: text;
+  min-width: 0;
+}
+
+.empty-state-text h2 {
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin-bottom: 25px;
+}
+
+.empty-state-subtitle {
+  margin: 6px 0 22px;
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--color-text-secondary);
+}
+
+.empty-state-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.empty-state-steps li {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.empty-state-number {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.empty-state-steps b {
+  display: block;
+  padding-top: 4px;
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--color-text);
+}
+
+.empty-state-mock {
+  width: 210px;
+  margin-top: 10px;
+  filter: drop-shadow(0 6px 14px rgba(15, 40, 28, 0.08));
+}
+
+.empty-state-mock svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.empty-state-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.empty-state-illustration {
+  grid-area: art;
+  justify-self: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+.empty-state-illustration svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.empty-state-start {
+  grid-area: start;
+  margin-top: 18px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.empty-state-start > b {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+
+.empty-state-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.empty-state-chips a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  background: #fff;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--color-text);
+  box-shadow: 0 1px 2px rgba(15, 40, 28, 0.05);
+}
+
+.empty-state-chips a:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.empty-state-chips .icon {
+  width: 17px;
+  height: 17px;
+  color: var(--color-primary);
+}
+
+/* inside the alerts layout (beside the settings panel) the art sits on top */
+.account-alerts .empty-state {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "art" "text";
+  padding: 26px;
+}
+
+.account-alerts .empty-state-illustration {
+  max-width: 280px;
+}
+
+/* documents: the empty state introduces the upload card below it */
+.empty-state + .account-id-documents {
+  margin-top: 14px;
+}
+
+@media (max-width: 1100px) {
+  .empty-state {
+    padding: 26px;
+    gap: 8px 20px;
+  }
+}
+
+@media (max-width: 700px) {
+  .empty-state {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "art" "text" "start";
+    padding: 20px 18px;
+    border-radius: 16px;
+  }
+
+  .empty-state-illustration {
+    max-width: 260px;
+  }
+
+  .empty-state-text h2 {
+    font-size: 20px;
+    margin-bottom: 15px;
+  }
+
+  .empty-state-actions .btn {
+    flex: 1;
+  }
+
+  .empty-state-chips a {
+    height: 38px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+}
+
+/* my enquiries: three stages — waiting for reply, in touch, closed */
+.lead-board.is-3 {
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+}
+
+@media (max-width: 700px) {
+  .lead-board.is-3 {
+    grid-template-columns: repeat(3, 82vw);
+  }
+}
+
+/* =====================================================================
+   Home — Explore panel: the seven verticals in one row (icon over label),
+   then "Suggested for you"; phones scroll the row sideways
+   ===================================================================== */
+.dashboard-discover.dashboard-panel {
+  margin-top: 26px;
+}
+
+.dashboard-discover .dashboard-suggestions {
+  margin-top: 10px;
+}
+
+.dashboard-discover .dashboard-suggestions a {
+  background: var(--color-bg);
+}
+
+.dashboard-discover .dashboard-suggestions a:hover {
+  background: #fff;
+}
+
+/* New-customer home: keep the first-login state useful without making it oversized. */
+.account-dashboard .empty-state:has(.empty-state-actions) {
+  min-height: 0;
+}
+@media (min-width: 1101px) {
+  .account-dashboard .empty-state:has(.empty-state-actions) {
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+}
+@media (max-width: 700px) {
+  .account-dashboard .empty-state:has(.empty-state-actions) {
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+}
+
+/* =====================================================================
+   Phone polish — less scrolling, lighter actions, no sideways board
+   ===================================================================== */
+@media (max-width: 700px) {
+  /* empty states: smaller art, tighter steps, start chips in one sideways row */
+  .empty-state {
+    gap: 4px 0;
+  }
+
+  .empty-state-illustration {
+    max-width: 190px;
+  }
+
+  .empty-state-subtitle {
+    margin: 4px 0 16px;
+  }
+
+  .empty-state-steps {
+    gap: 12px;
+  }
+
+  .empty-state-mock {
+    width: 180px;
+    margin-top: 8px;
+  }
+
+  .empty-state-actions {
+    margin-top: 18px;
+  }
+
+  .empty-state-start {
+    margin-top: 12px;
+    padding-top: 16px;
+  }
+
+  .empty-state-start > b {
+    margin-bottom: 10px;
+  }
+
+  .empty-state-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -18px;
+    padding: 0 18px 2px;
+  }
+
+  .empty-state-chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .empty-state-chips a {
+    flex: none;
+  }
+
+  /* my enquiries: the three stages stacked, so every card is fully visible */
+  .lead-board.is-3 {
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+    scroll-snap-type: none;
+    padding-bottom: 0;
+  }
+
+  .lead-board.is-3 .lead-column {
+    min-height: 0;
+  }
+
+  /* needs you: compact answer buttons under the question, not full-width bars */
+  .dashboard-action-body {
+    flex-basis: 100%;
+  }
+
+  .dashboard-action-body .btn {
+    flex: none;
+    height: 36px;
+    padding: 0 18px;
+    font-size: 13px;
+  }
+}
+
+/* =====================================================================
+   Saved listings — grid or list (the search page's compact rows)
+   ===================================================================== */
+.account-saved-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+/* the sidebar takes a column, so four cards fit where search shows six */
+.account-grid.is-saved {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.account-saved-row {
+  display: flex;
+  align-items: center;
+  background: #fff;
+}
+
+.account-saved-row + .account-saved-row {
+  border-top: 1px solid var(--color-border);
+}
+
+.account-saved-row .row-item {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-saved-row .row-category em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.account-saved-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 0 14px 0 4px;
+}
+
+.account-saved-row-actions .btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  justify-content: center;
+}
+
+.account-saved-row-actions .btn .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.account-saved-row-actions .icon-btn .icon {
+  fill: var(--color-danger);
+  stroke: var(--color-danger);
+}
+
+@media (max-width: 1280px) {
+  .account-grid.is-saved {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .account-grid.is-saved {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .account-grid.is-saved {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* phone rows: photo, text and price on top; contact, compare and remove underneath */
+  .account-saved-list {
+    margin: 0 -16px;
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+  }
+
+  .account-saved-row {
+    flex-wrap: wrap;
+  }
+
+  .account-saved-row .row-item {
+    flex-basis: 100%;
+    grid-template-columns: 88px minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  .account-saved-row .row-item img,
+  .account-saved-row .row-item .tile {
+    width: 88px;
+    height: 66px;
+  }
+
+  .account-saved-row-actions {
+    width: 100%;
+    padding: 0 14px 12px 110px;
+  }
+
+  .account-saved-row-actions .account-compare-pick {
+    margin-right: auto;
+  }
+
+  .account-saved-row .row-price span {
+    display: inline;
+    margin-left: 3px;
+  }
+}
+
+/* =====================================================================
+   Profile & privacy — account · preferences, family · addresses,
+   privacy & data across the bottom; every row is one .account-setting
+   ===================================================================== */
+.account-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.account-profile-grid .account-box {
+  padding: 20px 22px;
+}
+
+.account-profile-grid h3 {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.account-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.account-box-header h3 {
+  margin: 0;
+}
+
+.account-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  font-weight: 700;
+  font-size: 13px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.account-add .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.account-box-note {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.account-box-empty {
+  margin: 10px 0 0;
+  padding: 18px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* name, member since and Edit at the top of the account card */
+.account-avatar.is-lg {
+  width: 52px;
+  height: 52px;
+  font-size: 18px;
+}
+
+.account-details-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 16px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.account-details-header > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-details-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.account-details-header small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+/* one setting per row */
+.account-setting {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+}
+
+.account-setting:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.account-box-note + .account-setting {
+  margin-top: 4px;
+}
+
+.account-setting > i {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+}
+
+.account-setting > i .icon {
+  width: 17px;
+  height: 17px;
+}
+
+.account-setting > .lead-avatar {
+  width: 36px;
+  height: 36px;
+}
+
+.account-setting > span:not(.status-pill):not(.toggle):not(.lead-avatar) {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-setting b {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.account-setting small {
+  display: block;
+  margin-top: 1px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.account-setting .status-pill,
+.account-setting .btn,
+.account-setting .account-select,
+.account-setting .toggle {
+  flex: none;
+}
+
+.account-setting .text-link {
+  flex: none;
+  border: 0;
+  background: none;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.account-setting .account-select select {
+  min-width: 84px;
+}
+
+.account-setting .icon-btn {
+  width: 32px;
+  height: 32px;
+  flex: none;
+}
+
+.account-setting .icon-btn .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.account-setting.is-link {
+  cursor: pointer;
+}
+
+.account-setting.is-link > .icon:last-child {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.account-setting.is-link:hover b {
+  color: var(--color-primary);
+}
+
+label.account-setting {
+  cursor: pointer;
+}
+
+/* states: missing, needs attention, later, danger */
+.account-setting.is-todo > i,
+.account-setting.is-later > i {
+  background: #f1f4f2;
+  color: var(--color-text-muted);
+}
+
+.account-setting.is-warn > i {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.account-setting.is-warn small {
+  color: var(--color-warning-text);
+}
+
+.account-setting.is-danger > i {
+  background: #fbeaea;
+  color: var(--color-danger);
+}
+
+.account-setting.is-danger b {
+  color: var(--color-danger);
+}
+
+/* privacy & data across the full width: what we share on the left, your data on the right */
+.account-privacy {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 32px;
+}
+
+.account-privacy-note {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0 6px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--color-primary-tint-light);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.account-privacy-note .icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--color-primary);
+}
+
+@media (max-width: 860px) {
+  .account-profile-grid,
+  .account-privacy {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .account-profile-grid .account-box {
+    padding: 16px;
+  }
+
+  .account-setting {
+    gap: 12px;
+  }
+}
+
+/* =====================================================================
+   Home as an activity centre — needs your attention first and widest,
+   light glance figures, clickable rows, then enquiries beside messages,
+   continue where you left off and saved; discover more at the end
+   ===================================================================== */
+.dashboard-glance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.dashboard-glance a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 99px;
+  background: #fff;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.dashboard-glance a:hover {
+  border-color: var(--color-primary-lighter);
+  color: var(--color-text);
+}
+
+.dashboard-glance b {
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.dashboard-needs {
+  margin-bottom: 16px;
+}
+
+.dashboard-needs.is-clear .dashboard-none {
+  padding-bottom: 2px;
+}
+
+/* every row is clickable; its buttons stay on top */
+.dashboard-action {
+  position: relative;
+  margin: 0 -12px;
+  padding: 12px;
+  border-bottom: 0;
+  border-radius: 12px;
+  transition: background .15s;
+}
+
+.dashboard-action + .dashboard-action {
+  border-top: 1px solid var(--color-border);
+  border-radius: 0 0 12px 12px;
+}
+
+.dashboard-action:hover {
+  background: var(--color-bg);
+}
+
+.dashboard-action-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.dashboard-action-body {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-action-link:hover b {
+  color: var(--color-primary);
+}
+
+/* one colour per kind of action */
+.dashboard-action.is-green .dashboard-action-link i {
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+}
+
+.dashboard-action.is-amber .dashboard-action-link i {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.dashboard-action.is-red .dashboard-action-link i {
+  background: #fbeaea;
+  color: var(--color-danger);
+}
+
+/* your enquiries and saved: the whole row opens it, with a visible View */
+.dashboard-enquiry,
+.dashboard-saved-item {
+  /* margin: 0 -12px;
+  padding-left: 12px;
+  padding-right: 12px;
+  border-radius: 10px;
+  transition: background .15s; */
+}
+
+.dashboard-enquiry:hover,
+.dashboard-saved-item:hover {
+  background: var(--color-bg);
+}
+
+.dashboard-enquiry:hover b,
+.dashboard-saved-item:hover b {
+  color: var(--color-primary);
+}
+
+.dashboard-enquiry .status-pill {
+  /* min-width: 92px; */
+  justify-content: center;
+}
+
+/* discover more: why these suggestions */
+.dashboard-panel-header > div small {
+  display: block;
+  margin-top: 2px;
+}
+
+.dashboard-discover .dashboard-suggestions {
+  margin-top: 10px;
+}
+
+/* sidebar: Activity and Account groups */
+.account-nav-group {
+  display: block;
+  padding: 14px 12px 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.account-nav-group:first-child {
+  padding-top: 8px;
+}
+
+@media (max-width: 1100px) {
+  /* the sidebar becomes a row of tabs: no group labels */
+  .account-nav-group {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .dashboard-glance {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-right: -16px;
+    padding-right: 16px;
+  }
+
+  .dashboard-glance::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dashboard-glance a {
+    flex: none;
+  }
+
+  .dashboard-action,
+.dashboard-enquiry,
+.dashboard-saved-item {
+    margin: 0 -8px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .dashboard-enquiry .status-pill {
+    display: inline-flex;
+    min-width: 0;
+  }
+}
+
+/* =====================================================================
+   Sidebar: one "Account" group under the activity links, set off by a rule
+   ===================================================================== */
+.account-nav .account-nav-group {
+  margin-top: 8px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 14px;
+}
+
+/* while Documents is hidden: a plain rule sets Profile apart, no group label */
+.account-nav-rule {
+  margin: 4px 6px;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 1100px) {
+  .account-nav-rule {
+    display: none;
+  }
+}
+
+/* =====================================================================
+   Home: closed enquiries folded into one line; saved shows what you contacted
+   ===================================================================== */
+.dashboard-closed,
+.dashboard-saved-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 12px 2px 2px;
+  border-top: 1px solid var(--color-border);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.dashboard-closed span,
+.dashboard-saved-tip span {
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-closed .icon,
+.dashboard-saved-tip .icon {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+.dashboard-closed:hover,
+.dashboard-saved-tip:hover {
+  color: var(--color-primary);
+}
+
+.dashboard-saved-tip {
+  color: var(--color-text-secondary);
+}
+
+.dashboard-contacted {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.dashboard-panel.is-saved .dashboard-saved-tip {
+  border: none;
+}
+
+.dashboard-contacted .icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* =====================================================================
+   Saved: verticals, contacted / not yet, and order — the search page's chips
+   ===================================================================== */
+.account-saved-verticals {
+  margin-bottom: 12px;
+}
+
+.account-saved-verticals .chip .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.account-saved-tools > span {
+  margin-right: auto;
+}
+
+/* =====================================================================
+   Documents: an expiring document asks for the renewed one on its own card (no banner above it)
+   ===================================================================== */
+.onboarding-document.is-compact .onboarding-document-header .btn {
+  flex: none;
+  margin-left: 6px;
+}
+
+@media (max-width: 700px) {
+  /* the greeting may shrink, so the glance strip scrolls inside the page instead of widening it */
+  .dashboard-header > div {
+    min-width: 0;
+  }
+
+  .dashboard-glance {
+    margin-right: 0;
+    padding-right: 0;
+  }
+
+  .account-saved-verticals {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .account-saved-verticals .chip {
+    flex: none;
+  }
+
+  .account-saved-tools {
+    flex-wrap: wrap;
+  }
+
+  .account-saved-tools > span {
+    width: 100%;
+  }
+
+  .account-saved-tools .lead-view-switch span {
+    display: none;
+  }
+
+  .account-saved-tools .account-pill-select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .onboarding-document.is-compact .onboarding-document-header {
+    flex-wrap: wrap;
+  }
+}
+
+.is-enquiry .dashboard-none {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 2px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* =====================================================================
+   A compact select that reads on its own ("All saved ▾", "instantly ▾") —
+   the same height and outline as the grid / list switch beside it
+   ===================================================================== */
+.account-pill-select {
+  height: 38px;
+  padding: 0 34px 0 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 99px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%235b6660' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E") no-repeat right 13px center;
+  appearance: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.account-pill-select:hover {
+  border-color: var(--color-primary-lighter);
+}
+
+.account-pill-select:focus-visible {
+  outline: 2px solid var(--color-primary-lighter);
+  outline-offset: 1px;
+}
+
+/* =====================================================================
+   Home · Your enquiries: the three stages, then each open enquiry with its track
+   ===================================================================== */
+.dashboard-pipeline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--color-bg);
+}
+
+.dashboard-pipeline a,
+.dashboard-pipeline button {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 6px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.dashboard-pipeline a:hover,
+.dashboard-pipeline button:hover {
+  background: #fff;
+}
+
+.dashboard-pipeline b {
+  font-size: 19px;
+  color: var(--color-text);
+}
+
+.dashboard-pipeline .is-stage-1 b {
+  color: var(--color-primary);
+}
+
+.dashboard-pipeline .is-stage-2 b {
+  color: var(--color-text-muted);
+}
+
+.dashboard-pipeline > i {
+  width: 14px;
+  height: 2px;
+  flex: none;
+  border-radius: 2px;
+  background: var(--color-border-strong);
+}
+
+.dashboard-enquiry .account-thumbnail {
+  width: 52px;
+  height: 44px;
+}
+
+.dashboard-enquiry-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dashboard-enquiry-main > small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dashboard-enquiry-next {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+}
+
+.dashboard-enquiry-next > span:last-child {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-track {
+  display: inline-flex;
+  gap: 3px;
+  flex: none;
+}
+
+.dashboard-track i {
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border-strong);
+}
+
+.dashboard-track[data-stage="0"] i:first-child,
+.dashboard-track[data-stage="1"] i:nth-child(-n+2) {
+  background: var(--color-primary);
+}
+
+.dashboard-panel-header h2 em {
+  margin-left: 4px;
+  font-style: normal;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+/* =====================================================================
+   Saved › Searches: what the search finds on top, its alert underneath
+   ===================================================================== */
+.account-searches {
+  display: grid;
+  gap: 12px;
+}
+
+.account-search {
+  display: block;
+  padding: 0;
+}
+
+.account-search-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+}
+
+.account-search-text small {
+  margin: 2px 0 0;
+}
+
+.account-search-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 18px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.account-search-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.account-search-alert > .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-primary);
+}
+
+.account-search-open {
+  align-items: center;
+}
+
+/* =====================================================================
+   Alerts: New / Earlier, each alert with its button; channels as switches
+   ===================================================================== */
+.account-feed-group + .account-feed-group {
+  margin-top: 22px;
+}
+
+.account-feed-group h2 {
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.account-notification {
+  align-items: center;
+}
+
+.account-notification.is-unread {
+  background: var(--color-primary-tint-light);
+}
+
+.account-notification.is-unread::before {
+  top: 50%;
+  margin-top: -3px;
+}
+
+.account-notification-text {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  color: var(--color-text);
+}
+
+.account-notification-text small {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* the time sits under the message, so every row lines up whatever button it has (or none) */
+.account-notification-text em {
+  display: block;
+  margin-top: 4px;
+}
+
+.account-notification-text:hover b {
+  color: var(--color-primary);
+}
+
+.account-notification-action {
+  flex: none;
+}
+
+.account-preferences h3 {
+  margin-bottom: 2px;
+}
+
+.account-preferences-note {
+  margin-bottom: 4px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.account-preference {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.account-preference > b {
+  display: block;
+  font-size: 14px;
+}
+
+.account-preference > small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.account-channels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.account-channel {
+  position: relative;
+  cursor: pointer;
+}
+
+.account-channel input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.account-channel span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 99px;
+  background: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.account-channel .icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* the tick only shows on a picked channel, in place of the channel's own icon */
+.account-channel .channel-tick {
+  display: none;
+}
+
+.account-channel:hover span {
+  border-color: var(--color-border-strong);
+  color: var(--color-text-secondary);
+}
+
+/* picked: light tint, green outline and a tick — clearly on, without a block of solid colour */
+.account-channel input:checked + span {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary-dark);
+  font-weight: 700;
+}
+
+.account-channel input:checked + span .icon:not(.channel-tick) {
+  display: none;
+}
+
+.account-channel input:checked + span .channel-tick {
+  display: inline-block;
+}
+
+.account-channel input:focus-visible + span {
+  outline: 2px solid var(--color-primary-tint);
+  outline-offset: 2px;
+}
+
+.account-preference-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.account-preference-link .icon {
+  width: 13px;
+  height: 13px;
+}
+
+.account-preferences .account-quiet-hours {
+  border-top: 0;
+}
+
+@media (max-width: 700px) {
+  .dashboard-pipeline a {
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .dashboard-enquiry {
+    align-items: flex-start;
+  }
+
+  .dashboard-enquiry > .status-pill {
+    display: none;
+  }
+
+  .account-search-top {
+    flex-wrap: wrap;
+    padding: 14px;
+  }
+
+  .account-search-bottom {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 14px;
+  }
+
+  .account-search-open .btn {
+    flex: 1;
+  }
+
+  .account-notification {
+    flex-wrap: wrap;
+    padding: 14px 16px 14px 18px;
+  }
+
+  .account-notification-text {
+    flex-basis: calc(100% - 54px);
+  }
+
+  .account-notification-action {
+    width: 100%;
+    padding-left: 54px;
+  }
+
+  .account-notification.is-unread::before {
+    top: 34px;
+    margin-top: 0;
+  }
+
+  /* "Alert me" on its own line, then how often and the channel side by side */
+  .account-search-alert > span:first-of-type {
+    flex: 1 0 calc(100% - 30px);
+  }
+
+  .account-search-alert > span:not(:first-of-type) {
+    display: none;
+  }
+
+  .account-search-alert .account-pill-select {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+/* =====================================================================
+   Needs your attention: most urgent first; the top reply opens up with the
+   whole message and the listing it's about, its buttons underneath
+   ===================================================================== */
+.dashboard-hint {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.dashboard-action.is-featured {
+  display: block;
+  margin-bottom: 6px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--color-primary-tint-light);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.dashboard-action.is-featured + .dashboard-action {
+  border-top: 0;
+}
+
+.dashboard-action.is-featured .dashboard-action-link i {
+  background: #fff;
+}
+
+.dashboard-action.is-featured .dashboard-action-link b {
+  font-size: 15.5px;
+}
+
+.dashboard-action-quote {
+  margin: 12px 0 0 50px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.dashboard-action-listing {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 0 50px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.dashboard-action-listing .account-thumbnail {
+  width: 40px;
+  height: 30px;
+  flex: none;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.dashboard-action-listing span {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-action-listing .icon {
+  width: 15px;
+  height: 15px;
+  color: var(--color-text-muted);
+}
+
+.dashboard-action-listing:hover span {
+  color: var(--color-primary);
+}
+
+.dashboard-action.is-featured .dashboard-action-body {
+  margin: 14px 0 0 50px;
+}
+
+@media (max-width: 700px) {
+  .dashboard-hint {
+    display: none;
+  }
+
+  .dashboard-action-quote,
+  .dashboard-action-listing,
+  .dashboard-action.is-featured .dashboard-action-body {
+    margin-left: 0;
+  }
+
+  .dashboard-action.is-featured .dashboard-action-body {
+    padding-left: 0;
+  }
+
+  /* "Nudge Shine & Co." and WhatsApp may not fit side by side — wrap instead of widening the page */
+  .dashboard-action-body {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .dashboard-action-body .btn {
+    max-width: 100%;
+  }
+}
+
+/* =====================================================================
+   One enquiry: what you asked about on top, progress beside the lister
+   (named once, with every way to reach them) and tips for this step
+   ===================================================================== */
+.account-enquiry-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.account-enquiry-listing .account-thumbnail {
+  display: block;
+  width: 96px;
+  height: 72px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.account-enquiry-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.account-enquiry-title h1 {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  line-height: 1.2;
+  color: var(--color-primary-darkest);
+}
+
+.account-enquiry-title small {
+  display: block;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.account-enquiry-title .text-link {
+  font-weight: 700;
+}
+
+.account-enquiry-title .lead-source {
+  vertical-align: -1px;
+}
+
+.account-enquiry-header > .status-pill {
+  flex: none;
+  align-self: flex-start;
+}
+
+.account-lister {
+  padding: 0;
+  overflow: hidden;
+}
+
+.account-lister-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  color: var(--color-text);
+}
+
+.account-lister-header > span:not(.lead-avatar) {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-lister-header > .lead-avatar {
+  flex: none;
+}
+
+.account-lister-header b {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 15.5px;
+}
+
+.account-lister-header b .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-primary);
+}
+
+.account-lister-header small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.account-lister-header small .icon {
+  width: 13px;
+  height: 13px;
+  color: #e0a526;
+  fill: #e0a526;
+}
+
+.account-lister-header > .icon:last-child {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-muted);
+}
+
+.account-lister-header:hover b {
+  color: var(--color-primary);
+}
+
+/* the listing page's channel buttons, flush inside the box — the name is already above */
+.account-lister .agent-card {
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.account-lister .agent-card.is-channels h4 {
+  display: none;
+}
+
+.account-lister .account-button-pair {
+  padding: 0 18px 16px;
+}
+
+.account-tips h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.account-tips h3 .icon {
+  width: 17px;
+  height: 17px;
+  color: #c98a0e;
+}
+
+.account-tips ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.account-tips li {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.account-tips li .icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--color-primary);
+}
+
+.account-tips li:last-child {
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+}
+
+.account-tips li:last-child .icon {
+  color: var(--color-warning-text);
+}
+
+.account-enquiry-links {
+  display: flex;
+  justify-content: center;
+}
+
+.account-enquiry-links .text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.account-enquiry-links .icon {
+  width: 14px;
+  height: 14px;
+}
+
+@media (max-width: 700px) {
+  .account-enquiry-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .account-enquiry-listing .account-thumbnail {
+    width: 72px;
+    height: 56px;
+  }
+
+  .account-enquiry-title {
+    flex-basis: calc(100% - 88px);
+  }
+
+  .account-enquiry-title h1 {
+    font-size: 19px;
+  }
+
+  .account-enquiry-header > .status-pill {
+    margin-left: 88px;
+  }
+}
+
+/* =====================================================================
+   My enquiries: vertical chips and search, then sections — Needs you,
+   Waiting for reply, In touch — five rows each, closed folded into one line
+   ===================================================================== */
+.account-enquiry-filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.account-enquiry-filters .lead-bar {
+  flex: 0 0 auto;
+  max-width: 100%;
+  margin: 0;
+}
+
+.account-enquiry-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 300px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 99px;
+  background: #fff;
+}
+
+.account-enquiry-search:focus-within {
+  border-color: var(--color-primary);
+}
+
+.account-enquiry-search .icon {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.account-enquiry-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+}
+
+.account-enquiry-group + .account-enquiry-group,
+.account-enquiry-group + .account-enquiry-closed {
+  margin-top: 22px;
+}
+
+.account-enquiry-group h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.account-enquiry-group h2 em {
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: #eaefec;
+  font-style: normal;
+  letter-spacing: 0;
+  color: var(--color-text-secondary);
+}
+
+.account-enquiry-group.is-needs h2 {
+  color: var(--color-warning-text);
+}
+
+.account-enquiry-group.is-needs h2 em {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.account-enquiry-list {
+  padding: 0;
+  overflow: hidden;
+}
+
+.account-enquiry-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-right: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.account-enquiry-row:last-child {
+  border-bottom: 0;
+}
+
+.account-enquiry-row:hover {
+  background: var(--color-bg);
+}
+
+.account-enquiry-row-link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0 14px 16px;
+  color: var(--color-text);
+}
+
+.account-enquiry-row-link .account-thumbnail {
+  width: 56px;
+  height: 46px;
+  flex: none;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.account-enquiry-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.account-enquiry-row-main b {
+  font-size: 14.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-enquiry-row-main small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.account-enquiry-row-main .account-enquiry-row-next {
+  display: block;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-enquiry-row-link:hover b {
+  color: var(--color-primary);
+}
+
+.account-enquiry-row-link > .status-pill {
+  flex: none;
+}
+
+.account-enquiry-row-action {
+  flex: none;
+}
+
+.account-enquiry-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.account-enquiry-more .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.account-enquiry-more:hover {
+  background: var(--color-bg);
+}
+
+.account-enquiry-closed {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.account-enquiry-closed span {
+  flex: 1;
+}
+
+.account-enquiry-closed em {
+  font-style: normal;
+  color: var(--color-primary);
+}
+
+.account-enquiry-closed .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.account-enquiry-closed:hover {
+  border-color: var(--color-primary-lighter);
+}
+
+@media (max-width: 700px) {
+  .account-enquiry-search {
+    width: 100%;
+  }
+
+  .account-enquiry-row {
+    flex-wrap: wrap;
+    gap: 0;
+    padding-right: 0;
+  }
+
+  .account-enquiry-row-link {
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .account-enquiry-row-link .account-thumbnail {
+    width: 48px;
+    height: 40px;
+  }
+
+  .account-enquiry-row-link > .status-pill {
+    display: none;
+  }
+
+  .account-enquiry-row-action {
+    width: 100%;
+    padding: 0 14px 14px 74px;
+    margin-top: -6px;
+  }
+}
+
+/* board columns: five cards, then the rest on request */
+.lead-column-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 12px;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.lead-column-more .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.lead-column-more:hover {
+  background: #fff;
+}
+
+/* the folded line under a column: waiting over a week, or closed over a month ago */
+.lead-column-fold {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.lead-column-fold .icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.lead-column-fold span {
+  flex: 1;
+  min-width: 0;
+}
+
+.lead-column-fold em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.lead-column-fold:hover {
+  background: #fff;
+}
+
+/* over 15 enquiries: a quiet nudge towards the List view */
+.lead-board-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--color-primary-tint-light);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.lead-board-hint .icon {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--color-primary);
+}
+
+.lead-board-hint span {
+  flex: 1;
+  min-width: 0;
+}
+
+.lead-board-hint button {
+  flex: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* My enquiries: search, channel and Board / List top right beside the title; under it where there isn't room */
+.account-header:has(.account-enquiry-search) {
+  align-items: center;
+}
+
+.account-header-actions:has(.account-enquiry-search) {
+  align-items: center;
+}
+
+.account-header-actions .account-enquiry-search {
+  width: 240px;
+}
+
+@media (max-width: 1280px) {
+  .account-header:has(.account-enquiry-search) {
+    flex-wrap: wrap;
+  }
+
+  .account-header-actions:has(.account-enquiry-search) {
+    width: 100%;
+  }
+
+  .account-header-actions .account-enquiry-search {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .account-header-actions:has(.account-enquiry-search) {
+    flex-wrap: wrap;
+  }
+
+  .account-header-actions .account-enquiry-search {
+    flex-basis: 100%;
+  }
+
+  .account-header-actions [data-enq-channel] {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* one filter row: verticals as text chips (scroll if they don't fit), then "Via" and the channels as round icon
+   buttons in each channel's colour — a different shape, so the two filters never read as one list */
+.account-enquiry-filters {
+  flex-wrap: nowrap;
+  gap: 14px;
+  /* margin-top: -20px; */
+}
+
+.account-enquiry-filters .lead-bar {
+  flex: 0 1 auto;
+  min-width: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.account-enquiry-filters .lead-bar::-webkit-scrollbar {
+  display: none;
+}
+
+/* chips that don't fit fade out at the edge — it reads as "scroll for more", not as a broken chip */
+@media (min-width: 701px) {
+  .account-enquiry-filters .lead-bar.is-overflowing {
+    mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent);
+  }
+}
+
+.account-enquiry-filters .lead-bar .chip {
+  flex: none;
+}
+
+.account-enquiry-channels {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  margin-left: auto;
+  padding-left: 14px;
+  border-left: 1px solid var(--color-border);
+}
+
+.account-enquiry-channels > span {
+  margin-right: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.account-enquiry-channels button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--c);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+
+.account-enquiry-channels button .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.account-enquiry-channels button b {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.account-enquiry-channels button em {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border: 1.5px solid #fff;
+  border-radius: 99px;
+  background: #e6ebe8;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 14px;
+  color: var(--color-text-secondary);
+}
+
+.account-enquiry-channels button:hover {
+  border-color: var(--c);
+}
+
+.account-enquiry-channels button.is-on {
+  border-color: var(--c);
+  background: var(--c);
+  color: #fff;
+}
+
+.account-enquiry-channels button.is-on em {
+  background: var(--color-text);
+  color: #fff;
+}
+
+.account-enquiry-channels button:focus-visible {
+  outline: 2px solid var(--color-primary-lighter);
+  outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  /* phones: the whole row scrolls — verticals, then Via and the channels */
+  .account-enquiry-filters {
+    flex-direction: row;
+    align-items: center;
+    margin: 0 -16px 18px;
+    padding: 6px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .account-enquiry-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .account-enquiry-filters .lead-bar {
+    flex: none;
+    width: max-content;
+    max-width: none;
+    overflow: visible;
+  }
+
+  .account-enquiry-channels {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  /* phones: search and Board / List share one row; the switch shows its icons only */
+  .account-header-actions .account-enquiry-search {
+    flex-basis: auto;
+  }
+
+  .account-header-actions:has(.account-enquiry-search) {
+    flex-wrap: nowrap;
+  }
+
+  .account-header-actions .lead-view-switch button {
+    padding: 0 10px;
+    font-size: 0;
+    gap: 0;
+  }
+
+  .account-header-actions .lead-view-switch button .icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* filter row, final: wider screens wrap the chips (nothing is ever cut) and keep Via at the end on the right;
+   phones scroll the verticals with a fade and give Via its own line, always in view */
+@media (min-width: 701px) {
+  .account-enquiry-filters {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .account-enquiry-filters .lead-bar {
+    display: contents;
+  }
+
+  .account-enquiry-filters .lead-bar.is-overflowing {
+    mask-image: none;
+  }
+
+  .account-enquiry-channels {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .account-enquiry-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin: 0 0 18px;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .account-enquiry-filters .lead-bar {
+    width: auto;
+    max-width: none;
+    margin: 0 -16px;
+    padding: 2px 16px;
+    overflow-x: auto;
+  }
+
+  .account-enquiry-filters .lead-bar.is-overflowing {
+    mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+  }
+
+  .account-enquiry-channels {
+    margin-left: 0;
+    padding: 6px 0 0;
+    border-left: 0;
+  }
+}
+
+/* a little tighter so six verticals and Via share one line on a laptop; it still wraps cleanly beyond that */
+@media (min-width: 701px) {
+  .account-enquiry-filters {
+    gap: 6px;
+  }
+
+  .account-enquiry-filters .lead-bar .chip {
+    padding: 0 11px;
+    gap: 5px;
+  }
+
+  .account-enquiry-channels {
+    gap: 5px;
+    padding-left: 12px;
+  }
+
+  .account-enquiry-channels button {
+    width: 32px;
+    height: 32px;
+  }
+
+  .account-enquiry-channels button .icon {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+/* the filter row's -20px pull only works while search sits beside the title; once the header wraps, keep the gap */
+@media (max-width: 1280px) {
+  .account-enquiry-filters {
+    margin-top: 0;
+  }
+}
+
+/* Your enquiries on Home: the stages use the account tabs, a little tighter inside the panel */
+.dashboard-stage-tabs .account-tabs {
+  margin-bottom: 4px;
+}
+
+.dashboard-stage-tabs .account-tabs button {
+  height: 40px;
+  padding: 0 12px;
+  font-size: 13.5px;
+}
+
+/* Your enquiries: the stage strip is a set of tabs — the chosen stage sits on white like a selected tab */
+.dashboard-pipeline button {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dashboard-pipeline button.is-on {
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 40, 28, 0.08), 0 0 0 1px var(--color-border);
+  color: var(--color-text);
+}
+
+.dashboard-pipeline button:focus-visible {
+  outline: 2px solid var(--color-primary-lighter);
+  outline-offset: 1px;
+}
+
+/* Up next: the featured reply leads with the lister's avatar and a kicker line */
+.dashboard-action.is-featured .dashboard-action-link .lead-avatar {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  background: #fff;
+}
+
+.dashboard-action-link .dashboard-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.dashboard-action-link .dashboard-kicker .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.dashboard-action.is-featured .dashboard-action-link b {
+  font-size: 18px;
+  margin-top: 1px;
+}
+
+.dashboard-action.is-featured .dashboard-action-quote,
+.dashboard-action.is-featured .dashboard-action-listing,
+.dashboard-action.is-featured .dashboard-action-body {
+  margin-left: 56px;
+}
+
+@media (max-width: 700px) {
+  .dashboard-action.is-featured .dashboard-action-quote,
+  .dashboard-action.is-featured .dashboard-action-listing,
+  .dashboard-action.is-featured .dashboard-action-body {
+    margin-left: 0;
+  }
+}
+
+/* =====================================================================
+   Messages, livelier: a colour per lister, the listing photo on top, a
+   soft chat background with day lines, white bubbles in, green bubbles out
+   ===================================================================== */
+.message-avatar {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: hsl(var(--hue) 45% 92%);
+  color: hsl(var(--hue) 45% 30%);
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+.message-avatar.is-md {
+  width: 44px;
+  height: 44px;
+}
+
+.message-avatar.is-sm {
+  width: 28px;
+  height: 28px;
+  font-size: 10.5px;
+}
+
+/* conversation list */
+.message-row {
+  position: relative;
+  align-items: center;
+  padding: 14px 16px 14px 18px;
+}
+
+.message-row.is-on {
+  background: var(--color-primary-tint-light);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.message-row-listing {
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  margin-top: 1px;
+}
+
+.message-row-listing .lead-source {
+  flex: none;
+}
+
+.message-row-listing span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.message-row-last {
+  margin-top: 2px;
+  color: var(--color-text-secondary) !important;
+}
+
+.message-row.is-unread .message-row-text b,
+.message-row.is-unread .message-row-last {
+  font-weight: 800;
+  color: var(--color-text) !important;
+}
+
+.message-row > i {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+/* header */
+.message-pane-header {
+  gap: 10px;
+}
+
+.message-icon-btn {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-secondary);
+}
+
+.message-icon-btn .icon {
+  width: 17px;
+  height: 17px;
+}
+
+.message-icon-btn.is-whatsapp {
+  border-color: #1faa59;
+  background: #1faa59;
+  color: #fff;
+}
+
+/* the listing this conversation is about, with its photo */
+.message-context {
+  gap: 12px;
+  padding: 8px 12px 8px 8px;
+}
+
+.message-context .account-thumbnail {
+  width: 56px;
+  height: 44px;
+  flex: none;
+  border-radius: 9px;
+  object-fit: cover;
+}
+
+.message-context .status-pill {
+  flex: none;
+}
+
+/* the conversation */
+.message-list {
+  gap: 10px;
+  margin-top: 14px;
+  padding: 18px 20px;
+  background: #f3f6f4;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.message-day {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0;
+}
+
+.message-day span {
+  padding: 3px 12px;
+  border-radius: 99px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 40, 28, 0.06);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.message-in {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 80%;
+}
+
+.message-in .message-bubble {
+  max-width: none;
+}
+
+.message-bubble {
+  padding: 10px 14px 8px;
+  border-radius: 16px 16px 16px 4px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 40, 28, 0.08);
+  color: var(--color-text);
+}
+
+.message-bubble.is-out {
+  border-radius: 16px 16px 4px 16px;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.message-bubble small {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.message-bubble.is-out small {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.message-ticks {
+  display: inline-flex;
+  margin-left: 2px;
+}
+
+.message-ticks .icon {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.6;
+}
+
+.message-ticks .icon + .icon {
+  margin-left: -8px;
+}
+
+/* suggested replies and the compose bar */
+.message-quick {
+  align-items: center;
+  padding: 12px 20px 4px;
+}
+
+.message-quick > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.message-quick > span .icon {
+  width: 14px;
+  height: 14px;
+  color: #c98a0e;
+}
+
+.message-quick .chip {
+  border-color: var(--color-primary-tint);
+  color: var(--color-primary-dark);
+  background: var(--color-primary-tint-light);
+}
+
+.message-quick .chip:hover {
+  border-color: var(--color-primary);
+}
+
+.message-compose {
+  border-top: 0;
+}
+
+.message-closed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.message-closed .icon {
+  width: 15px;
+  height: 15px;
+  color: var(--color-primary);
+}
+
+@media (max-width: 700px) {
+  .message-context .status-pill {
+    display: none;
+  }
+
+  .message-in {
+    max-width: 90%;
+  }
+
+  .message-list {
+    padding: 14px;
+  }
+
+  .message-compose input::placeholder {
+    font-size: 13px;
+  }
+}
+
+/* My enquiries board: each card leads with the listing photo and title, the lister underneath */
+.lead-card-top {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 8px;
+}
+
+.lead-card-top .account-thumbnail {
+  width: 64px;
+  height: 52px;
+  flex: none;
+  border-radius: 9px;
+  object-fit: cover;
+}
+
+.lead-card-top > span {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lead-card-top b {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 13.5px;
+  line-height: 1.3;
+}
+
+.lead-card-top small {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* lister avatars keep their circle inside flex rows (the row's span rules would otherwise stretch them) */
+.message-row > .message-avatar,
+.message-pane-header > .message-avatar,
+.message-in > .message-avatar {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.message-row > .message-avatar,
+.message-pane-header > .message-avatar {
+  width: 42px;
+  height: 42px;
+}
+
+.message-in > .message-avatar {
+  width: 28px;
+  height: 28px;
+}
+
+/* one enquiry: a photo big enough to recognise the place the moment you land */
+.account-enquiry-header {
+  align-items: stretch;
+  padding: 12px;
+  gap: 18px;
+}
+
+.account-enquiry-listing .account-thumbnail {
+  width: 200px;
+  height: 132px;
+  border-radius: 12px;
+}
+
+.account-enquiry-title {
+  justify-content: center;
+  padding: 4px 0;
+}
+
+.account-enquiry-title h1 {
+  font-size: 26px;
+}
+
+.account-enquiry-header > .status-pill {
+  margin: 6px 6px 0 0;
+}
+
+@media (max-width: 700px) {
+  .account-enquiry-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .account-enquiry-listing .account-thumbnail {
+    width: 100%;
+    height: 170px;
+  }
+
+  .account-enquiry-title {
+    flex-basis: auto;
+    padding: 0 4px;
+  }
+
+  .account-enquiry-header > .status-pill {
+    position: absolute;
+    margin: 10px 0 0 10px;
+  }
+
+  .account-enquiry-header {
+    position: relative;
+  }
+
+  /* suggested replies: one line that scrolls */
+  .message-quick {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .message-quick::-webkit-scrollbar {
+    display: none;
+  }
+
+  .message-quick > * {
+    flex: none;
+  }
+}
+
+/* =====================================================================
+   Board cards on one grid: every card has the same parts at the same
+   heights — photo + two-line title, a two-line message, a footer line —
+   and the three columns run to the same height
+   ===================================================================== */
+.lead-board.is-3 {
+  align-items: stretch;
+}
+
+.lead-board.is-3 .lead-card {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+}
+
+.lead-board.is-3 .lead-card-top {
+  align-items: center;
+  min-height: 52px;
+  margin-bottom: 8px;
+}
+
+.lead-board.is-3 .lead-card-top .account-thumbnail {
+  width: 60px;
+  height: 52px;
+}
+
+.lead-board.is-3 .lead-card-top > span {
+  justify-content: center;
+}
+
+.lead-board.is-3 .lead-card-top b {
+  min-height: 0;
+  -webkit-line-clamp: 2;
+}
+
+.lead-board.is-3 .lead-card p {
+  margin: 0;
+  line-height: 18px;
+  -webkit-line-clamp: 2;
+}
+
+.lead-board.is-3 .lead-footer {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* the "your turn / no reply" accent: a thin top bar, so every card keeps the same left edge */
+.lead-board.is-3 .lead-card.is-hot {
+  box-shadow: inset 0 3px 0 var(--color-amber), 0 1px 2px rgba(15, 40, 28, 0.04);
+}
+
+.lead-board.is-3 .lead-card:hover {
+  border-color: var(--color-primary-lighter);
+  box-shadow: 0 4px 14px rgba(15, 40, 28, 0.08);
+}
+
+.lead-board.is-3 .lead-card.is-hot:hover {
+  box-shadow: inset 0 3px 0 var(--color-amber), 0 4px 14px rgba(15, 40, 28, 0.08);
+}
+
+/* Documents: health records (reports and results clinics share with the customer) */
+.document-health {
+  margin-top: 18px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.document-health-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.document-health-header i {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #fbeaea;
+  color: #c2413b;
+}
+
+.document-health-header b {
+  display: block;
+  font-size: 14.5px;
+}
+
+.document-health-header small {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.document-health-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 26px 20px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.document-health-body .icon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-text);
+}
+
+/* =====================================================================
+   Saved: one toolbar — vertical chips on the left, show / sort / view on
+   the right; the same green for every active state
+   ===================================================================== */
+.account-saved-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.account-saved-toolbar .account-saved-verticals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+}
+
+.account-saved-toolbar .chip {
+  height: 34px;
+  gap: 6px;
+}
+
+.account-saved-toolbar .chip em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.account-saved-toolbar .chip.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.account-saved-toolbar .chip.is-active em {
+  color: inherit;
+  opacity: .8;
+}
+
+.account-saved-toolbar .account-saved-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  flex: none;
+  margin: 0;
+}
+
+.account-saved-count {
+  margin-right: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+/* "Show: All ▾" — a quiet text dropdown, not a big pill */
+.account-text-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 6px 0 10px;
+  border-radius: 99px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.account-text-select:hover {
+  background: var(--color-bg);
+}
+
+.account-text-select select {
+  field-sizing: content; /* as wide as the chosen option, not the longest one */
+  max-width: 130px;
+  padding: 0 18px 0 0;
+  border: 0;
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2314201a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E") no-repeat right center;
+  appearance: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.account-text-select select:focus-visible {
+  outline: 2px solid var(--color-primary-lighter);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* grid / list: icons only */
+.account-saved-tools .lead-view-switch.is-icons {
+  margin-left: 6px;
+  padding: 2px;
+}
+
+.lead-view-switch.is-icons button {
+  width: 34px;
+  height: 30px;
+  padding: 0;
+  justify-content: center;
+}
+
+.lead-view-switch.is-icons button .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.lead-view-switch.is-icons button.is-on {
+  background: var(--color-primary);
+}
+
+@media (max-width: 860px) {
+  /* chips scroll on their own row; the controls sit under them, on the right */
+  .account-saved-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .account-saved-toolbar .account-saved-verticals {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .account-saved-toolbar .account-saved-verticals::-webkit-scrollbar {
+    display: none;
+  }
+
+  .account-saved-toolbar .chip {
+    flex: none;
+  }
+
+  .account-saved-toolbar .account-saved-tools {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .account-saved-toolbar .account-saved-count {
+    margin-right: auto;
+  }
+}
+
+/* =====================================================================
+   Saved › Listers: one even card per lister — colour avatar, company and
+   rating, where you stand, the listing you last asked about, quick contact
+   ===================================================================== */
+.account-listers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 14px;
+}
+
+.account-lister-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: #fff;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.account-lister-card:hover {
+  border-color: var(--color-primary-lighter);
+  box-shadow: 0 4px 14px rgba(15, 40, 28, 0.07);
+}
+
+.account-lister-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-text);
+}
+
+.account-lister-card-head > span:not(.message-avatar) {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-lister-card-head > .message-avatar {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+}
+
+.account-lister-card-head b {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-lister-card-head b .icon {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--color-primary);
+}
+
+.account-lister-card-head small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-lister-card-head:hover b {
+  color: var(--color-primary);
+}
+
+.account-lister-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: #fdf3dc;
+  font-style: normal;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #8a5a00;
+}
+
+.account-lister-rating .icon {
+  width: 12px;
+  height: 12px;
+  fill: #e0a526;
+  color: #e0a526;
+}
+
+.account-lister-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.account-lister-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 99px;
+  background: var(--color-bg);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.account-lister-stats span.is-open {
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary-dark);
+}
+
+.account-lister-stats .icon {
+  width: 13px;
+  height: 13px;
+}
+
+.account-lister-latest {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.account-lister-latest .account-thumbnail {
+  width: 48px;
+  height: 40px;
+  flex: none;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.account-lister-latest > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-lister-latest small {
+  display: block;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+.account-lister-latest b {
+  display: block;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-lister-latest .status-pill {
+  flex: none;
+}
+
+.account-lister-latest:hover b {
+  color: var(--color-primary);
+}
+
+.account-lister-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.account-lister-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.account-lister-profile .icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Saved › Following: search, the followed cards, then people you contacted with a Follow button each */
+.account-following-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.account-following-tools .account-enquiry-search {
+  width: 320px;
+}
+
+.account-following-more {
+  margin-top: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.account-lister-actions .btn-follow.is-following,
+.account-contacted-row .btn-follow.is-following {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary-dark);
+}
+
+.account-contacted {
+  margin-top: 26px;
+}
+
+.account-contacted .account-section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.account-contacted .account-section-header h2 {
+  font-size: 16px;
+}
+
+.account-contacted .account-section-header small {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.account-contacted-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 0 24px;
+  padding: 4px 16px;
+}
+
+.account-contacted-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.account-contacted-row > .message-avatar {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+}
+
+.account-contacted-row > a {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text);
+}
+
+.account-contacted-row b {
+  display: block;
+  font-size: 14px;
+}
+
+.account-contacted-row small {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-contacted-row .btn {
+  flex: none;
+}
+
+@media (max-width: 700px) {
+  .account-following-tools .account-enquiry-search {
+    width: auto;
+    flex: 1;
+  }
+}
+
+/* Following card, final layout — nothing wraps at card width */
+.account-lister-card {
+  gap: 12px;
+}
+
+.account-lister-card .account-lister-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.account-lister-card-head > a:first-child {
+  flex: none;
+  display: flex;
+}
+
+.account-lister-who {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text);
+}
+
+.account-lister-who b {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 15px;
+}
+
+.account-lister-who b span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-lister-who b .icon {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--color-primary);
+}
+
+.account-lister-who small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.account-lister-who small span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-lister-who small em {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  font-style: normal;
+  font-weight: 800;
+  color: #8a5a00;
+}
+
+.account-lister-who small em .icon {
+  width: 12px;
+  height: 12px;
+  fill: #e0a526;
+  color: #e0a526;
+}
+
+.account-lister-who:hover b span {
+  color: var(--color-primary);
+}
+
+.account-lister-bell {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.account-lister-bell .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.account-lister-bell.is-following {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.account-lister-stats span.is-new {
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary-dark);
+}
+
+.account-lister-stats span {
+  background: #eef2ef;
+}
+
+.account-lister-card .account-lister-latest b {
+  font-size: 13.5px;
+}
+
+.account-lister-card .account-lister-latest small {
+  display: flex;
+  gap: 4px;
+  margin-top: 1px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.account-lister-latest small em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.account-lister-latest small em.is-info {
+  color: #1f5a8c;
+}
+
+.account-lister-latest small em.is-warning {
+  color: var(--color-warning-text);
+}
+
+.account-lister-latest > .icon {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.account-lister-card .account-lister-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+@media (max-width: 700px) {
+  .account-contacted .account-section-header {
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+/* "8 new listings this week" opens their profile */
+.account-lister-stats a.is-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 99px;
+  background: var(--color-primary-tint-light);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  white-space: nowrap;
+}
+
+.account-lister-stats a.is-new .icon {
+  width: 13px;
+  height: 13px;
+}
+
+.account-lister-stats a.is-new:hover {
+  background: var(--color-primary-tint);
+}
+
+/* Following card: three even figures in one strip instead of loose tags */
+.account-lister-card .account-lister-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  flex-wrap: nowrap;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.account-lister-card .account-lister-stats > a,
+.account-lister-card .account-lister-stats > span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  height: auto;
+  padding: 9px 4px;
+  border-radius: 0;
+  background: #fff;
+  text-align: center;
+  white-space: normal;
+  color: var(--color-text);
+}
+
+.account-lister-card .account-lister-stats > * + * {
+  border-left: 1px solid var(--color-border);
+}
+
+.account-lister-card .account-lister-stats b {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.account-lister-card .account-lister-stats b i {
+  margin-left: 2px;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.account-lister-card .account-lister-stats small {
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text-muted);
+}
+
+.account-lister-card .account-lister-stats > a.is-new {
+  background: var(--color-primary-tint-light);
+}
+
+.account-lister-card .account-lister-stats > a.is-new b,
+.account-lister-card .account-lister-stats > a.is-new small {
+  color: var(--color-primary-dark);
+}
+
+.account-lister-card .account-lister-stats > a:hover {
+  background: var(--color-bg);
+}
+
+.account-lister-card .account-lister-stats > a.is-new:hover {
+  background: var(--color-primary-tint);
+}
+
+/* People you've contacted: one small card each in an even grid — no shared box, no row lines */
+.account-contacted-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.account-contacted-row {
+  gap: 12px;
+  padding: 12px 12px 12px 14px;
+  border: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: #fff;
+  transition: border-color .15s;
+}
+
+.account-contacted-row:hover {
+  border-color: var(--color-primary-lighter);
+}
+
+.account-contacted-row > a:hover b {
+  color: var(--color-primary);
+}
+
+.account-contacted-row .btn {
+  height: 34px;
+  padding: 0 14px;
+}
+
+/* =====================================================================
+   Alerts: grouped by day; each row shows the place it's about (its photo)
+   with a small badge for what happened; unread rows have a dot and bold title
+   ===================================================================== */
+.account-alert-kinds {
+  margin-bottom: 18px;
+}
+
+.account-alert-list {
+  padding: 0;
+  overflow: hidden;
+}
+
+.account-alert {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px 14px 26px;
+  border-bottom: 1px solid var(--color-border);
+  background: #fff;
+}
+
+.account-alert:last-child {
+  border-bottom: 0;
+}
+
+.account-alert:hover {
+  background: #fafcfb;
+}
+
+.account-alert.is-unread::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+.account-alert-media {
+  position: relative;
+  flex: none;
+  width: 56px;
+  height: 48px;
+}
+
+.account-alert-media img,
+.account-alert-tile {
+  display: block;
+  width: 56px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.account-alert-tile {
+  display: grid;
+  place-items: center;
+}
+
+.account-alert-tile .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.account-alert-media > i {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+}
+
+.account-alert-media > i .icon {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.4;
+}
+
+.account-alert-media .is-info,
+.account-alert-tile.is-info { background: #e3eef8; color: #1f5a8c; }
+.account-alert-media .is-amber,
+.account-alert-tile.is-amber { background: var(--color-warning-bg); color: var(--color-warning-text); }
+.account-alert-media .is-red,
+.account-alert-tile.is-red { background: #fbeaea; color: var(--color-danger); }
+.account-alert-media .is-ok,
+.account-alert-tile.is-ok { background: var(--color-primary-tint); color: var(--color-primary-dark); }
+
+.account-alert-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  color: var(--color-text);
+}
+
+.account-alert-text b {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.account-alert.is-unread .account-alert-text b {
+  font-weight: 800;
+}
+
+.account-alert-text > span {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-alert-text small {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-alert-text:hover b {
+  color: var(--color-primary);
+}
+
+.account-alert-action {
+  flex: none;
+}
+
+@media (max-width: 700px) {
+  .account-alert {
+    flex-wrap: wrap;
+    padding: 14px 14px 14px 22px;
+    gap: 12px;
+  }
+
+  .account-alert-text {
+    flex-basis: calc(100% - 70px);
+  }
+
+  .account-alert-text > span {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .account-alert-action {
+    width: 100%;
+    padding-left: 68px;
+  }
+
+  .account-alert-kinds {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-right: -16px;
+  }
+
+  .account-alert-kinds .chip {
+    flex: none;
+  }
+}
+
+/* your photo: initials until you add one; the profile avatar is the picker (camera badge) */
+.account-avatar {
+  text-transform: uppercase;
+  overflow: hidden;
+}
+
+.account-avatar.has-photo {
+  background: var(--color-bg);
+}
+
+.account-avatar.has-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.account-photo {
+  position: relative;
+  flex: none;
+  display: block;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.account-photo > i {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--color-text);
+  color: #fff;
+}
+
+.account-photo > i .icon {
+  width: 12px;
+  height: 12px;
+}
+
+.account-photo:hover .account-avatar {
+  box-shadow: 0 0 0 3px var(--color-primary-tint);
+}
+
+.account-photo:focus-within .account-avatar {
+  box-shadow: 0 0 0 3px var(--color-primary-lighter);
+}
+
+.account-details-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.account-details-actions label.btn {
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .account-details-header {
+    flex-wrap: wrap;
+  }
+
+  .account-details-actions {
+    width: 100%;
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+}
+
+.account-details-header > .account-details-actions {
+  flex: none;
+}
+
+.account-photo-links {
+  display: flex;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.account-photo-links label,
+.account-photo-links button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.account-photo-links button {
+  color: var(--color-text-muted);
+}
+
+.account-photo-links .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.account-photo-links label:hover,
+.account-photo-links button:hover {
+  text-decoration: underline;
+}
+
+/* Up next rows: one solid button only on the featured reply; the rest are soft, in the row's colour,
+   the same width, lined up on the right */
+.dashboard-action:not(.is-featured) .dashboard-action-body .btn {
+  min-width: 132px;
+  justify-content: center;
+  border: 1px solid transparent;
+  box-shadow: none;
+  font-weight: 700;
+}
+
+.dashboard-action:not(.is-featured) .dashboard-action-body .btn .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.dashboard-action.is-red:not(.is-featured) .dashboard-action-body .btn-primary {
+  background: #fdecea;
+  border-color: #f6cfcb;
+  color: #a3312a;
+}
+
+.dashboard-action.is-red:not(.is-featured) .dashboard-action-body .btn-primary:hover {
+  background: #fadcd8;
+}
+
+.dashboard-action.is-amber:not(.is-featured) .dashboard-action-body .btn-primary {
+  background: var(--color-warning-bg);
+  border-color: #f0dcae;
+  color: var(--color-warning-text);
+}
+
+.dashboard-action.is-amber:not(.is-featured) .dashboard-action-body .btn-primary:hover {
+  background: #f7e6bf;
+}
+
+.dashboard-action.is-green:not(.is-featured) .dashboard-action-body .btn-primary,
+.dashboard-action.is-blue:not(.is-featured) .dashboard-action-body .btn-primary {
+  background: var(--color-primary-tint-light);
+  border-color: var(--color-primary-tint);
+  color: var(--color-primary-dark);
+}
+
+.dashboard-action:not(.is-featured) .dashboard-action-body .btn-whatsapp {
+  background: #e6f6ed;
+  border-color: #c4ead4;
+  color: #12804a;
+}
+
+@media (max-width: 700px) {
+  .dashboard-action:not(.is-featured) .dashboard-action-body .btn {
+    min-width: 0;
+  }
+}
+
+/* =====================================================================
+   Home: "Explore" — Featured · Top rated · New this week. The site's listing
+   cards in a row that scrolls sideways: no scrollbar, small previous / next
+   buttons beside "See all"; on phones a swipe row with the next card peeking
+   ===================================================================== */
+.dashboard-picks {
+  margin-top: 30px;
+}
+
+.dashboard-picks .dashboard-panel-header h2 {
+  font-size: 19px;
+}
+
+.dashboard-picks .dashboard-panel-header small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.dashboard-pick-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.dashboard-pick-nav > a {
+  margin-right: 6px;
+}
+
+.dashboard-pick-arrow {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text-secondary);
+  transition: 0.12s;
+}
+
+.dashboard-pick-arrow .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.dashboard-pick-arrow:hover:not(:disabled) {
+  border-color: var(--color-primary-lighter);
+  color: var(--color-primary-dark);
+}
+
+.dashboard-pick-arrow:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dashboard-pick-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.dashboard-pick-tabs .chip {
+  height: 30px;
+  font-size: 12.5px;
+}
+
+/* room above and below so the cards' hover lift and shadow aren't clipped */
+.dashboard-pick-row {
+  display: flex;
+  gap: 16px;
+  margin: 6px 0 -8px;
+  padding: 6px 0 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.dashboard-pick-row::-webkit-scrollbar {
+  display: none;
+}
+
+.dashboard-pick-row > .card {
+  flex: 0 0 calc((100% - 3 * 16px) / 4);
+  scroll-snap-align: start;
+}
+
+@media (max-width: 1100px) {
+  .dashboard-pick-row > .card {
+    flex-basis: calc((100% - 2 * 16px) / 3);
+  }
+}
+
+@media (max-width: 700px) {
+  .dashboard-picks {
+    margin-top: 22px;
+  }
+
+  /* swipe instead of buttons */
+  .dashboard-pick-arrow {
+    display: none;
+  }
+
+  .dashboard-pick-nav > a {
+    margin-right: 0;
+  }
+
+  .dashboard-pick-row {
+    gap: 12px;
+    margin: 4px -16px -8px;
+    padding: 6px 16px 8px;
+    scroll-padding: 0 16px;
+  }
+
+  .dashboard-pick-row > .card {
+    flex-basis: 72%;
+  }
+}
