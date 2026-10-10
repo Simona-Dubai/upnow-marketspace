@@ -25,8 +25,7 @@
       <div class="sect-t">Required before publishing</div>
       <div class="ar">${ico('shield')}<div class="bd"><b>Business verification</b><small>Already verified for Greenstone</small></div>${st('Done')}</div>
       <div class="ar">${ico('file')}<div class="bd"><b>${docs}</b><small>Upload now or later — you can set up the pack while it is reviewed</small></div><button class="btn btn-o btn-sm" onclick="this.outerHTML='<span class=\\'st warn\\'>Uploaded</span>'">Upload</button></div>
-      <div class="callout" style="margin:14px 0;padding:12px;border-radius:12px;background:var(--g1);font-size:12.5px"><b>Launch mode:</b> no subscription fee. Published pricing is calculated in shadow with a 100% launch credit.</div>
-      <button class="btn btn-g" style="width:100%" data-act="packOn" data-arg="${v}">Activate ${PKL(v)}</button></div>`);
+      <button class="btn btn-g" style="width:100%;margin-top:14px" data-act="packOn" data-arg="${v}">Activate ${PKL(v)}</button></div>`);
   };
   PWA.acts.packOn = v => { if (!S.active.includes(v)) S.active.push(v); S.pack = v; if (PW.V[v]) S.v = v; S.page = 'overview'; save(); closeModal(); render(); toast(PKL(v) + ' pack activated'); };
 
@@ -57,7 +56,7 @@
 
   /* ============ SETTINGS ============ */
   const SGROUPS = () => [
-    ['Business', [['Account & KYC', 'Legal identity, authorized signatory and verification documents', 'shield'], ['Entities & Branches', 'Legal entities, branches, countries and currencies', 'building'], ['Team & Permissions', 'Who can see and do what', 'users']]],
+    ['Business', [['Account & KYC', 'Legal identity, authorized signatory and verification documents', 'shield'], ['Plan & billing', 'Your UpNow plan, what each plan includes, and payments', 'star'], ['Entities & Branches', 'Legal entities, branches, countries and currencies', 'building'], ['Team & Permissions', 'Who can see and do what', 'users']]],
     ['Customers', [['Channels', 'Where leads come from and how they connect to your inbox', 'link'], ['Notifications', 'Who gets alerted, how, and when it escalates', 'bell'], ['Language', 'Workspace, listing and template languages', 'globe']]],
   ];
   const STABS = () => ['Overview', ...SGROUPS().flatMap(g => g[1].map(x => x[0]))];
@@ -84,43 +83,298 @@
   PW.SOURCES.sms = PW.SOURCES.sms || { l: 'SMS', s: 'SMS', c: '#7b877f' };
   const chOn = c => c[4] === 'on' || S.chOn[c[0]];
 
+  // team table: each member with their initials
+  const memRows = rows => rows.map(r => [`<span class="st-mem">${av(r[0])}<span>${r[0]}</span></span>`, ...r.slice(1)]);
   const SB = {
     'Account & KYC': () => `<div class="g2" style="grid-template-columns:1.4fr 1fr">${pn('Provider identity', saveB('Provider identity saved'), `<div class="frm">${fld('Provider type', 'Company', '', 'sel', ['Company', 'Individual owner'])}${fld('Legal name', 'Greenstone Services LLC')}${fld('Registration / licence number', 'CN-2081142')}${fld('Tax registration number', '100384726100003')}${fld('Registered address', 'Business Bay, Dubai')}${fld('Legal-notices address', 'PO Box 118822, Dubai')}</div>`)}
       ${pn('Authorized signatory', `<button class="btn btn-o btn-sm" data-act="toastX" data-arg="Signatory invited">Invite</button>`, `<div class="frm">${fld('Name', 'Khalid Baalfalasi')}${fld('Email and phone', 'khalid@greenstone.ae')}${fld('Authority', '', '', 'sel', ['Authorized signatory', 'Power of attorney', 'Manager'])}${fld('Expiry', '2027-06-30', '', 'date')}</div>`)}</div>
-      <div class="mt">${pn('Verification documents', '', tbl(['Document', 'Applies to', 'Expiry', 'Status', 'Action'], ['Trade licence / company registration', 'Owner or signatory identity', 'Passport and visa where required', 'VAT registration certificate', 'Power of attorney / signing authority', PKL(S.pack) + ' regulatory licence'].map((x, i) => [x, i === 5 ? PKL(S.pack) + ' / jurisdiction' : 'Provider account', i === 1 ? '—' : i === 5 ? '14 Oct 2026' : '15 Dec 2026', i === 5 ? '§Renewal due|warn' : '§Verified', `<button class="btn btn-o btn-sm" data-act="toastX" data-arg="Document manager opened">View / replace</button>`])), 'Business once · vertical licences only when required')}</div>`,
+      <div class="mt">${pn('Verification documents', '', tbl(['Document', 'Applies to', 'Expiry', 'Status', 'Action'], ['Trade licence / company registration', 'Owner or signatory identity', 'Passport and visa where required', 'VAT registration certificate', 'Power of attorney / signing authority', PKL(S.pack) + ' regulatory licence'].map((x, i) => [x, i === 5 ? PKL(S.pack) + ' / jurisdiction' : 'Provider account', i === 1 ? '—' : `<span style="white-space:nowrap">${i === 5 ? '14 Oct 2026' : '15 Dec 2026'}</span>`, i === 5 ? '§Renewal due|warn' : '§Verified', `<button class="btn btn-o btn-sm" data-act="toastX" data-arg="Document manager opened">View / replace</button>`])), 'Business once · vertical licences only when required')}</div>`,
     'Entities & Branches': () => pn('Legal entities and operating branches', `<button class="btn btn-g btn-sm" data-act="toastX" data-arg="Entity or branch form opened">${ico('plus')}Add</button>`, tbl(['Entity / branch', 'Country', 'Currency & tax', 'Verticals', 'Listings & operations', 'Status'], [['Greenstone Services LLC<br><small class="hint">Legal entity</small>', 'UAE', 'AED · UAE VAT', 'Spaces · Services', 'Dubai and Abu Dhabi', '§Active'], ['Dubai Marina branch<br><small class="hint">Operating branch</small>', 'UAE', 'Inherited', 'Spaces', '9 properties · 113 units', '§Active'], ['Greenstone Oman SPC<br><small class="hint">Legal entity</small>', 'Oman', 'OMR · Oman VAT', 'Services', 'Muscat', '§Draft|mute']])),
-    'Team & Permissions': () => pn('Team access', `<button class="btn btn-g btn-sm" data-act="invite">${ico('plus')}Invite member</button>`, tbl(['Member', 'Role', 'Branch / portfolio', 'Work modes', 'Sensitive access', 'Status'], [['Khalid Baalfalasi', 'Owner', 'All', 'Remote', 'Everything', '§Active'], ['Ahmed Karim', 'Leasing manager', 'Dubai Marina', 'Remote + on-ground', 'Customer records · operations', '§Active'], ['Sara Idris', 'Operations', 'Stays · venues', 'Remote + on-ground', 'Customer records', '§Active'], ['Finance controller', 'Finance', 'All UAE', 'Remote', 'Pay, cost, margin · banking', '§Active'], ['Rashid Omar', 'Technician', 'All Dubai', 'On-ground', 'Assigned work only', '§Active']])
+    'Team & Permissions': () => pn('Team access', `<button class="btn btn-g btn-sm" data-act="invite">${ico('plus')}Invite member</button>`, tbl(['Member', 'Role', 'Branch / portfolio', 'Work modes', 'Sensitive access', 'Status'], memRows([['Khalid Baalfalasi', 'Owner', 'All', 'Remote', 'Everything', '§Active'], ['Ahmed Karim', 'Leasing manager', 'Dubai Marina', 'Remote + on-ground', 'Customer records · operations', '§Active'], ['Sara Idris', 'Operations', 'Stays · venues', 'Remote + on-ground', 'Customer records', '§Active'], ['Finance controller', 'Finance', 'All UAE', 'Remote', 'Pay, cost, margin · banking', '§Active'], ['Rashid Omar', 'Technician', 'All Dubai', 'On-ground', 'Assigned work only', '§Active']]))
       + `<p class="hint" style="margin:14px 0 0"><b>Permission boundary:</b> workers see assigned work. Managers see team delivery. Only owners and finance roles see pay, cost, banking and margin.</p>`),
     Channels: () => { const on = CH.filter(chOn), off = CH.filter(c => !chOn(c));
-      return `<section class="pn"><div class="pn-h"><h2>Lead & communication channels</h2><span class="sub">${on.length} connected · everything lands in one inbox</span></div>
-      <div class="flow4">${['Connect', 'Verify', 'Map listings', 'Route to team'].map(() => '<span class="on"></span>').join('')}</div>
-      <div class="chg">${CH.map(c => { const o = chOn(c), s = PW.SOURCES[c[0]]; const n = PWA.leads().filter(l => l.src === c[0]).length; return `<div class="chc ${o ? '' : 'off'}"><div class="t"><span class="sw" style="width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:12px;background:${o ? s.c : 'var(--line2)'}">${esc(s.s.slice(0, 2))}</span><b>${esc(c[1])}</b>${o ? st('Live') : st('Off', 'mute')}</div><small>${esc(c[3])}</small>
-        ${o ? `<div class="m"><span>${esc(S.chOn[c[0]] ? 'Connected just now' : c[2])}</span><span>${n} leads · 30d</span></div><button class="btn btn-o btn-sm" data-act="chManage" data-arg="${c[0]}">Manage</button>` : `<button class="btn btn-g btn-sm" data-act="chConnect" data-arg="${c[0]}">${ico('link')}Connect</button>`}</div>`; }).join('')}</div></section>
+      const card = c => { const o = chOn(c), s = PW.SOURCES[c[0]]; const n = PWA.leads().filter(l => l.src === c[0]).length; return `<div class="chc ${o ? '' : 'off'}"><div class="t"><span class="sw" style="width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:12px;background:${o ? s.c : 'var(--line2)'}">${esc(s.s.slice(0, 2))}</span><b>${esc(c[1])}</b>${o ? st('Live') : st('Off', 'mute')}</div><small>${esc(c[3])}</small>
+        ${o ? `<div class="m"><span>${esc(S.chOn[c[0]] ? 'Connected just now' : c[2])}</span><span>${n} leads · 30d</span></div><button class="btn btn-o btn-sm" data-act="chManage" data-arg="${c[0]}">Manage</button>` : `<button class="btn btn-o btn-sm" data-act="chConnect" data-arg="${c[0]}">${ico('link')}Connect</button>`}</div>`; };
+      return `<section class="pn"><div class="pn-h"><h2>Connected</h2><span class="sub">${on.length} channels · every lead lands in one inbox</span></div><div class="chg">${on.map(card).join('')}</div></section>
+      ${off.length ? `<section class="pn mt"><div class="pn-h"><h2>Add more channels</h2><span class="sub">${off.length} available · connect one in a few steps</span></div><div class="chg">${off.map(card).join('')}</div></section>` : ''}
       <section class="pn mt"><div class="pn-h"><h2>Notices and automation</h2><span class="sub">One audited communication timeline</span></div><div class="chipset">${['Conversation', 'Notification', 'Reminder', 'Announcement', 'Formal notice', 'Warning', 'Consent request', 'Emergency alert', 'Delivery status', 'Customer acknowledgement'].map(x => `<span class="chip" style="height:28px;font-size:12px">${x}</span>`).join('')}</div></section>`; },
     Notifications: () => pn('Notification rules', saveB('Notification rules saved'), tbl(['Event', 'Owner', 'Channels', 'Escalation'], [['New lead or customer reply', 'Demand owner', 'In-app · email · WhatsApp', 'Manager after 15 min'], ['Viewing / appointment in 1 hour', 'Assignee', 'Push · WhatsApp', '—'], ['Payment due, failed or unmatched', 'Finance', 'In-app · email', 'Owner'], ['Work late or evidence missing', 'Accountable owner', 'Push · in-app', 'Operations lead'], ['Licence, agreement or AMC expiry', 'Compliance owner', 'Email · in-app', 'Provider owner']])),
     Language: () => pn('Languages and translated content', `<button class="btn btn-g btn-sm" data-act="toastX" data-arg="Language picker opened">${ico('plus')}Add language</button>`, tbl(['Language', 'Direction', 'Workspace', 'Listings', 'Templates', 'Status'], [['English', 'LTR', 'Complete', 'Required', 'Approved', '§Live'], ['العربية', 'RTL', 'Complete', 'Required', 'Approved', '§Live'], ['Русский', 'LTR', '—', 'Optional', '4 of 12', '§Draft|mute']])),
   };
+  /* plan & billing: the UpNow plan the provider is on, what each plan includes, changing plan, and the monthly payments.
+     The admin portal owns the plans (pages/admin → upnow.admin.state.plans: price and listing limit) and sets each
+     provider's plan (upnow.join.review.plan, and planOf.REAL in the admin state). Payments follow pages/admin/js/admin.js
+     invoices(): every 30 days from approval, due within 7 days, marked paid by the team (admin state paid['REAL-<n>']).
+     PLANS is the same list as pages/admin/js/data.js PLANS0; INCL is what each plan includes. */
+  const PLANS = [{ id: 'launch', n: 'Launch', p: 0, max: 5 }, { id: 'basic', n: 'Basic', p: 299, max: 10 }, { id: 'pro', n: 'Pro', p: 799, max: 50 }, { id: 'business', n: 'Business', p: 1999, max: 500 }];
+  // what each plan adds on top of the one before; built on what the dashboard has (Channels, Team & Permissions,
+  // Demand, Boost on a listing, Entities & Branches)
+  const INCL = {
+    launch: ['Leads by call, WhatsApp, SMS and email from your listings', 'Verified badge on your profile and listings', 'Leads, calendar and messages in one place', 'Views and leads for each listing'],
+    basic: ['Connect your WhatsApp Business and email inbox', 'Enquiry form for your own website', 'Up to 3 team members', 'Reply templates for WhatsApp and email', 'Weekly performance report by email'],
+    pro: ['Leads from Bayut, Property Finder, Dubizzle, Instagram and Facebook', 'A tracked phone number for each listing', 'Up to 15 team members, with roles', 'New leads shared out to your team automatically', 'Demand: what customers search for in your areas', '2 featured listings (Boost) a month'],
+    business: ['Several branches and legal entities', 'Unlimited team members', 'Upload many listings at once', '10 featured listings (Boost) a month', 'A named UpNow account manager']
+  };
+  const FOR = { launch: 'Getting started', basic: 'Owners and freelancers', pro: 'Agencies, clinics, operators', business: 'Large portfolios and multi-branch' };
+  const DAY = 864e5;
+  const readLS = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+  const writeLS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  const plans = () => { const a = readLS('upnow.admin.state'); return a && Array.isArray(a.plans) && a.plans.length ? a.plans : PLANS; };
+  const dt = t => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const aedP = n => 'AED ' + Number(n).toLocaleString();
+  const MY = () => {
+    const u = readLS('upnow.user'), app = readLS('upnow.join'), who = u && (u.email || (u.dial || '') + u.phone), adm = readLS('upnow.admin.state') || {};
+    const P = plans(), find = id => P.find(p => p.id === id) || P[0];
+    // ?demo (no application of their own): the sample business, on Pro for about three months
+    if (!app || !who || (app.owner && app.owner !== who)) {
+      const d = S.demoPlan || {}, since = Date.now() - 95 * DAY;
+      if (d.next && d.next.from <= Date.now()) { (d.hist = d.hist || [{ id: d.id || 'pro', from: since }]).push({ id: d.next.id, from: d.next.from }); d.id = d.next.id; delete d.next; save(); }
+      return { demo: true, plan: find(d.id || 'pro'), next: d.next ? { plan: find(d.next.id), from: d.next.from } : null, used: PW.LISTINGS.length + S.extraListings.length, since, hist: d.hist || [], find, paid: () => true };
+    }
+    const used = ((readLS('upnow.listings@' + who) || {}).items || []).filter(l => l.status !== 'rejected').length;
+    // in review: the admin can pick the plan before approving (pages/admin planBox → admin state planOf.REAL); it starts on approval
+    if (!(app.status === 'verified' || app.status === 'approved')) return { plan: null, used, pending: find((adm.planOf && adm.planOf.REAL) || app.plan || 'launch'), chosen: !!(adm.planOf && adm.planOf.REAL && adm.planOf.REAL !== app.plan), asked: !!app.plan };
+    const r = app.review || {}, now = Date.now();
+    // a smaller plan chosen earlier starts on its date
+    if (r.next && r.next.from <= now) { (r.hist = r.hist || [{ id: r.plan || 'launch', from: r.t || now }]).push({ id: r.next.id, from: r.next.from }); r.plan = r.next.id; delete r.next; app.review = r; writeLS('upnow.join', app); if (adm.planOf) { adm.planOf.REAL = r.plan; writeLS('upnow.admin.state', adm); } }
+    const id = (adm.planOf && adm.planOf.REAL) || r.plan || 'launch';
+    return { plan: find(id), next: r.next ? { plan: find(r.next.id), from: r.next.from } : null, used, since: r.t || app.sent || now, hist: r.hist || [], find, paid: k => !!(adm.paid && adm.paid['REAL-' + k]) };
+  };
+  // each month is billed at the plan in effect on its date (hist: [{ id, from }], written when the plan changes)
+  const planAt = (m, t) => { const h = (m.hist || []).filter(x => x.from <= t + 1).pop(); return h ? m.find(h.id) : m.hist && m.hist.length ? m.find(m.hist[0].id) : m.plan; };
+  const bills = m => {
+    if (!m.plan) return [];
+    const out = [], now = Date.now();
+    for (let t = m.since, k = 0; t <= now; t += 30 * DAY, k++) { const p = planAt(m, t); if (!p.p) continue; const paid = m.paid(k) && (!m.demo || now - t > 3 * DAY); out.push({ k, t, p, amt: p.p, due: t + 7 * DAY, state: paid ? 'paid' : now > t + 7 * DAY ? 'overdue' : 'due' }); }
+    return out.reverse();
+  };
+  const nextBill = m => { let t = m.since; while (t <= Date.now()) t += 30 * DAY; return t; };
+  const incl = x => x.f || INCL[x.id] || [];
+  const PL_ICO = { launch: 'bolt', basic: 'star', pro: 'chart', business: 'building' };
+  const PL_C = { launch: '#6f8f7f', basic: '#25946a', pro: '#047246', business: '#0b3d2a' };
+  const plC = x => PL_C[x.id] || x.c || '#047246';
+  const PL_CSS = `
+    .pl-root{container-type:inline-size;display:grid;grid-template-columns:minmax(0,1fr);gap:18px}.pl-root>*{min-width:0}
+    .btn:disabled{opacity:.45;cursor:not-allowed}
+    .pl-hero{position:relative;overflow:hidden;border-radius:20px;color:#fff;padding:26px 28px;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:24px;align-items:stretch;
+      background:radial-gradient(110% 140% at 100% 0%,rgba(52,190,128,.32),transparent 55%),radial-gradient(80% 120% at 0% 100%,rgba(233,180,92,.14),transparent 60%),linear-gradient(135deg,var(--g9),var(--g7))}
+    .pl-eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#bfe6d2}
+    .pl-eyebrow .ico{width:15px;height:15px}
+    .pl-hero-name{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:10px 0 4px}
+    .pl-hero-name h2{font-family:var(--serif);font-weight:400;font-size:44px;line-height:1;letter-spacing:-.01em;color:#fff}
+    .pl-chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 11px;border-radius:99px;font-size:12px;font-weight:800;background:rgba(255,255,255,.16);color:#fff}
+    .pl-chip::before{content:'';width:7px;height:7px;border-radius:50%;background:#5fe0a1}.pl-chip.rv::before{background:#ffd27a}
+    .pl-hero-sub{font-size:15px;font-weight:600;color:#e3f4ea;margin:0}
+    .pl-hero-note{font-size:13px;line-height:1.55;color:#bfdccc;margin:12px 0 0;max-width:460px}
+    .pl-hero-acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+    .pl-hero-acts .btn{height:38px;padding:0 16px;border-radius:11px;font-weight:700}
+    .pl-btn-light{background:#fff;color:var(--g9)}.pl-btn-light:hover{background:#eef8f2}
+    .pl-btn-ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35)}.pl-btn-ghost:hover{background:rgba(255,255,255,.1)}
+    .pl-hero-side{display:grid;gap:12px;align-content:center}
+    .pl-stat{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:14px 16px}
+    .pl-stat small{display:block;font-size:12px;color:#bfdccc;font-weight:600}
+    .pl-stat b{display:block;font-size:24px;font-weight:800;letter-spacing:-.02em;margin-top:2px}.pl-stat b span{font-size:14px;font-weight:600;color:#bfdccc}
+    .pl-stat em{display:block;font-style:normal;font-size:12px;color:#bfdccc;margin-top:6px}
+    .pl-meter{height:7px;border-radius:99px;background:rgba(255,255,255,.16);overflow:hidden;margin-top:10px}.pl-meter i{display:block;height:100%;border-radius:99px;background:#5fe0a1}.pl-meter.over i{background:#ffc35c}
+    .pl-alerts{display:grid;gap:10px}
+    .pl-alert{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:#fff}
+    .pl-alert .pl-ai{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;background:var(--g1);color:var(--g7)}.pl-alert .pl-ai .ico{width:17px;height:17px}
+    .pl-alert.warn .pl-ai{background:#fbf0dc;color:#8a5a14}.pl-alert.risk .pl-ai{background:#f9e3e1;color:#9a2f2a}
+    .pl-alert div{flex:1;min-width:0}.pl-alert b{display:block;font-size:13.5px}.pl-alert small{display:block;font-size:12.5px;color:var(--ink3);margin-top:1px}
+    .pl-sec-h{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:6px 2px 12px}
+    .pl-sec-h h2{font-family:var(--serif);font-weight:400;font-size:26px;color:var(--g9);line-height:1.1}.pl-sec-h p{color:var(--ink3);font-size:13px;margin:4px 0 0}
+    .pl-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding-top:12px}
+    @container (max-width:980px){.pl-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pl-hero{grid-template-columns:minmax(0,1fr)}.pl-hero-side{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @container (max-width:560px){.pl-grid{grid-template-columns:minmax(0,1fr)}.pl-hero{padding:22px 18px;border-radius:18px}.pl-hero-side{grid-template-columns:minmax(0,1fr)}.pl-hero-name h2{font-size:36px}.pl-hero-acts .btn{flex:1;justify-content:center}
+      .pl-alert{flex-wrap:wrap}.pl-alert>.btn,.pl-alert>.st{margin-left:46px}.pl-bill{padding:4px 10px 8px}.pl-bill .tbl th,.pl-bill .tbl td{padding-left:6px;padding-right:6px}.pl-bill .tbl th:nth-child(2),.pl-bill .tbl td:nth-child(2){display:none}}
+    .pl-bill .tbl td{white-space:nowrap}
+    .pl-card{position:relative;display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px 18px 18px;transition:box-shadow .2s,transform .2s}
+    .pl-card::before{content:'';position:absolute;inset:0 0 auto;height:4px;border-radius:18px 18px 0 0;background:var(--c)}
+    .pl-card:hover{box-shadow:0 14px 34px -22px rgba(11,61,42,.45);transform:translateY(-2px)}
+    .pl-card.is-cur{border:2px solid var(--g7);box-shadow:0 18px 40px -26px rgba(4,114,70,.55);padding:19px 17px 17px}
+    .pl-tag{position:absolute;top:-12px;left:16px;height:24px;padding:0 10px;border-radius:99px;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:800;background:var(--g7);color:#fff;box-shadow:0 4px 10px -4px rgba(4,114,70,.6)}
+    .pl-tag .ico{width:13px;height:13px}.pl-tag.pend{background:#1f5a8c;box-shadow:0 4px 10px -4px rgba(31,90,140,.6)}
+    .pl-card-h{display:flex;align-items:flex-start;gap:11px;min-height:58px}
+    .pl-ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;color:var(--c);background:color-mix(in srgb,var(--c) 12%,#fff)}.pl-ic .ico{width:20px;height:20px}
+    .pl-card-h h3{font-size:17px;letter-spacing:-.01em}.pl-card-h small{display:block;color:var(--ink3);font-size:12px;margin-top:1px;line-height:1.3}
+    .pl-price{display:flex;align-items:baseline;gap:5px;margin:18px 0 10px}.pl-price b{font-size:30px;font-weight:800;letter-spacing:-.03em;color:var(--ink)}.pl-price span{font-size:13px;color:var(--ink3);font-weight:600}
+    .pl-limit{display:inline-flex;align-self:flex-start;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:9px;font-size:13px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 10%,#fff)}.pl-limit .ico{width:15px;height:15px}
+    .pl-feats{border-top:1px dashed var(--line);margin-top:16px;padding-top:14px;flex:1}
+    .pl-plus{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
+    .pl-feats ul{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+    .pl-feats li{display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.45;color:var(--ink2)}
+    .pl-feats li i{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;flex:none;margin-top:1px;background:var(--g1);color:var(--g7)}.pl-feats li i .ico{width:11px;height:11px;stroke-width:3}
+    .pl-cta{margin-top:18px}.pl-cta .btn{width:100%;justify-content:center;height:40px;border-radius:11px;font-weight:700}
+    .pl-cur-note{display:flex;align-items:center;justify-content:center;gap:6px;height:40px;border-radius:11px;background:var(--g1);color:var(--g8);font-size:13px;font-weight:700}.pl-cur-note .ico{width:15px;height:15px}
+    .pl-bill{background:#fff;border:1px solid var(--line);border-radius:18px;padding:6px 18px 10px;overflow-x:auto}
+    .pl-bill .tbl td,.pl-bill .tbl th{padding-top:12px;padding-bottom:12px}
+    .pl-empty{display:flex;align-items:center;gap:12px;padding:16px 0;color:var(--ink3);font-size:13px}.pl-empty .pl-ai{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--g1);color:var(--g7)}
+    .pl-note{font-size:13px;line-height:1.5;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--g1)}
+    .pl-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:6px}
+    .pl-sum div{background:var(--g1);border-radius:12px;padding:12px 14px}.pl-sum small{display:block;color:var(--ink3);font-size:12px}.pl-sum b{font-size:15px}`;
+  const plCss = () => { const s = document.getElementById('pl-css') || document.head.appendChild(Object.assign(document.createElement('style'), { id: 'pl-css' })); if (s.textContent !== PL_CSS) s.textContent = PL_CSS; };
+  // cur: the plan they're on (with change buttons); pend: the plan that starts when they're approved (no buttons)
+  const planCards = (cur, pend) => { const P = plans();
+    return `<div class="pl-grid">${P.map((x, i) => { const on = cur && x.id === cur.id, pd = pend && x.id === pend.id, prev = P[i - 1];
+      return `<div class="pl-card ${on || pd ? 'is-cur' : ''}" style="--c:${plC(x)}">
+        ${on ? `<span class="pl-tag">${ico('check')}Your plan</span>` : pd ? `<span class="pl-tag pend">${ico('clock')}Starts when approved</span>` : ''}
+        <div class="pl-card-h"><span class="pl-ic">${ico(PL_ICO[x.id] || 'star')}</span><div><h3>${esc(x.n)}</h3><small>${esc(FOR[x.id] || x.note || '')}</small></div></div>
+        <div class="pl-price"><b>${aedP(x.p)}</b><span>/ month</span></div>
+        <span class="pl-limit">${ico('layers')}Up to ${x.max} listings</span>
+        <div class="pl-feats"><span class="pl-plus">${prev ? 'Everything in ' + esc(prev.n) + ', plus' : 'Includes'}</span><ul>${incl(x).map(f => `<li><i>${ico('check')}</i><span>${esc(f)}</span></li>`).join('')}</ul></div>
+        ${cur ? `<div class="pl-cta">${on ? `<div class="pl-cur-note">${ico('check')}Your current plan</div>` : `<button class="btn ${x.p > cur.p ? 'btn-g' : 'btn-o'}" data-act="planAsk" data-arg="${x.id}">${x.p > cur.p ? 'Upgrade to ' : 'Switch to '}${esc(x.n)}</button>`}</div>` : ''}</div>`; }).join('')}</div>`; };
+  const plAlert = (tone, icon, title, text, act = '') => `<div class="pl-alert ${tone}"><span class="pl-ai">${ico(icon)}</span><div><b>${title}</b><small>${text}</small></div>${act}</div>`;
+  const plHero = (x, o) => `<section class="pl-hero"><div>
+      <span class="pl-eyebrow">${ico(PL_ICO[x.id] || 'star')}Your UpNow plan</span>
+      <div class="pl-hero-name"><h2>${esc(x.n)}</h2><span class="pl-chip ${o.review ? 'rv' : ''}">${o.review ? 'In review' : 'Active'}</span></div>
+      <p class="pl-hero-sub">${aedP(x.p)} a month · up to ${x.max} listings</p>
+      <p class="pl-hero-note">${o.note}</p>
+      <div class="pl-hero-acts"><button class="btn pl-btn-light" data-act="planCompare">${ico('layers')}Compare plans</button>${o.up ? `<button class="btn pl-btn-ghost" data-act="planAsk" data-arg="${o.up.id}">${ico('arrow')}Upgrade to ${esc(o.up.n)}</button>` : ''}</div></div>
+    <div class="pl-hero-side">
+      <div class="pl-stat"><small>Listings used</small><b>${o.used}<span> of ${x.max}</span></b><div class="pl-meter ${o.used > x.max ? 'over' : ''}"><i style="width:${Math.min(100, Math.round(o.used / x.max * 100))}%"></i></div><em>${o.used > x.max ? (o.used - x.max) + ' over your limit' : (x.max - o.used) + ' left on this plan'}</em></div>
+      <div class="pl-stat"><small>${o.k}</small><b>${o.v}</b><em>${o.vs}</em></div></div></section>`;
+  const plSec = (id, title, sub, body) => `<section ${id ? `id="${id}"` : ''}><div class="pl-sec-h"><div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div></div>${body}</section>`;
+  const COMPARE_SUB = 'Every plan includes leads by call, WhatsApp, SMS and email, and the verified badge.';
+  PWA.acts.planCompare = () => { const s = document.getElementById('pl-compare'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  SB['Plan & billing'] = () => { plCss(); const m = MY(), p = m.plan, P = plans();
+    if (!p) { const q = m.pending;
+      return `<div class="pl-root">${plHero(q, { review: true, used: m.used, k: 'Starts', v: 'When approved', vs: 'Billing begins the day UpNow approves you',
+          note: (m.chosen ? `Picked by the UpNow team for your application. It starts the day you're approved.` : m.asked ? `You chose ${esc(q.n)} when you applied. Our team confirms it when they approve you, and it starts that day.` : `You start on ${esc(q.n)}. The UpNow team may suggest another plan when they approve you.`) + ' After that you can change it here.' })}
+        ${plSec('pl-compare', 'Compare plans', COMPARE_SUB, planCards(null, q))}</div>`; }
+    const over = m.used > p.max, B = bills(m), open = B.filter(b => b.state !== 'paid'), nO = open.filter(b => b.state === 'overdue').length, nD = open.length - nO;
+    const up = P.find(x => x.p > p.p);
+    const alerts = [
+      over ? plAlert('warn', 'alert', 'Over your listing limit', `You have ${m.used} listings and ${esc(p.n)} includes ${p.max}. Pick a bigger plan to keep adding.`, up ? `<button class="btn btn-g btn-sm" data-act="planAsk" data-arg="${up.id}">Upgrade</button>` : '') : '',
+      m.next ? plAlert('', 'clock', `Changing to ${esc(m.next.plan.n)} on ${dt(m.next.from)}`, `You keep ${esc(p.n)} and its ${p.max} listings until then.`, `<button class="btn btn-o btn-sm" data-act="planKeep">Keep ${esc(p.n)}</button>`) : '',
+      open.length ? plAlert(nO ? 'risk' : 'warn', 'coin', [nO ? nO + (nO > 1 ? ' payments' : ' payment') + ' overdue' : '', nD ? nD + (nD > 1 ? ' payments' : ' payment') + ' due' : ''].filter(Boolean).join(' · '), `${aedP(open.reduce((s, b) => s + b.amt, 0))} in total. Questions about a payment? Contact the UpNow team.`, st(nO ? 'Overdue' : 'Due', nO ? 'risk' : 'warn')) : ''
+    ].filter(Boolean);
+    return `<div class="pl-root">${plHero(p, { used: m.used, up, k: p.p ? 'Next payment' : 'On this plan since', v: p.p ? dt(nextBill(m)) : dt(m.since), vs: p.p ? aedP((m.next && m.next.from <= nextBill(m) ? m.next.plan : p).p) + ' · billed monthly' : 'Change your plan any time',
+        note: m.next ? `Changing to ${esc(m.next.plan.n)} on ${dt(m.next.from)}.` : up ? `Need more room? ${esc(up.n)} gives you up to ${up.max} listings.` : `You're on our biggest plan.` })}
+      ${alerts.length ? `<div class="pl-alerts">${alerts.join('')}</div>` : ''}
+      ${plSec('pl-compare', 'Compare plans', COMPARE_SUB, planCards(p))}
+      ${plSec('', 'Billing history', B.length ? 'Monthly, from the day you were approved' : '', `<div class="pl-bill">${B.length ? tbl(['Date', 'Plan', 'Amount', 'Status'], B.map(b => [dt(b.t), esc(b.p.n), aedP(b.amt), b.state === 'paid' ? '§Paid' : b.state === 'due' ? '§Due ' + dt(b.due) + '|warn' : '§Overdue|risk'])) : `<div class="pl-empty"><span class="pl-ai">${ico('coin')}</span>No payments yet.</div>`}</div>`)}</div>`; };
+  PWA.acts.planAsk = id => { const m = MY(), cur = m.plan, to = plans().find(x => x.id === id); if (!cur || !to) return;
+    const up = to.p > cur.p, diff = to.p - cur.p, nb = nextBill(m);
+    const block = to.max < m.used;
+    modal(`<div class="mh"><h3>${up ? 'Upgrade' : 'Switch'} to ${esc(to.n)}</h3><button class="x" data-act="closeModal">${ico('x')}</button></div><div class="mb">
+      <div class="pl-sum"><div><small>Now</small><b>${esc(cur.n)}</b><small>${aedP(cur.p)} / month · ${cur.max} listings</small></div><div><small>New</small><b>${esc(to.n)}</b><small>${aedP(to.p)} / month · ${to.max} listings</small></div></div>
+      <p class="pl-note">${diff ? `${diff > 0 ? '+' : '−'}${aedP(Math.abs(diff))} a month. ` : ''}${up ? `Starts today: your next payment on ${dt(nb)} is ${aedP(to.p)}.` : `Starts on ${dt(nb)}, your next billing date. You keep ${esc(cur.n)} until then.`}</p>
+      ${block ? `<p class="pl-note" style="background:#fbf0dc"><b>${esc(to.n)} includes ${to.max} listings and you have ${m.used}.</b> Remove ${m.used - to.max} listing${m.used - to.max > 1 ? 's' : ''} first, or pick a bigger plan.</p>` : ''}
+      <button class="btn btn-g" style="width:100%" data-act="planDo" data-arg="${to.id}" ${block ? 'disabled' : ''}>${up ? 'Upgrade' : 'Switch'} to ${esc(to.n)}</button></div>`); };
+  PWA.acts.planDo = id => { const m = MY(), to = plans().find(x => x.id === id); if (!m.plan || !to || to.max < m.used) return;
+    const up = to.p > m.plan.p, from = nextBill(m);
+    const now = Date.now(), hist = (m.hist && m.hist.length ? m.hist : [{ id: m.plan.id, from: m.since }]).concat(up ? [{ id, from: now }] : []);
+    if (m.demo) { S.demoPlan = up ? { id, hist } : { id: m.plan.id, hist, next: { id, from } }; }
+    else {
+      const app = readLS('upnow.join'), adm = readLS('upnow.admin.state'); app.review = app.review || {};
+      app.review.hist = hist;
+      if (up) { app.review.plan = id; delete app.review.next; if (adm) { adm.planOf = adm.planOf || {}; adm.planOf.REAL = id; writeLS('upnow.admin.state', adm); } }
+      else app.review.next = { id, from };
+      writeLS('upnow.join', app);
+    }
+    save(); closeModal(); render(); toast(up ? `You're on ${to.n} now` : `${to.n} starts on ${dt(from)}`); };
+  PWA.acts.planKeep = () => { const m = MY(); if (m.demo) { if (S.demoPlan) delete S.demoPlan.next; } else { const app = readLS('upnow.join'); if (app.review) delete app.review.next; writeLS('upnow.join', app); } save(); render(); toast(`You're staying on ${m.plan.n}`); };
+
   const ATTN = () => [
     ['Account & KYC', 'warn', PKL(S.pack) + ' regulatory licence renews 14 Oct', 'Renew'],
+    ...((m => m.plan && m.used > m.plan.max ? [['Plan & billing', 'warn', `${m.used} listings — your ${m.plan.n} plan includes ${m.plan.max}`, 'Upgrade']] : [])(MY())),
+    ...((m => bills(m).some(b => b.state === 'overdue') ? [['Plan & billing', 'risk', 'A payment to UpNow is overdue', 'Review']] : [])(MY())),
     ['Channels', 'info', CH.filter(c => !chOn(c)).length + ' lead channels not connected', 'Connect'],
     ['Entities & Branches', 'mute', 'Greenstone Oman SPC is still a draft', 'Finish'],
     ['Language', 'mute', 'Russian templates 4 of 12 translated', 'Review']
   ].filter(a => !(a[0] === 'Channels' && !CH.some(c => !chOn(c))));
-  const SUMM = { 'Account & KYC': '5 of 6 documents verified', 'Entities & Branches': '2 entities · 3 branches', 'Team & Permissions': '5 members · 4 roles', Channels: () => CH.filter(chOn).length + ' of ' + CH.length + ' connected', Notifications: '5 rules active', Language: 'English · العربية' };
+  const SUMM = { 'Account & KYC': '5 of 6 documents verified', 'Plan & billing': () => { const m = MY(); return m.plan ? m.plan.n + ' · ' + m.used + ' of ' + m.plan.max + ' listings' : m.pending.n + ' · starts when you\'re approved'; }, 'Entities & Branches': '2 entities · 3 branches', 'Team & Permissions': '5 members · 4 roles', Channels: () => CH.filter(chOn).length + ' of ' + CH.length + ' connected', Notifications: '5 rules active', Language: 'English · العربية' };
   const summ = n => { const v = SUMM[n]; return typeof v === 'function' ? v() : v || 'Configured'; };
   const sOverview = () => { const A = ATTN(); return `
-    <section class="pn"><div class="pn-h"><h2>Needs your attention</h2><span class="sub">${A.length} items</span></div>
-      ${A.map(a => `<div class="ar"><span class="st ${a[1]}" style="width:10px;padding:0;height:10px"></span><div class="bd"><b>${esc(a[2])}</b><small>${esc(a[0])}</small></div><button class="btn btn-o btn-sm" data-act="setTab" data-arg="${esc(a[0])}">${a[3]}</button></div>`).join('')}</section>
+    <section class="pn st-att"><div class="pn-h"><h2>Needs your attention</h2><span class="st-count">${A.length}</span></div>
+      ${A.map(a => `<div class="ar"><span class="st-ai ${a[1]}">${ico({ 'Account & KYC': 'shield', 'Plan & billing': 'star', Channels: 'link', 'Entities & Branches': 'building', Language: 'globe' }[a[0]] || 'alert')}</span><div class="bd"><b>${esc(a[2])}</b><small>${esc(a[0])}</small></div><button class="btn btn-o btn-sm" data-act="setTab" data-arg="${esc(a[0])}">${a[3]}</button></div>`).join('')}</section>
     ${SGROUPS().map(([g, items]) => `<div class="sect-t" style="margin-top:22px">${g}</div><div class="sov">${items.map(([n, d, i]) => { const w = A.find(a => a[0] === n); return `<button class="soc" data-act="setTab" data-arg="${esc(n)}"><span class="ic">${ico(i)}</span><span class="bd"><b>${esc(n)}</b><small>${esc(d)}</small><em>${w ? `<span class="st ${w[1]}">${esc(w[3])} needed</span>` : `<span class="ok">${ico('check')}${esc(summ(n))}</span>`}</em></span>${ico('chevR')}</button>`; }).join('')}</div>`).join('')}`; };
+  /* settings page look: scoped to .pg-settings so the rest of the dashboard is untouched */
+  const ST_CSS = `
+    .pg-settings .st-top{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin:4px 0 24px}
+    .pg-settings .st-top h1{font-family:var(--serif);font-weight:400;font-size:40px;line-height:1;color:var(--g9);letter-spacing:-.01em}
+    .pg-settings .st-top p{color:var(--ink3);font-size:14.5px;margin:8px 0 0}
+    .pg-settings .st-id{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:10px 10px 10px 12px;box-shadow:0 10px 30px -24px rgba(11,61,42,.5)}
+    .pg-settings .st-av{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px;background:linear-gradient(135deg,var(--g9),var(--g7))}
+    .pg-settings .st-id b{display:block;font-size:14.5px}.pg-settings .st-id>div{min-width:0}.pg-settings .st-id b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pg-settings .st-id small{white-space:nowrap;display:flex;align-items:center;gap:5px;font-size:12px;color:var(--g7);font-weight:700}.pg-settings .st-id small .ico{width:13px;height:13px}
+    .pg-settings .st-id small.rv{color:#8a5a14}
+    .pg-settings .st-plan{white-space:nowrap;flex:none;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;margin-left:6px;border-radius:10px;background:var(--g1);color:var(--g8);font-weight:800;font-size:12.5px;cursor:pointer}
+    .pg-settings .st-plan:hover{background:#d9efe3}.pg-settings .st-plan .ico{width:14px;height:14px}
+    .pg-settings .setg{grid-template-columns:264px minmax(0,1fr);gap:28px}
+    .pg-settings .snav{top:8px;border-radius:18px;padding:12px;box-shadow:0 12px 32px -28px rgba(11,61,42,.55)}
+    .pg-settings .ssrch{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:11px;background:var(--bg);border:1px solid transparent;margin-bottom:8px}
+    .pg-settings .ssrch:focus-within{background:#fff;border-color:var(--g5);box-shadow:0 0 0 3px var(--g1)}
+    .pg-settings .ssrch input{border:0;background:none;outline:0;flex:1;font:inherit;font-size:13.5px;min-width:0}.pg-settings .ssrch .ico{width:16px;height:16px;color:var(--ink3)}
+    .pg-settings .sgl{font-size:10.5px;font-weight:800;letter-spacing:.09em;color:var(--ink3);padding:14px 10px 6px}
+    .pg-settings .si{position:relative;display:flex;align-items:center;gap:11px;height:44px;padding:0 10px 0 8px;border-radius:12px;color:var(--ink2);font-weight:600;font-size:14px;cursor:pointer;transition:background .15s,color .15s}
+    .pg-settings .si:hover{background:var(--bg);color:var(--ink)}
+    .pg-settings .si .si-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none;background:var(--bg);color:var(--ink3);transition:inherit}.pg-settings .si .si-ic .ico{width:16px;height:16px}
+    .pg-settings .si .si-t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .pg-settings .si.on{background:var(--g1);color:var(--g9);font-weight:800}
+    .pg-settings .si.on .si-ic{background:var(--g7);color:#fff}
+    .pg-settings .si.on::before{content:'';position:absolute;left:-12px;top:10px;bottom:10px;width:4px;border-radius:0 4px 4px 0;background:var(--g7)}
+    .pg-settings .si em{font-style:normal;min-width:22px;height:22px;padding:0 6px;border-radius:99px;display:grid;place-items:center;font-size:11.5px;font-weight:800;background:#f6e3c4;color:#8a5a14}
+    .pg-settings .si i.dot{width:8px;height:8px;border-radius:50%;background:#d9902f;box-shadow:0 0 0 3px #fbf0dc}
+    .pg-settings .si i.dot.info{background:#3d82c4;box-shadow:0 0 0 3px #e3eef8}.pg-settings .si i.dot.mute{background:#aab5af;box-shadow:0 0 0 3px #eef0ef}
+    .pg-settings .shd{align-items:center;gap:16px;margin:2px 0 22px}.pg-settings .shd>div{min-width:0}.pg-settings .shd h2{overflow-wrap:anywhere}
+    .pg-settings .shd .ic{width:54px;height:54px;border-radius:16px;color:#fff;background:linear-gradient(135deg,var(--g9),var(--g7));box-shadow:0 10px 22px -14px rgba(4,114,70,.8)}.pg-settings .shd .ic .ico{width:24px;height:24px}
+    .pg-settings .shd .crumb{font-size:12.5px;color:var(--ink3);font-weight:600}.pg-settings .shd .crumb a{color:var(--g7);cursor:pointer}
+    .pg-settings .shd h2{font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.05;color:var(--g9);margin-top:2px}
+    .pg-settings .shd p{font-size:14px;margin-top:4px}
+    .pg-settings .smain .pn{border-radius:18px;padding:20px 22px;box-shadow:0 12px 32px -30px rgba(11,61,42,.6)}
+    .pg-settings .smain .pn-h{margin-bottom:16px;flex-wrap:wrap}.pg-settings .smain .pn-h h2{white-space:normal;min-width:0}.pg-settings .smain .pn-h h2{font-size:16.5px}
+    .pg-settings .smain .tbl th{background:var(--bg);padding-top:10px;padding-bottom:10px}
+    .pg-settings .smain .tbl th:first-child{border-radius:10px 0 0 10px}.pg-settings .smain .tbl th:last-child{border-radius:0 10px 10px 0}
+    .pg-settings .smain .tbl th{border-bottom:0}.pg-settings .smain .tbl td{padding-top:13px;padding-bottom:13px}
+    .pg-settings .smain .tbl tbody tr:hover td{background:#fafcfb}
+    .pg-settings .smain .fld label{font-size:12.5px;font-weight:700;color:var(--ink2)}
+    .pg-settings .smain .fld input,.pg-settings .smain .fld select{border-radius:11px;border-color:var(--line);background:#fff;transition:border-color .15s,box-shadow .15s}
+    .pg-settings .smain .fld input:focus,.pg-settings .smain .fld select:focus{border-color:var(--g5);box-shadow:0 0 0 3px var(--g1);outline:0}
+    .pg-settings .st-att .ar{padding:12px 0;gap:12px}
+    .pg-settings .st-ai{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;background:var(--g1);color:var(--g7)}.pg-settings .st-ai .ico{width:16px;height:16px}
+    .pg-settings .st-ai.warn{background:#fbf0dc;color:#8a5a14}.pg-settings .st-ai.risk{background:#f9e3e1;color:#9a2f2a}.pg-settings .st-ai.info{background:#e3eef8;color:#1f5a8c}.pg-settings .st-ai.mute{background:#eef0ef;color:var(--ink2)}
+    .pg-settings .st-count{min-width:24px;height:24px;padding:0 7px;border-radius:99px;display:inline-grid;place-items:center;font-size:12px;font-weight:800;background:#f6e3c4;color:#8a5a14}
+    .pg-settings .sect-t{font-size:11px;font-weight:800;letter-spacing:.09em;color:var(--ink3)}
+    .pg-settings .sov{grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr));gap:14px}
+    .pg-settings .soc{border-radius:18px;padding:18px;gap:14px;box-shadow:0 12px 32px -30px rgba(11,61,42,.6);transition:box-shadow .2s,transform .2s,border-color .2s}
+    .pg-settings .soc:hover{transform:translateY(-2px);border-color:#bfe0cf;box-shadow:0 18px 36px -24px rgba(11,61,42,.45)}
+    .pg-settings .soc .ic{width:46px;height:46px;border-radius:14px}
+    .pg-settings .soc b{font-size:15.5px}
+    .pg-settings .st-sub{display:flex;align-items:center;gap:10px;margin:22px 2px 12px}.pg-settings .st-sub h3{font-size:14px}.pg-settings .st-sub span{color:var(--ink3);font-size:12.5px}
+    .pg-settings .chg{grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr));gap:14px}
+    .pg-settings .chc{border-radius:16px;padding:16px;gap:10px;transition:box-shadow .2s,transform .2s}
+    .pg-settings .chc:hover{transform:translateY(-2px);box-shadow:0 16px 32px -26px rgba(11,61,42,.5)}
+    .pg-settings .chc .t .sw{border-radius:11px!important;width:38px!important;height:38px!important}
+    .pg-settings .chc small{min-height:34px;line-height:1.45}
+    .pg-settings .chc.off{background:#fff;border-style:solid}
+    .pg-settings .chc .btn{height:36px;border-radius:10px}
+    .pg-settings .st-mem{display:flex;align-items:center;gap:10px}.pg-settings .st-mem .av{width:34px;height:34px;border-radius:10px;font-size:12px;flex:none}
+    @media (max-width:1100px){
+      .pg-settings .setg{grid-template-columns:minmax(0,1fr);gap:18px}
+      .pg-settings .snav{position:static;display:flex;gap:8px;overflow-x:auto;padding:8px;scrollbar-width:none}.pg-settings .snav::-webkit-scrollbar{display:none}
+      .pg-settings .snav .ssrch,.pg-settings .snav .sgl,.pg-settings .snav .snone{display:none!important}
+      .pg-settings .snav .sg{display:contents!important}
+      .pg-settings .si{flex:none;height:40px;padding:0 12px 0 6px;background:var(--bg)}.pg-settings .si .si-ic{width:28px;height:28px;background:#fff}
+      .pg-settings .si.on::before{display:none}
+    }
+    @media (max-width:640px){.pg-settings .st-top h1{font-size:34px}.pg-settings .st-id{width:100%;flex-wrap:wrap}.pg-settings .st-plan{margin-left:54px}
+      .pg-settings .smain .g2{grid-template-columns:minmax(0,1fr)!important}.pg-settings .smain .frm{grid-template-columns:minmax(0,1fr)!important}.pg-settings .smain .pn{overflow-x:auto}.pg-settings .shd h2{font-size:26px}.pg-settings .shd .ic{width:46px;height:46px}.pg-settings .sov{grid-template-columns:minmax(0,1fr)}.pg-settings .smain .pn{padding:16px}}`;
+  const stCss = () => { const s = document.getElementById('st-css') || document.head.appendChild(Object.assign(document.createElement('style'), { id: 'st-css' })); if (s.textContent !== ST_CSS) s.textContent = ST_CSS; };
   PWA.pages.settings = () => { let t = S.setTab; const tabs = STABS(); if (!tabs.includes(t)) t = 'Overview';
     const A = ATTN(); let meta = null, grp = '';
     SGROUPS().forEach(([g, items]) => items.forEach(x => { if (x[0] === t) { meta = x; grp = g; } }));
+    stCss();
     const nav = `<aside class="snav"><label class="ssrch">${ico('search')}<input id="sSearch" placeholder="Search settings"></label>
-      <a class="si ${t === 'Overview' ? 'on' : ''}" data-act="setTab" data-arg="Overview" data-k="overview">${ico('grid')}<span>Overview</span>${A.length ? `<em>${A.length}</em>` : ''}</a>
-      ${SGROUPS().map(([g, items]) => `<div class="sg"><div class="sgl">${g}</div>${items.map(([n, d, i]) => `<a class="si ${t === n ? 'on' : ''}" data-act="setTab" data-arg="${esc(n)}" data-k="${esc((n + ' ' + d).toLowerCase())}">${ico(i)}<span>${esc(n)}</span>${A.find(a => a[0] === n && a[1] === 'warn') ? '<i class="dot"></i>' : ''}</a>`).join('')}</div>`).join('')}
+      <a class="si ${t === 'Overview' ? 'on' : ''}" data-act="setTab" data-arg="Overview" data-k="overview"><span class="si-ic">${ico('grid')}</span><span class="si-t">Overview</span>${A.length ? `<em>${A.length}</em>` : ''}</a>
+      ${SGROUPS().map(([g, items]) => `<div class="sg"><div class="sgl">${g.toUpperCase()}</div>${items.map(([n, d, i]) => { const w = A.find(a => a[0] === n); return `<a class="si ${t === n ? 'on' : ''}" data-act="setTab" data-arg="${esc(n)}" data-k="${esc((n + ' ' + d).toLowerCase())}"><span class="si-ic">${ico(i)}</span><span class="si-t">${esc(n)}</span>${w && w[1] !== 'mute' ? `<i class="dot ${w[1] === 'info' ? 'info' : ''}"></i>` : ''}</a>`; }).join('')}</div>`).join('')}
       <p class="hint snone" style="display:none;padding:8px 10px">No settings match.</p></aside>`;
     const body = t === 'Overview' ? sOverview() : `<div class="shd"><span class="ic">${ico(meta[2])}</span><div><div class="crumb"><a data-act="setTab" data-arg="Overview">Settings</a> / ${esc(grp)}</div><h2>${esc(t)}</h2><p>${esc(meta[1])}</p></div></div>${SB[t]()}`;
-    return head('Settings', 'Your business, team and customer channels.') + `<div class="setg">${nav}<div class="smain">${body}</div></div>`; };
+    const app = readLS('upnow.join'), d = (app && app.d) || {}, biz = d.display || d.trade || d.legal || (app && app.name) || 'Greenstone', m = MY();
+    const ok = !app || app.status === 'verified' || app.status === 'approved', pl = m.plan || m.pending;
+    const top = `<header class="st-top"><div><h1>Settings</h1><p>Your business, plan, team and the ways customers reach you.</p></div>
+      <div class="st-id"><span class="st-av">${esc(((document.querySelector('.sb .biz .av') || {}).textContent || biz.split(/\s+/).map(w => w[0]).slice(0, 2).join('')).trim().toUpperCase())}</span><div><b>${esc(biz)}</b><small class="${ok ? '' : 'rv'}">${ico(ok ? 'shield' : 'clock')}${ok ? 'Verified provider' : 'Application in review'}</small></div>
+        ${pl ? `<button class="st-plan" data-act="setTab" data-arg="Plan &amp; billing">${ico('star')}${esc(pl.n)} plan</button>` : ''}</div></header>`;
+    return top + `<div class="setg">${nav}<div class="smain">${body}</div></div>`; };
   PWA.after.settings = () => { const Q = s => [...document.querySelectorAll(s)]; const i = document.getElementById('sSearch'); if (!i) return; i.oninput = () => { const q = i.value.trim().toLowerCase(); let n = 0; Q('.snav .si').forEach(a => { const m = !q || a.dataset.k.includes(q); a.style.display = m ? '' : 'none'; if (m) n++; }); Q('.snav .sg').forEach(g => g.style.display = [...g.querySelectorAll('.si')].some(a => a.style.display !== 'none') ? '' : 'none'); document.querySelector('.snone').style.display = n ? 'none' : ''; }; };
   PWA.acts.setTab = t => { S.setTab = t; save(); render(); };
   PWA.openChannels = () => { S.setTab = 'Channels'; save(); go('settings'); };

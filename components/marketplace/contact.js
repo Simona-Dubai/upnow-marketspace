@@ -58,7 +58,7 @@
           <div class="field is-full"><label>Email</label><input name="email" type="email" required value="${esc(m.email)}" placeholder="you@email.com"></div>
           <div class="field is-full"><label>Message</label><textarea name="msg" rows="4">${esc(`Hi ${fn}, I'm interested in ${l.title} (Ref ${l.ref}). Is it still available?`)}</textarea></div></div>
         <button class="btn btn-primary contact-submit">${ico('msg')}Send email to ${esc(fn)}</button>
-        <p class="contact-tip">Shared only with ${esc(fn)}. ${SITE.name} never asks for payment.</p></form>`, 'contact-modal');
+        <p class="contact-tip">Shared only with ${esc(fn)}.</p></form>`, 'contact-modal');
     document.getElementById('leadForm').onsubmit = e => {
       e.preventDefault(); const fd = Object.fromEntries(new FormData(e.target).entries());
       store.set('me', { name: fd.name, phone: fd.phone, email: fd.email });
@@ -84,7 +84,7 @@
         <small>${esc(r.catLabel)} · ${esc(r.area)} · ${esc(r.provider)}</small>
         <small>${{ request: 'Enquiry', email: 'Email enquiry', call: 'Phone call', whatsapp: 'WhatsApp' }[r.type]} · ${ago(r.t)} · ${esc(r.id)}</small></div></a>`; }).join('')
         : `<div class="side-drawer-empty">${ico('msg')}<b>No enquiries yet</b><span>When you request a viewing, call or WhatsApp a provider, it's tracked here.</span></div>`}</div>
-      <div class="side-drawer-footer"><span>Replies arrive by WhatsApp, call or email. ${SITE.name} never takes payments.</span></div>`);
+      <div class="side-drawer-footer"><span>Replies arrive by WhatsApp, call or email.</span></div>`);
   }
   function saved() {
     const L = [...favs].map(byId).filter(Boolean);

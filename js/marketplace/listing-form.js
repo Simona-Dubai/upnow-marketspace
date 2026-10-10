@@ -296,7 +296,7 @@
       : `<div class="listing-photo-grid">${L.img.map((src, i) => `<figure class="listing-photo ${i === 0 ? 'is-cover' : ''}" draggable="true" data-ln-ph="${i}"><img src="${src}" alt="Photo ${i + 1}">
           ${i === 0 ? `<em>${ico('star')}Cover</em>` : `<span class="listing-photo-num">${i + 1}</span>`}
           <span class="listing-photo-actions">${i ? `<button type="button" data-ln-phcover="${i}" title="Make cover" aria-label="Make photo ${i + 1} the cover">${ico('star')}</button>` : ''}<button type="button" data-ln-phrm="${i}" title="Remove" aria-label="Remove photo ${i + 1}">${icon('trash')}</button></span></figure>`).join('')}
-        ${count < MAX_PHOTOS ? `<label class="listing-photo-add">${input}${ico('plus')}<b>Add photos</b><small>Pick several at once</small></label>` : ''}</div>`;
+        ${count < MAX_PHOTOS ? `<label class="listing-photo-add" title="Add photos — you can pick several at once">${input}<span class="listing-photo-add-ic">${ico('plus')}</span><b>Add photos</b>${count < min ? `<small>${min - count} more needed</small>` : ''}</label>` : ''}</div>`;
     return SECX('ln-photos', 'Photos', count ? 'Drag to reorder — the first photo is the cover customers see in search.' : '', `<div class="listing-photos ${count ? '' : 'is-empty'} ${E.photos ? 'has-error' : ''}" data-f="photos">${body}</div>
       ${E.photos ? help(esc(E.photos), 'error', 'alert') : ''}
       ${shots.length ? `<p class="listing-shots"><span>Suggested shots</span>${shots.map(x => `<em>${esc(x)}</em>`).join('')}</p>` : ''}`, status);
@@ -347,7 +347,7 @@
     const days = weekly(L.v) ? `<div class="listing-q is-many ${E.days ? 'has-error' : ''}" data-f="days"><span>Days you work</span><div class="onboarding-categories listing-chips">${DAYS.map(x => `<button type="button" class="onboarding-chip ${L.days.includes(x) ? 'is-active' : ''}" data-ln-day="${x}"><span>${x}</span><span class="onboarding-tick">${ico('check')}</span></button>`).join('')}</div>${err('days')}</div>
           <div class="listing-q"><span>Hours</span><div class="onboarding-segmented-control">${HOURS.map(([id, t]) => `<button type="button" class="${L.hours === id ? 'is-active' : ''}" data-ln-hours="${id}">${t}</button>`).join('')}</div></div>` : '';
     const permit = pm ? `<div class="field onboarding-field ${E.permit ? 'has-error' : ''}" data-f="permit"><label for="ln-permit">${O.lease ? 'DLD advertising permit' : 'DET holiday home permit'}</label><div class="listing-unit"><input id="ln-permit" data-ln-k="permit" value="${esc(L.permit)}" placeholder="${O.lease ? 'e.g. 7123456789' : 'e.g. HH-245981'}" ${O.lease ? 'inputmode="numeric"' : ''}>${permitOk ? `<span class="is-ok">${ico('check')}Format OK</span>` : ''}</div>${E.permit ? err('permit') : help(O.lease ? 'Required for every rental ad in Dubai — we confirm it with DLD.' : 'Every holiday home needs its own — we confirm it with DET.')}</div>` : '';
-    return `${SECX('ln-price', rentLike ? 'Rent' : 'Price', `Customers agree the details with you directly — ${esc(SITE.name)} never takes payments.`, `
+    return `${SECX('ln-price', rentLike ? 'Rent' : 'Price', `Customers agree the details with you directly.`, `
         ${otherOne.map(f => control(L, f)).join('')}
         <div class="listing-pr-grid">${money}${deposit}</div>
         ${cheques}

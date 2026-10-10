@@ -132,7 +132,6 @@
   function topbar() {
     const C = COUNTRIES[S.cc];
     $('#top').innerHTML = `<label class="srch">${ico('search')}<input id="gsearch" placeholder="Search leads, listings, customers…"></label><span class="sp"></span>
-      <span class="live hide-s">Launch mode · 0% fees</span>
       <button class="btn btn-g btn-sm" data-act="addListing">${ico('plus')}Add listing</button>
       <label class="tsel"><select id="ccSel">${Object.entries(COUNTRIES).map(([k, x]) => `<option value="${k}" ${k === S.cc ? 'selected' : ''}>${x[0]} ${x[1]} · ${x[2]}</option>`).join('')}</select>${ico('chev')}</label>
       <label class="tsel g"><select id="lgSel"><option value="en" ${S.lang === 'en' ? 'selected' : ''}>English</option><option value="ar" ${S.lang === 'ar' ? 'selected' : ''}>العربية</option></select>${ico('chev')}</label>

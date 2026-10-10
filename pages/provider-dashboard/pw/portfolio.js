@@ -66,6 +66,20 @@
     .pf-tabs button{height:38px;padding:0 12px;border:0;background:none;font:inherit;font-size:13.5px;font-weight:700;color:var(--ink3);border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer}
     .pf-tabs button em{font-style:normal;font-size:11px;margin-left:6px;padding:1px 7px;border-radius:99px;background:#eef0ef;color:var(--ink2)}
     .pf-tabs button.on{color:var(--g8);border-bottom-color:var(--g7)}.pf-tabs button.on em{background:var(--g1);color:var(--g7)}
+    /* the categories chosen when joining: which already have a listing, and the ones still to add */
+    .pf-cats{margin:0 0 18px;padding:18px 20px;border:1px solid #d8efe3;border-radius:18px;background:linear-gradient(180deg,#f4faf6,#fff 70%)}
+    .pf-cats-h{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px}.pf-cats-h>div{flex:1;min-width:0}
+    .pf-cats-h b{display:block;font-size:15.5px}.pf-cats-h small{display:block;margin-top:3px;font-size:13px;color:var(--ink3);line-height:1.45}
+    .pf-cats-n{flex:none;font-size:12.5px;font-weight:800;color:var(--g7);white-space:nowrap}
+    .pf-cats-bar{height:6px;margin:-4px 0 14px;border-radius:99px;background:#e3efe8;overflow:hidden}.pf-cats-bar i{display:block;height:100%;width:var(--w);border-radius:99px;background:var(--g6);transition:width .6s}
+    .pf-cats-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+    .pf-cat{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);transition:.15s}
+    .pf-cat:hover{border-color:var(--g5);box-shadow:var(--sh)}
+    .pf-cat>i{width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:10px;background:var(--g1);color:var(--g7)}.pf-cat>i .ico{width:18px;height:18px}
+    .pf-cat>span{flex:1;min-width:0}.pf-cat b{display:block;font-size:14px}.pf-cat small{display:block;margin-top:2px;font-size:12.5px;color:var(--ink3)}
+    .pf-cat.todo{border:1.5px dashed #bfe3cf;background:#fbfdfb}.pf-cat.todo>i{background:#fbf1e2;color:#a8701a}
+    .pf-cat .go{flex:none;font-size:12.5px;font-weight:800;color:var(--g7);white-space:nowrap}
+    .pf-chip-new{margin-left:4px;padding:2px 7px;border-radius:99px;background:#fbf1e2;color:#a8701a;font-style:normal;font-size:10.5px;font-weight:800;white-space:nowrap}
     .pf-list{display:flex;flex-direction:column;gap:10px}
     .pf-row{display:flex;align-items:center;gap:14px;padding:12px;border:1px solid var(--line);border-radius:16px;background:#fff;transition:.15s}
     .pf-row:hover{border-color:var(--g5);box-shadow:var(--sh)}
@@ -134,6 +148,23 @@
 
   /* ---------- the page ---------- */
   const F = { v: 'all', g: 'all' };
+  // the categories they chose when joining (and when adding a business type), each with its listings so far
+  const catList = () => { const all = items(), out = []; types().forEach(t => t.cats.forEach(c => { if (!out.some(x => x.v === t.v && x.c === c)) out.push({ v: t.v, c, t, L: all.filter(L => L.v === t.v && L.cat === c) }); })); return out; };
+  P.pfCatsTodo = () => catList().filter(x => !x.L.length);
+  const catsCard = () => {
+    const C = catList(); if (C.length < 2) return '';
+    const done = C.filter(x => x.L.length).length; if (done === C.length) return '';
+    const inReview = !approved();
+    const row = x => { const O = offer(x.v, x.c), V = SV[x.v];
+      if (!x.L.length) return `<a class="pf-cat todo" href="${editor('new=' + x.v + ':' + x.c)}"><i>${ico(O.icon || V.icon)}</i><span><b>${esc(O.label)}</b><small>Not listed yet</small></span><span class="go">Add listing</span></a>`;
+      const live = x.L.filter(L => L.status === 'live').length, wait = x.L.filter(L => ['verify', 'review', 'licence'].includes(L.status)).length, draft = x.L.length - live - wait;
+      return `<a class="pf-cat" href="${editor('new=' + x.v + ':' + x.c)}"><i>${ico(O.icon || V.icon)}</i><span><b>${esc(O.label)}</b><small>${[live && live + ' live', wait && wait + ' waiting for approval', draft && draft + ' to finish'].filter(Boolean).join(' · ')}</small></span>${P.ico('check')}</a>`; };
+    return `<section class="pf-cats"><div class="pf-cats-h"><div><b>${C.length - done === 1 ? '1 category still to list' : C.length - done + ' categories still to list'}</b>
+        <small>You chose ${C.length} categories when you joined. Add a listing for each one${inReview ? ' — you can do it now: it’s saved and sent for approval with your application, and goes live once you’re approved.' : ' — it goes live after we check it, usually within 24 hours.'}</small></div>
+        <span class="pf-cats-n">${done} of ${C.length} listed</span></div>
+      <div class="pf-cats-bar"><i style="--w:${Math.round(done / C.length * 100)}%"></i></div>
+      <div class="pf-cats-g">${C.map(row).join('')}</div></section>`;
+  };
   P.pages.portfolio = () => {
     const ts = types(), all = items().slice().sort((x, y) => (y.updated || 0) - (x.updated || 0));
     if (F.v !== 'all' && !ts.some(t => t.v === F.v) && !all.some(L => L.v === F.v)) F.v = 'all';
@@ -155,7 +186,7 @@
       : `<div class="pf-tabs">${GROUPS.map(([k, l]) => `<button class="${F.g === k ? 'on' : ''}" data-act="pfG" data-arg="${k}">${l}<em>${count(k)}</em></button>`).join('')}</div>
         ${list.length ? `<div class="pf-list">${rows}</div>` : `<div class="pf-empty"><b>Nothing here</b><span>No listings match this filter.</span></div>`}`;
     return `<div class="ph"><div><h1>Portfolio</h1><p>${all.length ? `${live} live · ${all.length - live} more` : 'Everything you list on UpNow, in one place.'}</p></div><span class="sp"></span>
-      <div class="acts"><button class="btn btn-o btn-sm" data-act="pfAddType">${P.ico('brief')}Add a business type</button><button class="btn btn-g btn-sm" data-act="addListing">${P.ico('plus')}Add listing</button></div></div>${typeChips}${body}`;
+      <div class="acts"><button class="btn btn-o btn-sm" data-act="pfAddType">${P.ico('brief')}Add a business type</button><button class="btn btn-g btn-sm" data-act="addListing">${P.ico('plus')}Add listing</button></div></div>${catsCard()}${typeChips}${body}`;
   };
   P.acts.pfV = v => { F.v = v; P.render(); };
   P.acts.pfG = k => { F.g = k; P.render(); };
@@ -167,7 +198,7 @@
     const block = t => {
       const V = SV[t.v], mine = V.offers.filter(o => t.cats.includes(o.id)), rest = V.offers.filter(o => !t.cats.includes(o.id));
       return `<div class="pf-block"><div class="pf-block-h"><span>${ico(V.icon)}</span><div><b>${esc(V.label)}</b><small>${t.status === 'approved' ? 'Approved' : t.main ? 'Your application is in review — listings wait for it' : 'In review — start listings now, they go live once it\'s approved'}</small></div></div>
-        <div class="pf-chips">${mine.map(o => `<a class="pf-chip" href="${editor('new=' + t.v + ':' + o.id)}">${ico(o.icon || V.icon)}${esc(o.label)}</a>`).join('')}</div>
+        <div class="pf-chips">${mine.map(o => `<a class="pf-chip" href="${editor('new=' + t.v + ':' + o.id)}">${ico(o.icon || V.icon)}${esc(o.label)}${items().some(L => L.v === t.v && L.cat === o.id) ? '' : '<em class="pf-chip-new">Not listed yet</em>'}</a>`).join('')}</div>
         ${rest.length ? `<p class="pf-more">${P.ico('plus')}<span>Also offer ${esc(rest.slice(0, 3).map(o => o.label.toLowerCase()).join(', '))}${rest.length > 3 ? '…' : ''}?</span><a href="${addType(t.v)}">Add a category</a></p>` : ''}</div>`;
     };
     P.modal(`<div class="mh"><h3 style="flex:1">Add listing</h3><button class="x" data-act="closeModal">${P.ico('x')}</button></div>

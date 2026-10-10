@@ -547,7 +547,7 @@ body{font-size:15px}
 
 .app{grid-template-columns:248px 1fr}
 .sb a.ni{font-size:14px}
-@media (max-width:1100px){.app{grid-template-columns:72px 1fr}}
+@media (max-width:1100px){.app{grid-template-columns:72px 1fr}.sb .logo small,.sb .logo .pro{display:none}.sb .logo{justify-content:center;padding-left:0;padding-right:0}} /* icon-only sidebar: just the U mark */
 
 /* money */
 .msel{height:36px;border:1px solid var(--line2);border-radius:10px;padding:0 10px;font:inherit;font-size:13.5px;font-weight:600;background:#fff}
@@ -571,3 +571,11 @@ body{font-size:15px}
 
 .sb a.ni{height:34px}.bxh small{display:none}.bxh{padding:6px 10px 4px}.sb .biz{margin-bottom:6px}.sb .logo{padding:2px 8px 8px}.pkbox .pksw small{display:none}
 @media (min-height:900px){.bxh small{display:block}.sb a.ni{height:36px}}
+
+/* one white header strip across the top: the logo sits on white at the top bar's height, with one line under both;
+   the sidebar's divider starts below it (the content's left edge) so nothing cuts through the header */
+.app>.sb{--sbx:14px;padding-top:0;padding-left:var(--sbx);padding-right:var(--sbx);border-right:0}
+.app>.sb>.logo{position:sticky;top:0;z-index:2;flex:none;display:flex;align-items:center;gap:8px;height:64px;box-sizing:border-box;margin:0 calc(-1 * var(--sbx)) 4px;padding:0 calc(var(--sbx) + 8px);background:#fff;border-bottom:1px solid var(--line)}
+.app>.main>.top{height:64px;box-sizing:border-box}
+.app>.main>.view{border-left:1px solid var(--line)}
+@media (max-width:1100px){.app>.sb{--sbx:8px}.app>.sb>.logo{justify-content:center;padding:0}}

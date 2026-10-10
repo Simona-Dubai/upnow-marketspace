@@ -172,7 +172,7 @@ function paint() {
           .join("")}</div></div></div>
       ${PROFILE.aboutBox({
         title: "About " + org,
-        text: `${org} is a ${kind.toLowerCase()} with ${agents.length} ${agents.length === 1 ? "agent" : "agents"} on UpNow, listing ${cats.map((c) => offerOf(v, c).label.toLowerCase()).join(", ")} across ${areas.slice(0, 3).map((a) => areaName(a[0])).join(", ")}${areas.length > 3 ? " and " + (areas.length - 3) + " more communities" : ""}. Every enquiry goes straight to the agent handling the listing — no middleman, no fees for you.`,
+        text: `${org} is a ${kind.toLowerCase()} with ${agents.length} ${agents.length === 1 ? "agent" : "agents"} on UpNow, listing ${cats.map((c) => offerOf(v, c).label.toLowerCase()).join(", ")} across ${areas.slice(0, 3).map((a) => areaName(a[0])).join(", ")}${areas.length > 3 ? " and " + (areas.length - 3) + " more communities" : ""}. Every enquiry goes straight to the agent handling the listing — no middleman.`,
         facts: [
           ["Specialises in", esc(cats.map((c) => offerOf(v, c).label).join(", "))],
           ["Price range", `${money(prices[0])} – ${UP.K(prices[prices.length - 1])}`],
@@ -185,7 +185,7 @@ function paint() {
         <div class="verification-row">${ico("check")}<span>Trade licence</span><b>DED ${ded}</b></div>
         <div class="verification-row">${ico("check")}<span>${SP && LEASE ? "Agents with BRN" : "Team ID checked"}</span><b>${SP && LEASE ? agents.filter((a) => a.brn).length : agents.length}/${agents.length}</b></div>
         ${SP && LEASE ? `<div class="verification-row">${ico("check")}<span>Listings with DLD permit</span><b>${L.filter((l) => l.a.verified).length}/${L.length}</b></div>` : ""}
-        <p style="font-size:12px;color:var(--color-text-muted);margin:10px 0 0">UpNow never takes payments. <a class="text-link" href="#" onclick="UPUI.toast('Thanks — our trust team will review');return false">Report agency</a></p></div>
+        <p style="font-size:12px;color:var(--color-text-muted);margin:10px 0 0"><a class="text-link" href="#" onclick="UPUI.toast('Thanks — our trust team will review');return false">Report agency</a></p></div>
     </aside></div>
   </div>
   ${PROFILE.contactBar(L0.id, org)}`;

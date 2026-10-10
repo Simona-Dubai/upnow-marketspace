@@ -261,7 +261,8 @@
   const MAX_LANGS = 6;
   const HOURS = [['9-18', '9 AM – 6 PM'], ['9-22', '9 AM – 10 PM'], ['24', '24/7']];
   const CHANNELS = [['wa', 'WhatsApp', 'wa'], ['call', 'Calls', 'phone'], ['email', 'Email', 'mail'], ['sms', 'SMS', 'msg']];
-  // steps keep their numbers (1 business · 2 verify · 3 profile · 4 listing); adding a business type skips the profile
+  // steps keep their numbers (1 business · 2 verify · 3 profile · 4 listing); adding a business type skips the profile.
+  // The plan is chosen in the confirmation that follows the last step (no step of its own)
   const STEP = { 1: ['About you', 'What you do'], 2: ['Verify', 'Who you are'], 3: ['Profile', 'What customers see'], 4: ['Listing', 'What you offer'] };
   const ORDER = ADD ? [1, 2, 4] : [1, 2, 3, 4];
   const STEPS = ORDER.map(n => STEP[n]);
@@ -300,6 +301,7 @@
   }
   if (!VERTICALS[S.v]) S.v = 'spaces';
   if (S.status === 'approved') S.status = 'submitted';
+  if (/[?&]fix=1\b/.test(location.search) && S.status === 'submitted' && !ADD && S.review && ['changes', 'rejected'].includes(S.review.st)) { S.status = 'draft'; S.step = 2; }
   if (!ORDER.includes(S.step)) S.step = ORDER.filter(n => n <= S.step).pop() || 1;
   if (companyOnly(S)) S.role = 'company';
   dropCompanyOnly(S); syncType();
@@ -587,6 +589,40 @@
   // the listing goes with the application only when it is complete and not left for later
   const listingReady = () => { const L = listing(); return !!(L && LF.started(L) && !A.listingLater && !Object.keys(LF.validate(L, 'all')).length); };
 
+  /* ---------- the plan they ask for: the last choice, in the confirmation ----------
+     The UpNow team confirms it when they approve the application (pages/admin pre-selects it), and billing starts
+     that day. Plans, prices and listing limits come from the admin portal's settings ('upnow.admin.state'), the same
+     list the dashboard's Plan & billing page shows. */
+  const PLANS_DEF = [{ id: 'launch', n: 'Launch', p: 0, max: 5 }, { id: 'basic', n: 'Basic', p: 299, max: 10 }, { id: 'pro', n: 'Pro', p: 799, max: 50 }, { id: 'business', n: 'Business', p: 1999, max: 500 }];
+  const PLAN_FOR = { launch: 'Getting started', basic: 'Owners and freelancers', pro: 'Agencies, clinics, operators', business: 'Large portfolios and multi-branch' };
+  const plansNow = () => { try { const a = JSON.parse(localStorage.getItem(SITE.storageKey + '.admin.state') || 'null'); if (a && Array.isArray(a.plans) && a.plans.length) return a.plans; } catch (e) {} return PLANS_DEF; };
+  // what each plan includes — the same list as the dashboard's Settings › Plan & billing (pw/os.js INCL)
+  const PLAN_INCL = {
+    launch: ['Leads by call, WhatsApp, SMS and email', 'Verified badge on your profile and listings', 'Leads, calendar and communications in one place'],
+    basic: ['Leads from Bayut, Property Finder and your website', 'Up to 3 team members', 'Listing performance reports'],
+    pro: ['Up to 15 team members, with roles', 'Lead routing to your team', 'Business reports and exports'],
+    business: ['Unlimited team members', 'Several branches and legal entities', 'A named UpNow account manager']
+  };
+  // a starting point, never forced: companies usually need more listings than one owner
+  const suggestedPlan = () => isBiz(S) ? 'pro' : 'basic';
+  const planOf = id => plansNow().find(p => p.id === id);
+  // the plan picker in the confirmation: one row per plan; the chosen one opens to show what it includes
+  const PLAN_IC = { launch: 'leaf', basic: 'key', pro: 'brief', business: 'building' };
+  const planSum = p => `<b>${esc(p.n)} plan</b> · AED ${Number(p.p).toLocaleString('en-US')} / month, from the day you’re approved`;
+  function planPick() {
+    const P = plansNow(), sug = P.some(p => p.id === suggestedPlan()) ? suggestedPlan() : P[0].id;
+    if (!P.some(p => p.id === S.plan)) { S.plan = sug; save(); }
+    return `<section class="onboarding-cplan"><div class="onboarding-cplan-h"><h4>Choose your plan</h4><span>${ico('clock')}Change it any time</span></div>
+      <p>Pick how many listings you need. Our team confirms it when they approve you.</p>
+      <div class="onboarding-cplan-list" role="radiogroup" aria-label="Your plan">${P.map((p, i) => { const on = p.id === S.plan, prev = P[i - 1];
+        return `<button type="button" role="radio" aria-checked="${on}" class="onboarding-cplan-card ${on ? 'is-on' : ''}" data-cfplan="${esc(p.id)}" data-cfsum="${esc(planSum(p))}">
+          <span class="onboarding-cplan-ic">${ico(PLAN_IC[p.id] || 'tag')}</span>
+          <span class="onboarding-cplan-main"><b>${esc(p.n)}${p.id === sug ? '<em>Suggested</em>' : ''}</b><small>Up to ${p.max} listings</small></span>
+          <span class="onboarding-cplan-price"><strong>AED ${Number(p.p).toLocaleString('en-US')}</strong><small>/ month</small></span>
+          <i class="onboarding-cplan-radio" aria-hidden="true"></i>
+          <span class="onboarding-cplan-incl"><span><ul>${PLAN_FOR[p.id] ? `<li class="is-for">Best for ${esc(PLAN_FOR[p.id].charAt(0).toLowerCase() + PLAN_FOR[p.id].slice(1))}</li>` : ''}${prev ? `<li class="is-plus">Everything in ${esc(prev.n)}, plus</li>` : ''}${(PLAN_INCL[p.id] || []).map(f => `<li>${ico('check')}${esc(f)}</li>`).join('')}</ul></span></span></button>`; }).join('')}</div></section>`;
+  }
+
   /* ---------- submit: a short confirmation, not a review page ---------- */
   function confirmSubmit() {
     const d = S.d, biz = isBiz(S), main = docsFor(S)[0], t = typeOf(S);
@@ -606,11 +642,12 @@
         ${more.length ? `<p class="listing-review-more">${esc(more.join(' · '))}</p>` : ''}
         <div class="listing-review-edits">${PARTS.map((_, k) => `<button type="button" class="listing-link" data-cfpart="${k + 1}">Edit ${esc(partName(k + 1, LL).toLowerCase())}</button>`).join('<span>·</span>')}</div></div>
         <p class="listing-review-label">Your application</p>`; })() : '';
-    UPUI.openModal(`<div class="onboarding-confirm ${LL ? 'has-listing' : ''}"><button class="close-btn onboarding-confirm-close" data-close aria-label="Close">${ico('x')}</button>
-      <span class="onboarding-confirm-mark">${ico('shield')}</span>
-      <h3>${LL ? 'Review and send' : 'Send for review?'}</h3>
-      <p class="onboarding-confirm-subtitle">Our team checks your details against your ${biz ? 'licence' : 'ID'}${LL ? ' and your listing' : ''} — usually within 24 hours. Nothing goes live until you're approved.</p>
-      ${rows}
+    UPUI.openModal(`<div class="onboarding-confirm is-wide ${LL ? 'has-listing' : ''}"><button class="close-btn onboarding-confirm-close" data-close aria-label="Close">${ico('x')}</button>
+      <div class="onboarding-confirm-head"><span class="onboarding-confirm-mark">${ico('shield')}</span><div>
+      <h3>Review and send</h3>
+      <p class="onboarding-confirm-subtitle">Our team checks your details against your ${biz ? 'licence' : 'ID'}${LL ? ' and your listing' : ''} — usually within 24 hours. Nothing goes live until you're approved.</p></div></div>
+      <div class="onboarding-confirm-cols"><div class="onboarding-confirm-left">
+      ${rows || '<p class="listing-review-label">Your application</p>'}
       <div class="onboarding-confirm-summary">
         ${item('You’ll list', esc([S.cats.map(offerLabel).filter(Boolean).join(', ') || VERTICALS[S.v].label].join('')), esc(t ? t.t : ''), 1, `<span class="onboarding-confirm-avatar">${ico(VERTICALS[S.v].icon)}</span>`)}
         ${item('Verified with', esc(main ? main.t.replace(/^your /i, '').replace(/^./, c => c.toUpperCase()) : 'Your document'), esc([idNo && 'ending ' + String(idNo).replace(/[^0-9A-Za-z]/g, '').slice(-4), until && 'valid to ' + niceDate(until), biz && d.legal].filter(Boolean).join(' · ')), 2, `<span class="onboarding-confirm-avatar">${ico(biz ? 'doc' : 'user')}</span>`)}
@@ -620,10 +657,13 @@
           `<span class="onboarding-confirm-avatar">${ready && L.img[0] ? `<img src="${L.img[0]}" alt="">` : ico(ready ? VERTICALS[S.v].icon : 'clock')}</span>`); })()}
       </div>
       ${later.length ? `<p class="onboarding-confirm-later">${ico('clock')}<span>You can add your ${esc(later.map(x => x.t).join(', '))} later — those listings wait in draft until approved.</span></p>` : ''}
+      </div><div class="onboarding-confirm-right">
+      ${planPick()}
+      <p class="onboarding-cplan-sum" data-cfsumline>${(p => p ? planSum(p) : '')(planOf(S.plan))}</p>
       <label class="onboarding-confirm-agree"><input type="checkbox" data-cfagree ${S.agree ? 'checked' : ''}><span>These details are correct${biz ? `, I'm authorised to act for ${esc(d.legal || 'this business')}` : ''} and I agree to the <a class="text-link" href="#" onclick="return false">Provider terms</a>.</span></label>
       <button type="button" class="btn btn-primary onboarding-confirm-submit" data-cfsubmit ${S.agree ? '' : 'disabled'}>Send for approval</button>
       ${S.phone ? `<p class="onboarding-confirm-footer">${ico('wa')}We'll WhatsApp you on <span class="nowrap" style="white-space:nowrap">${S.dial || country().dial} ${esc(fmtPhone(S.phone))}</span> with the decision</p>`
-        : S.email ? `<p class="onboarding-confirm-footer">${ico('mail')}We'll email ${esc(S.email)} with the decision</p>` : ''}</div>`, 'onboarding-confirm-modal');
+        : S.email ? `<p class="onboarding-confirm-footer">${ico('mail')}We'll email ${esc(S.email)} with the decision</p>` : ''}</div></div></div>`, 'onboarding-confirm-modal is-wide');
   }
   document.addEventListener('change', e => {
     if (!e.target.matches('[data-cfagree]')) return;
@@ -634,17 +674,42 @@
     const g = e.target.closest('[data-cfgoto]');
     if (g) { UPUI.closeModal(); if (+g.dataset.cfgoto === LIST) S.lnPart = 1; go(+g.dataset.cfgoto); return; }
     const pt = e.target.closest('[data-cfpart]'); if (pt) { UPUI.closeModal(); if (S.step !== LIST) { S.step = LIST; } goPart(+pt.dataset.cfpart); return; }
+    const pl = e.target.closest('[data-cfplan]');
+    if (pl) { S.plan = pl.dataset.cfplan; save(); document.querySelectorAll('[data-cfplan]').forEach(b => { const on = b === pl; b.classList.toggle('is-on', on); b.setAttribute('aria-checked', on); });
+      const sum = document.querySelector('[data-cfsumline]'); if (sum) sum.innerHTML = pl.dataset.cfsum; return; }
     if (e.target.closest('[data-cfsubmit]') && S.agree) {
+      if (!S.plan) S.plan = plansNow()[0].id;
       UPUI.closeModal(); if (listingReady()) LF.submit(listing());
-      S.status = 'submitted'; save();
+      if (S.review) { S.reviews = [...(S.reviews || []), S.review]; delete S.review; }
+      S.status = 'submitted'; S.sent = Date.now(); save();
       // a new provider lands on their dashboard, which shows the application (and first listing) in review
       if (PATHS.href.dashboard) { location.href = `${PATHS.href.dashboard}?pack=${encodeURIComponent(S.v)}&welcome=1`; return; }
       A.dir = 'forward'; render(); window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   });
 
+  /* ---------- the team's decision (pages/admin writes S.review = { st: 'changes' | 'rejected', reason, t }) ----------
+     Approved needs nothing here (status becomes 'verified'). Asked for changes or not approved: the page says why and
+     "Fix your application" opens the steps again, with the team's note on top; sending it again files the note away. */
+  const sentBack = () => !ADD && S.review && (S.review.st === 'changes' || S.review.st === 'rejected') ? S.review : null;
+  function fixApp() { S.status = 'draft'; S.step = 2; A.dir = 'back'; save(); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  const fixNote = () => { const r = S.status === 'draft' && sentBack(); return r ? `<p class="listing-notice ${r.st === 'rejected' ? 'is-red' : 'is-amber'}" style="margin:0 0 16px">${ico(r.st === 'rejected' ? 'x' : 'clock')}<span><b>${r.st === 'rejected' ? 'Why we couldn’t approve it' : 'Our team asked you to change this'}:</b> ${esc(r.reason || 'See our WhatsApp message.')} Fix it in the steps below, then send your application again.</span></p>` : ''; };
+  function stepReviewed(r) {
+    const no = r.st === 'rejected';
+    return `<div class="onboarding-done"><div class="onboarding-done-mark"><span class="onboarding-done-icon is-wait">${ico(no ? 'x' : 'clock')}</span></div>
+      <h1 class="onboarding-title">${no ? 'We couldn’t approve your application' : 'One thing to fix before we approve you'}</h1>
+      <p class="onboarding-subtitle">Thanks${firstName() ? ', ' + esc(firstName()) : ''}. Our team checked your ${isBiz(S) ? 'licence and signatory ID' : 'ID'}${r.t ? ' on ' + new Date(r.t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}.${S.phone ? ' We’ve also sent this to you on WhatsApp.' : ''}</p>
+      <p class="listing-notice ${no ? 'is-red' : 'is-amber'}">${ico(no ? 'x' : 'clock')}<span><b>${no ? 'Why' : 'What to change'}:</b> ${esc(r.reason || 'See our WhatsApp message.')}</span></p>
+      <ol class="onboarding-timeline"><li class="is-done" style="--i:0"><i>${ico('check')}</i><span><b>Application sent</b><small>We had your details and documents</small></span></li>
+        <li class="is-done" style="--i:1"><i>${ico('check')}</i><span><b>Team review</b><small>${no ? 'Not approved' : 'Changes needed'}</small></span></li>
+        <li class="is-now" style="--i:2"><i>3</i><span><b>${no ? 'Fix it and send it again' : 'Fix it and send it again'}</b><small>Your details are saved — change only what’s needed</small></span></li>
+        <li style="--i:3"><i>4</i><span><b>You're approved</b><small>Usually within 24 hours of sending it again</small></span></li></ol>
+      <div class="onboarding-done-actions"><button type="button" class="btn btn-primary" data-act="fixapp">Fix your application${ico('chevR')}</button>${PATHS.href.dashboard ? `<a class="btn btn-outline" href="${PATHS.href.dashboard}?pack=${encodeURIComponent(S.v)}">Go to your dashboard</a>` : ''}</div></div>`;
+  }
+
   /* ---------- after submitting: under review ---------- */
   function stepSubmitted() {
+    if (sentBack()) return stepReviewed(sentBack());
     const bits = Array.from({ length: 18 }, (_, k) => { const a = k / 18 * Math.PI * 2, r = 70 + (k % 3) * 22; return `<span style="--x:${Math.round(Math.cos(a) * r)}px;--y:${Math.round(Math.sin(a) * r)}px;--r:${k * 47}deg;--d:${(k % 4) * 40}ms" class="c${k % 4}"></span>`; }).join('');
     return `<div class="onboarding-done"><div class="onboarding-done-mark"><span class="onboarding-confetti" aria-hidden="true">${bits}</span><span class="onboarding-done-icon"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span></div>
       <h1 class="onboarding-title">Application sent — we're on it</h1>
@@ -722,9 +787,10 @@
       <div class="listing-preview-card">${LF.cardOf(L)}</div>
       <div class="listing-strength"><div class="listing-strength-head"><b>Listing strength</b><span class="${st.pct === 100 ? 'is-ok' : ''}">${st.word}</span></div><div class="listing-strength-bar"><i style="width:${st.pct}%"></i></div>${st.items.some(x => x.done) ? `<p class="listing-strength-done">${ico('check')}${esc(st.items.filter(x => x.done).map(x => x.dt || x.t).join(' · '))}</p>` : ''}
         ${st.items.filter(x => !x.done).map(x => { const can = x.part <= reached(); return `<${can ? `button type="button" data-lnpart="${x.part}"` : 'span'} class="listing-strength-item ${x.done ? 'is-done' : ''}"><i>${x.done ? ico('check') : ''}</i><span>${esc(x.done ? x.dt || x.t : 'Add ' + LF.lowerFirst(x.t))}</span>${x.done || !can ? '' : ico('chevR')}</${can ? 'button' : 'span'}>`; }).join('')}</div>
-      <p class="listing-preview-note">${ico('clock')}Live within 24 hours of approval · direct leads, no fees</p></div>`; }
+      <p class="listing-preview-note">${ico('clock')}Live within 24 hours of approval · direct leads</p></div>`; }
     const docs = docsFor(S).filter(x => x.req), ok = docs.filter(settled).length;
-    const status = S.status === 'submitted' ? `${ico('shield')}In review — your “Verified” badge appears once you're approved`
+    const status = sentBack() ? `${ico('shield')}${sentBack().st === 'rejected' ? 'Not approved yet' : 'Changes needed'} — your “Verified” badge appears once you're approved`
+      : S.status === 'submitted' ? `${ico('shield')}In review — your “Verified” badge appears once you're approved`
       : `${ico('shield')}Documents checked · ${ok}/${docs.length || '—'}<span class="onboarding-mini-progress"><span style="width:${docs.length ? Math.round(ok / docs.length * 100) : 0}%"></span></span>`;
     return `<div class="onboarding-preview"><div class="onboarding-preview-header">${ico('eye')}Live preview<span>Updates as you type</span></div>
       ${card()}
@@ -827,10 +893,10 @@
     const wasMode = root.firstElementChild && root.firstElementChild.dataset.mode;
     paint(`<div class="onboarding-grid ${done ? 'is-done' : ''} ${locked ? 'is-locked' : ''}" data-mode="${S.status}"><main class="onboarding-main">
       ${flow ? progress() : ''}
-      <div class="onboarding-panel ${done ? 'is-done' : ''}"><div class="onboarding-scroll"><div class="onboarding-step ${A.dir ? 'is-in-' + A.dir : ''}">${body}</div></div>
+      <div class="onboarding-panel ${done ? 'is-done' : ''}"><div class="onboarding-scroll"><div class="onboarding-step ${A.dir ? 'is-in-' + A.dir : ''}">${fixNote()}${body}</div></div>
         ${done ? '' : `<div class="onboarding-nav">${S.step > 1 ? `<button type="button" class="btn btn-ghost" data-act="back" aria-label="Back">${ico('chevL')}<span class="nav-label">${S.step === LIST && listing() && LF.started(listing()) ? (part() > 1 ? esc(partName(part() - 1, listing())) : STEP[stepBefore(LIST)][0]) : 'Back'}</span></button>` : '<span></span>'}
           ${S.step === LIST && Object.keys(errors).length ? `<span class="listing-fix" role="alert">${Object.keys(errors).length} ${Object.keys(errors).length === 1 ? 'thing' : 'things'} to fix</span>` : `<span class="onboarding-save ${A.saved ? 'is-on' : ''}">${ico('check')}Draft saved</span>`}
-          ${locked ? `<button type="button" class="btn btn-primary onboarding-next" data-act="signin">Continue with your mobile${ico('chevR')}</button>` : S.step === LIST ? `<span class="listing-nav-end"><button type="button" class="btn btn-ghost" data-act="later">Add it later</button><button type="button" class="btn btn-primary onboarding-next" data-act="next">${listing() && LF.started(listing()) ? (part() < PARTS.length ? 'Continue to ' + esc(partName(part() + 1, listing()).toLowerCase()) : ADD ? 'Send for approval' : 'Review listing') : ADD ? 'Send for approval' : 'Review and send'}${ico('chevR')}</button></span>` : `<button type="button" class="btn btn-primary onboarding-next" data-act="next">Continue${ico('chevR')}</button>`}</div>`}</div>
+          ${locked ? `<button type="button" class="btn btn-primary onboarding-next" data-act="signin">Continue with your mobile${ico('chevR')}</button>` : S.step === LIST ? `<span class="listing-nav-end"><button type="button" class="btn btn-ghost" data-act="later">Add it later</button><button type="button" class="btn btn-primary onboarding-next" data-act="next">${listing() && LF.started(listing()) ? (part() < PARTS.length ? 'Continue to ' + esc(partName(part() + 1, listing()).toLowerCase()) : ADD ? 'Send for approval' : 'Review and send') : ADD ? 'Send for approval' : 'Review and send'}${ico('chevR')}</button></span>` : `<button type="button" class="btn btn-primary onboarding-next" data-act="next">Continue${ico('chevR')}</button>`}</div>`}</div>
     </main>
       <aside class="onboarding-aside ${previewOpen ? 'is-open' : ''}"><button type="button" class="onboarding-preview-toggle" data-act="preview">${ico('eye')}<span>${previewOpen ? 'Hide profile preview' : 'Preview your profile'}</span>${ico('chev')}</button>${pv}</aside></div>`, !!A.dir || (wasMode && wasMode !== S.status));
     // motion: keep the reading position, fill the bar, spring the control just picked, bring a new part into view
@@ -885,11 +951,13 @@
       else UPUI.toast(Object.values(errors).join(' · '));
       return;
     }
+    if (S.step === LIST) {
+      const L = listing();
+      if (L && LF.started(L) && part() < PARTS.length) return goPart(part() + 1);
+      A.listingLater = !(L && LF.started(L));
+      if (ADD) return addSubmit();
+    }
     if (S.step < LAST) return go(stepAfter(S.step));
-    const L = listing();
-    if (L && LF.started(L) && part() < PARTS.length) return goPart(part() + 1);
-    A.listingLater = !(L && LF.started(L));
-    if (ADD) return addSubmit();
     confirmSubmit();
   }
 
@@ -940,6 +1008,8 @@
   function setDoc(id, f) {
     const kb = f.size / 1024, doc = docsFor(S).find(x => x.id === id); if (!doc) return;
     S.docs[id] = { name: f.name, size: kb > 1024 ? (kb / 1024).toFixed(1) + ' MB' : Math.max(1, Math.round(kb)) + ' KB', state: 'scan', ok: false };
+    // the file itself goes to the browser's file store (js/core/files.js) so the UpNow team can see it when reviewing
+    if (window.UPFILES) { const key = `doc|${S.owner || 'guest'}|${id}|${Date.now()}`; S.docs[id].type = f.type || ''; UPFILES.put(key, f).then(ok => { if (ok && S.docs[id] && S.docs[id].name === f.name) { S.docs[id].file = key; save(); } }); }
     delete errors['doc_' + id];
     save(); render();
     if (calm.matches) readInto(id); else setTimeout(() => readInto(id), 1700);
@@ -1021,6 +1091,7 @@
       else if (a === 'back') { if (S.step === LIST && listing() && part() > 1) goPart(part() - 1); else go(stepBefore(S.step)); }
       else if (a === 'preview') { previewOpen = !previewOpen; render(); }
       else if (a === 'signin') signIn();
+      else if (a === 'fixapp') fixApp();
       else if (a === 'starter') typeAbout(aboutStarter());
       else if (a === 'later') { errors = {}; A.listingLater = true; if (ADD) return addSubmit(); render(); confirmSubmit(); }
       else if (a === 'rmphoto') { delete S.d.photo; commit(); }

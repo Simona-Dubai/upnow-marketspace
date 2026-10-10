@@ -46,7 +46,7 @@
   PWA.acts.openListing = id => PWA.openListing(id);
   PWA.acts.lstStatus = a => { const [id, s] = a.split('|'); const l = listingById(id); l.status = s; const x = S.extraListings.find(z => z.id === id); if (x) x.status = s; save(); render(); PWA.openListing(id); toast({ paused: 'Listing paused — hidden from search', live: 'Listing is live again', pending: 'Submitted to UpNow for review' }[s]); };
   PWA.acts.preview = () => toast('Opening public listing preview');
-  PWA.acts.boost = () => toast('Boost is free during launch mode · featured for 7 days');
+  PWA.acts.boost = () => toast('Boosted · featured for 7 days');
 
   /* ============ ADD LISTING WIZARD ============ */
   const W = { step: 0, d: {} };

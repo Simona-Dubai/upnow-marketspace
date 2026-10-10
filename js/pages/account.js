@@ -412,7 +412,7 @@ ${channels}</div>`;
   /* ---------- one enquiry — what you asked about, where it stands, what to do next ----------
      The lister is named once (the contact card); the timeline is the only progress view, and each step carries only
      its own action. Contact buttons live in the card, tips beside it: one for this step, two questions worth asking
-     for this kind of listing, and the safety line — UpNow never asks for money. */
+     for this kind of listing, and the safety line. */
   const QUESTIONS = {
     lease: ['Ask for the Trakheesi permit number and who the landlord is', 'Ask how many cheques, and whether DEWA, chiller and parking are included'],
     spaces: ['Confirm the dates, the total for your group and what’s included', 'Ask about the cancellation policy before you commit'],
@@ -433,7 +433,7 @@ ${channels}</div>`;
       closed: ['search', 'Similar listings nearby often have the same lister type — your saved search keeps an eye out for new ones.']
     }[stage];
     const qs = QUESTIONS[m.lease ? 'lease' : l ? l.v : ''] || [];
-    return [now_, ...(stage === 'closed' ? [] : qs.map(q => ['msg', q])), ['shield', `Never pay before you’ve seen it or signed a contract — ${SITE.name} never asks you for money.`]];
+    return [now_, ...(stage === 'closed' ? [] : qs.map(q => ['msg', q])), ['shield', `Never pay before you’ve seen it or signed a contract.`]];
   }
   function tracking(id) {
     const r = leads().find(x => x.id === id);

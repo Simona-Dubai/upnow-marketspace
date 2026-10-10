@@ -73,6 +73,10 @@
     .pe ol li.now b{color:#8a5a14}
     .pe-acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
     .pe-acts .btn-o{background:#fff}
+    .pe-more{display:flex;align-items:center;gap:12px;max-width:520px;margin-top:16px;padding:11px 14px;border-radius:14px;border:1.5px dashed #f1dfb8;background:#fffaf0;color:#7a5413;font-size:13px;line-height:1.4;cursor:pointer;transition:border-color .15s,transform .15s}
+    .pe-more:hover{border-color:#e0a526;transform:translateY(-1px)}
+    .pe-more>i{width:28px;height:28px;flex:none;display:grid;place-items:center;border-radius:50%;background:#f5c26b;color:#5a3a06;font-style:normal;font-weight:800;font-size:13px;animation:pe-now 2.2s ease-in-out infinite}
+    .pe-more>span{flex:1;min-width:0}.pe-more b{display:block;color:#5a3a06;font-size:13.5px}.pe-more .ico{width:16px;height:16px;flex:none}
     /* the steps play in one by one, the current one pulses, and the part of the track still ahead flows towards it */
     .pe ol li{opacity:0;animation:pe-step .5s cubic-bezier(.2,.7,.2,1) forwards}
     .pe ol li:nth-child(1){animation-delay:.25s}.pe ol li:nth-child(2){animation-delay:.5s}.pe ol li:nth-child(3){animation-delay:.75s}
@@ -202,7 +206,11 @@
     const st = stage();
     const primary = st === 'review' ? `<a class="btn btn-g" data-go="portfolio">${ico('clock')}See your application</a>`
       : st === 'approved' ? `<button class="btn btn-g" data-act="addListing">${ico('plus')}Add a listing</button>` : extra || '';
-    return `<div class="pe-acts">${primary}<button class="btn btn-o" data-act="sampleOn">${ico('eye')}Explore with sample data</button></div>`;
+    // categories chosen when joining that have no listing yet (pw/portfolio.js) — they can be added and sent for approval now
+    const todo = P.pfCatsTodo ? P.pfCatsTodo() : [], SVx = window.SITEUP && SITEUP.VERTICALS;
+    const names = todo.map(x => ((SVx[x.v].offers.find(o => o.id === x.c) || {}).label || x.c).toLowerCase());
+    const more = todo.length ? `<a class="pe-more" data-go="portfolio"><i>${todo.length}</i><span><b>${todo.length === 1 ? 'One more category to list' : todo.length + ' more categories to list'}</b>${esc(names.slice(0, 3).join(', '))}${names.length > 3 ? '…' : ''} — ${st === 'review' ? 'add them now, they’re sent for approval with your application' : 'add a listing for each'}</span>${ico('chevR')}</a>` : '';
+    return `<div class="pe-acts">${primary}<button class="btn btn-o" data-act="sampleOn">${ico('eye')}Explore with sample data</button></div>${more}`;
   };
   // a tip: [icon, title, text, link label, link attributes, amber?]
   const tips = (title, T) => `<section class="pe-tips"><h3>${title}<small>Worth doing before your first lead</small></h3><div class="pe-tipgrid">${T.map(([i, t, p, l, a, amber]) =>
@@ -222,7 +230,7 @@
         <div class="hl"><small>Waiting for first reply</small><b>0 leads</b><span>None past your 15-min target</span></div>
         <div><small>Today's ${sp() ? 'viewings & visits' : 'jobs & appointments'}</small><b>0 scheduled</b><span>Next: —</span></div>
         <div><small>Open pipeline</small><b>AED 0</b><span>0 active opportunities</span></div>
-        <div><small>Listings needing attention</small><b>${items().filter(x => x.status !== 'live').length}</b><span>${items().filter(x => x.status === 'review').length} in review</span></div></div>
+        <div><small>Listings needing attention</small><b>${items().filter(x => x.status !== 'live').length}</b><span>${items().filter(x => ['verify', 'review', 'licence'].includes(x.status)).length} waiting for approval</span></div></div>
       <div class="g4">${K.map((k, i) => `<div class="kpi"><small>${esc(k[0])}</small><b>${i === 1 ? '—' : /AED/.test(k[1]) ? 'AED 0' : '0'}</b><span class="d">${sub[i]}</span><svg class="spk" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0 26H100" fill="none" stroke="#cfe2d7" stroke-width="1.8" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/></svg></div>`).join('')}</div></div>`;
   };
   const tile = (t, e) => `<div class="pe-tile"><span>${t}</span><i class="pe-sh"></i><em>${e}</em></div>`;

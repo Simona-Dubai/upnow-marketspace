@@ -168,6 +168,12 @@
   function codeEntered() {
     const byEmail = A.codeFor === 'email';
     if (!byEmail) A.phoneVerified = true;
+    // the UpNow team's number (SITE.admin) opens the admin dashboard — it never becomes a customer or provider account
+    const adm = SITE.admin;
+    if (!byEmail && adm && byIso(A.iso).dial === adm.dial && digits(A.phone) === adm.phone && PATHS.href.admin) {
+      localStorage.setItem(SITE.storageKey + '.admin', JSON.stringify({ dial: adm.dial, phone: adm.phone, since: Date.now() }));
+      clearInterval(A.timer); A = null; closeModal(); location.href = PATHS.href.admin; return;
+    }
     const known = accounts()[keyOf(byEmail ? { email: A.email } : { dial: byIso(A.iso).dial, phone: digits(A.phone) })];
     // an existing account logs in, whichever screen they came from (providers still need a verified mobile)
     if (known && !(provider() && !known.phone && !A.phoneVerified)) {

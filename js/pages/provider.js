@@ -179,7 +179,7 @@ function paint() {
         <div class="verification-row">${ico("check")}<span>${P.person ? "Employer / agency" : "Trade licence"}</span><b>${P.person ? "Confirmed" : "Valid to 2027"}</b></div>
         <div class="verification-row">${ico("check")}<span>Mobile number</span><b>Verified</b></div>
         ${SP && LEASE ? `<div class="verification-row">${ico("check")}<span>Listings with DLD permit</span><b>${P.L.filter((l) => l.a.verified).length}/${P.L.length}</b></div>` : ""}
-        <p style="font-size:12px;color:var(--color-text-muted);margin:10px 0 0">${SP && LEASE ? "Validate the broker card on the Dubai REST app. " : ""}UpNow never takes payments. <a class="text-link" href="#" onclick="UPUI.toast('Thanks — our trust team will review');return false">Report profile</a></p></div>
+        <p style="font-size:12px;color:var(--color-text-muted);margin:10px 0 0">${SP && LEASE ? "Validate the broker card on the Dubai REST app. " : ""}<a class="text-link" href="#" onclick="UPUI.toast('Thanks — our trust team will review');return false">Report profile</a></p></div>
     </aside></div>
   </div>
   ${PROFILE.contactBar(L0.id, P.person ? first : P.name)}`;

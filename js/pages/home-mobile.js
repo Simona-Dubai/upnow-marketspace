@@ -123,7 +123,7 @@
         <div class="mobile-detail-section" style="border:0;margin-top:6px;padding-top:16px"><p class="mobile-about">${esc(about)}</p></div>
         ${DMB.secs.filter(([h, b]) => !/calendar-pair|slot-grid/.test(b) && !['Cost to move in', 'House rules'].includes(h)).map(([h, b]) => `<div class="mobile-detail-section"><h2>${esc(h)}</h2>${b}</div>`).join('')}
         <div class="mobile-detail-section"><h2>${lease ? 'Listed by' : 'Your provider'}</h2>${DM.agentCard(l)}</div>
-        <div class="mobile-detail-section"><div class="detail-note" style="margin:0">${ico('shield')}<span><b>Deal safely.</b> ${lease ? 'Never pay a deposit before viewing and checking the permit on Dubai REST.' : 'Confirm details before paying any deposit.'} UpNow never takes payments.</span></div></div>
+        <div class="mobile-detail-section"><div class="detail-note" style="margin:0">${ico('shield')}<span><b>Deal safely.</b> ${lease ? 'Never pay a deposit before viewing and checking the permit on Dubai REST.' : 'Confirm details before paying any deposit.'}</span></div></div>
         <div style="height:24px"></div></div></div>
       <div class="cta-bar"><div class="cta-price"><b>${pt.n}</b><small>${esc(pt.u.replace('/', 'per '))}</small></div><button class="icon-btn is-call" data-call="${l.id}">${ico('phone')}</button><button class="icon-btn is-whatsapp" data-wa="${l.id}">${ico('wa')}</button><button class="cta-primary" data-sheet="book">${esc(lease ? 'Book viewing' : O2.action.replace('Request a ', '').replace('Check ', 'Check ').replace(/^./, m => m.toUpperCase()))}</button></div>`;
   }

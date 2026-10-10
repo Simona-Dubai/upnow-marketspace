@@ -590,8 +590,7 @@ function paint() {
           ${DM.agentCard(l)}
           <div class="safety-note">
             <b>${ico("shield")}Deal safely</b>
-            ${LEASE ? "Never transfer a deposit or cheques before viewing and checking the permit on Dubai REST." : "Confirm details with the provider before paying any deposit."}
-            UpNow never takes payments.<br />
+            ${LEASE ? "Never transfer a deposit or cheques before viewing and checking the permit on Dubai REST." : "Confirm details with the provider before paying any deposit."}<br />
             <a href="#" onclick="UPUI.toast('Thanks — our team will review this listing');return false">${ico("flag")}Report this listing</a>
           </div>
         </section>
@@ -679,8 +678,7 @@ function paint() {
         ${DM.agentCard(l)}
         <div class="safety-note">
           <b>${ico("shield")}Deal safely</b>
-          ${LEASE ? "Never transfer a deposit or cheques before viewing and checking the permit on Dubai REST." : "Confirm details with the provider before paying any deposit."}
-          UpNow never takes payments.<br />
+          ${LEASE ? "Never transfer a deposit or cheques before viewing and checking the permit on Dubai REST." : "Confirm details with the provider before paying any deposit."}<br />
           <a href="#" onclick="UPUI.toast('Thanks — our team will review this listing');return false">${ico("flag")}Report this listing</a>
         </div>
       </aside>

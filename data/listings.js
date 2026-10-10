@@ -206,7 +206,7 @@
       form: [F.company, ['use', 'Intended use', 'select', ['Master lease / bulk rent', 'Staff housing', 'Serviced apartments', 'Owner-occupier']], F.movein, F.slot] },
 
     { id: 'holiday', label: 'Holiday homes', icon: 'sun', h1: 'Holiday homes', short: 'Short stays', basis: 'AED / night',
-      hero: ['Stay like', 'you live here.'], sub: 'DTCM-licensed holiday homes by the night. Ask the host about dates, early check-in or long stays — then pay the host directly.',
+      hero: ['Stay like', 'you live here.'], sub: 'DTCM-licensed holiday homes by the night. Ask the host about dates, early check-in or long stays.',
       img: im(['hotel1', 'villa1', 'apt2']), n: 12, permit: 'DTCM permit',
       action: 'Check availability', flow: ['Enquiry', 'Host confirms dates', 'Pay host directly', 'Check-in', 'Review'], org: ['Silkhaus', 'Frank Porter', 'Greenstone Stays', 'Private host'], people: 1,
       fields: ['loc', 'checkin', 'checkout', 'guests'], locLabel: 'Destination',

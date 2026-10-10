@@ -174,7 +174,7 @@
       ${L ? `<div class="listing-preview-card">${F.cardOf(L)}</div>` : `<div class="listing-preview-empty">${ART}</div>`}
       <div class="onboarding-card-status ${L && (g || !ok) ? 'is-review' : ''}">${status}</div>
       <ul class="onboarding-why"><li>${ico('shield')}<span><b>Your verified profile</b>Name, contact and licence come with every listing.</span></li>
-        <li>${ico('bolt')}<span><b>Direct leads</b>Customers call or WhatsApp you — no booking fees.</span></li>
+        <li>${ico('bolt')}<span><b>Direct leads</b>Customers call or WhatsApp you.</span></li>
         <li>${ico('check')}<span><b>Checked before it's live</b>Every listing is reviewed, usually within 24 hours.</span></li></ul></div>`;
   }
 

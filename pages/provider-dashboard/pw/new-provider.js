@@ -27,8 +27,10 @@
     views: 0, contacts: 0, leads: 0, quality: 90, units: LST[L.status] || '', meta: [], resp: 0 })));
   try { P.save(); } catch (e) {}
 
-  // the rest only while the application is sent and not yet approved
-  if (app.status !== 'submitted') return;
+  // the rest only while the application is sent and not yet approved — or the team sent it back (pages/admin writes
+  // app.review = { st: 'changes' | 'rejected', reason }) and they're fixing it on the join page
+  const rev = app.review && ['changes', 'rejected'].includes(app.review.st) ? app.review : null;
+  if (app.status !== 'submitted' && !rev) return;
   const { ico, esc } = P;
   const sent = items.filter(x => x.status !== 'draft');
   // the first listing counts once it was sent with the application ("Add it later" leaves none)
@@ -59,6 +61,9 @@
     @keyframes np-ping{from{opacity:.9;transform:scale(.6)}to{opacity:0;transform:scale(1.8)}}
     .np-hero h1{margin:14px 0 0;font-family:var(--serif);font-weight:400;font-size:40px;line-height:1.05;letter-spacing:-.01em}
     .np-hero h1 em{font-style:normal;color:#9fe3c2}
+    .np-hero p.np-why{margin-top:14px;padding:11px 14px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(245,194,107,.45);color:#fff}.np-why b{color:#ffe1aa}
+    .np-steps.np-s3:after{animation-name:np-track3,np-shine}@keyframes np-track3{to{width:calc(50% + 6px)}}
+    .np-fix{margin-top:16px;background:#fff;color:var(--g8)}.np-fix:hover{background:#eafaf2}
     .np-hero p{margin:10px 0 0;max-width:560px;color:rgba(255,255,255,.8);font-size:14.5px;line-height:1.55}
     .np-ring{position:relative;width:132px;height:132px;flex:none}
     .np-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
@@ -219,7 +224,25 @@
     [false, 'Explore your workspace', 'Try it with sample data', 'compass']
   ];
   // Portfolio, top: where the application is
+  const fixHref = (PATHS.href.join || '../join.html') + '?fix=1';
+  // sent back: what the team said, and the way to fix it
+  function heroBack() {
+    const no = rev.st === 'rejected', fixing = app.status === 'draft';
+    return `<div class="np-wrap np-head"><section class="np-hero">
+        <div class="np-top"><div>
+          <span class="np-eyebrow"><span class="np-dot"></span>${no ? 'Not approved' : 'Changes needed'} · ${esc(VERT[app.v] || 'Provider')}</span>
+          <h1>${no ? 'We couldn’t approve it yet' : 'One thing to fix'}, <em>${esc(firstName)}</em></h1>
+          <p>${fixing ? 'You’re fixing your application — send it again when you’re done and we’ll review it within 24 hours.' : `Our team checked your ${app.role === 'company' ? 'licence and signatory ID' : 'ID'} and needs you to change something before approving you.`}</p>
+          <p class="np-why"><b>${no ? 'Why' : 'What to change'}:</b> ${esc(rev.reason || 'See our WhatsApp message.')}</p>
+          <a class="btn np-fix" href="${fixHref}">${fixing ? 'Continue fixing' : 'Fix your application'}${ico('chevR')}</a></div></div>
+        <ol class="np-steps np-s3"><li class="done"><i>${check}</i><b>Application sent</b>Details and documents in</li>
+          <li class="done"><i>${check}</i><b>Team review</b>${no ? 'Not approved' : 'Changes needed'}</li>
+          <li class="now"><i>3</i><b>Fix and send again</b>Your details are saved</li>
+          <li><i>4</i><b>You're approved</b>Usually within 24 hours</li></ol>
+      </section></div>`;
+  }
   function hero() {
+    if (rev) return heroBack();
     const off = (339.3 * (1 - 2 / 4)).toFixed(1); // the review is step 2 of 4: half the ring
     return `<div class="np-wrap np-head"><section class="np-hero">
         <div class="np-top"><div>
@@ -246,11 +269,15 @@
     </div>`;
   }
   // Demand: the application in one bar, and that the numbers below are samples
-  const strip = () => `<div class="np-strip"><span class="np-eyebrow"><span class="np-dot"></span>In review</span>
+  const strip = () => rev ? `<div class="np-strip"><span class="np-eyebrow"><span class="np-dot"></span>${rev.st === 'rejected' ? 'Not approved' : 'Changes needed'}</span>
+      <div class="tx"><b>${rev.st === 'rejected' ? 'We couldn’t approve your application yet' : 'Our team asked for one change'}</b>${esc(rev.reason || 'See our WhatsApp message.')}</div>
+      <ol aria-hidden="true"><li class="done"></li><li class="done"></li><li class="now"></li><li></li></ol>
+      <a class="btn btn-sm" href="${fixHref}">Fix your application${ico('chevR')}</a></div>` : `<div class="np-strip"><span class="np-eyebrow"><span class="np-dot"></span>In review</span>
       <div class="tx"><b>Your application is with our team — step 2 of 4</b>Usually within 24 hours. Until you're approved, this dashboard shows sample data.</div>
       <ol aria-hidden="true"><li class="done"></li><li class="now"></li><li></li><li></li></ol>
       <a class="btn btn-sm" data-go="portfolio">View application${ico('chevR')}</a></div>`;
-  const note = `<div class="np-note">${clock}<span>Your application is in review — this page shows sample data until you're approved.</span><a data-go="portfolio">See status</a></div>`;
+  const note = rev ? `<div class="np-note">${clock}<span>Our team asked you to change something in your application — this page shows sample data until you're approved.</span><a href="${fixHref}">Fix it</a></div>`
+    : `<div class="np-note">${clock}<span>Your application is in review — this page shows sample data until you're approved.</span><a data-go="portfolio">See status</a></div>`;
   // the application lives on Portfolio now: an old link to application.html goes there
   if (window.PW_START === 'application') { location.replace('portfolio.html' + location.search); return; }
 
@@ -262,7 +289,7 @@
     const ini = name.split(/\s+/).map(x => x[0]).slice(0, 2).join('').toUpperCase();
     const me = document.querySelector('#sb .me');
     if (me) me.innerHTML = `<span class="av sm">${esc(ini)}</span><div><b style="font-size:13px">${esc(name)}</b><small>${app.role === 'company' ? 'Owner' : 'Provider'}</small></div>`;
-    if (biz) biz.innerHTML = `<span class="av">${esc(ini)}</span><div><b>${esc(name)}</b><small>In review · ${esc(VERT[app.v] || '')}</small></div>`;
+    if (biz) biz.innerHTML = `<span class="av">${esc(ini)}</span><div><b>${esc(name)}</b><small>${rev ? (rev.st === 'rejected' ? 'Not approved' : 'Changes needed') : 'In review'} · ${esc(VERT[app.v] || '')}</small></div>`;
     const view = document.getElementById('view'); if (!view) return;
     if (P.S.page === 'portfolio') { view.insertAdjacentHTML('afterbegin', hero()); view.insertAdjacentHTML('beforeend', extras()); }
     else if (P.S.page === 'demand') view.insertAdjacentHTML('afterbegin', strip());

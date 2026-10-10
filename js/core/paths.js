@@ -17,7 +17,8 @@
       account: page('account.html'),
       listingNew: page('listing-new.html'),
       dashboard: page('provider-dashboard/index.html'),
-      portfolio: page('provider-dashboard/portfolio.html')
+      portfolio: page('provider-dashboard/portfolio.html'),
+      admin: page('admin/index.html')
     },
     asset: p => root + 'assets/' + p,
     // accepts 'hero.jpg', 'img/hero.jpg', 'assets/images/hero.jpg' (older saved data) or an absolute URL
@@ -29,7 +30,8 @@
     try {
       const u = JSON.parse(localStorage.getItem('upnow.user') || 'null'), a = JSON.parse(localStorage.getItem('upnow.join') || 'null');
       if (!u || !a || (a.owner && a.owner !== (u.email || (u.dial || '') + u.phone))) return null;
-      return (a.status || (a.done ? 'submitted' : 'draft')) === 'draft' ? null : a;
+      // a draft isn't a provider yet — unless the team sent it back and they're fixing it (pages/admin → a.review)
+      return (a.status || (a.done ? 'submitted' : 'draft')) === 'draft' && !a.review ? null : a;
     } catch (e) { return null; }
   };
   // the provider dashboard is for providers: a customer (or nobody signed in) goes to "Become a provider" instead.
