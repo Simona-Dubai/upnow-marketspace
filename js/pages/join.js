@@ -5,6 +5,8 @@
      2 Verify      — upload the ID / trade licence (+ the licence the vertical needs); we read the details off the document,
                      the provider checks and corrects them (reading a document is not verification)
      3 Profile     — only what the documents can't tell us: public name, photo / logo, about, languages, contact
+     4 Listing     — their first listing (optional — "Add it later"): the shared listing form, js/marketplace/listing-form.js.
+                     It is sent with the application and goes to review once the provider is approved
    Submit opens a short confirmation (one line per part + consent) — no full review page: every detail was already
    confirmed on its step. Then admin verification → approved or rejected (handled by the team, outside this page).
    Country rules — ID document, licence names, issuing authorities — come from data/markets.js. */
@@ -250,9 +252,9 @@
   const MAX_LANGS = 6;
   const HOURS = [['9-18', '9 AM – 6 PM'], ['9-22', '9 AM – 10 PM'], ['24', '24/7']];
   const CHANNELS = [['wa', 'WhatsApp', 'wa'], ['call', 'Calls', 'phone'], ['email', 'Email', 'mail'], ['sms', 'SMS', 'msg']];
-  const STEPS = [['Business', 'What you do'], ['Verify', 'Who you are'], ['Profile', 'What customers see']];
+  const STEPS = [['Business', 'What you do'], ['Verify', 'Who you are'], ['Profile', 'What customers see'], ['Listing', 'What you offer']];
   const LAST = STEPS.length;
-  const MINUTES = [4, 3, 1];
+  const MINUTES = [4, 3, 1, 5];
 
   /* ---------- state (draft kept in this browser) ----------
      status: draft → submitted (approval happens outside this page). docs[id]: { name, size, state: 'scan' | 'read', ok: confirmed by the provider }
@@ -273,7 +275,7 @@
   }
   if (!VERTICALS[S.v]) S.v = 'spaces';
   if (S.status === 'approved') S.status = 'submitted';
-  if (S.step > 3) S.step = 3;
+  if (S.step > LAST) S.step = LAST;
   if (companyOnly(S)) S.role = 'company';
   dropCompanyOnly(S); syncType();
   S.later = S.later || {};
@@ -300,7 +302,7 @@
   /* ---------- motion bookkeeping (view only, never saved) ----------
      dir: the step slides in from this side on the next render · pop: selector of the control just picked (it springs)
      seen: sections already on screen (a new one fades up and scrolls into view) · fill: progress-bar widths last drawn */
-  const A = { dir: '', pop: '', seen: new Set(), entering: true, revealed: '', fill: [0, 0, 0], preview: '', saved: false, optOpen: false, open: {}, otherCity: false };
+  const A = { dir: '', pop: '', seen: new Set(), entering: true, revealed: '', fill: [0, 0, 0, 0], preview: '', saved: false, optOpen: false, open: {}, otherCity: false };
   let previewOpen = false;
 
   /* ---------- small builders ---------- */
@@ -338,6 +340,7 @@
       <g class="onboarding-illustration-shield"><path d="M112 44l22 8v16c0 15-10 24-22 28-12-4-22-13-22-28V52z" fill="#136142"/><path d="m102 70 7 7 13-14" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>
       <g><rect x="30" y="76" width="22" height="18" rx="4" fill="#e0a526"/><path d="M35 76v-5a6 6 0 0 1 12 0v5" fill="none" stroke="#e0a526" stroke-width="3"/><circle cx="41" cy="85" r="2.5" fill="#fff"/></g></svg>`
   };
+  ART.listing = ART.profile;
   const hero = (title, sub, art) => `<div class="onboarding-hero"><div><h1 class="onboarding-title">${title}</h1><p class="onboarding-subtitle">${sub}</p></div><div class="onboarding-illustration">${ART[art]}</div></div>`;
 
   /* ---------- step 1: your business — what it does (location belongs to each listing) ---------- */
@@ -503,6 +506,33 @@
   }
 
 
+  /* ---------- step 4: your first listing (optional) — the shared listing form ---------- */
+  const LF = window.UPLF;
+  const listing = () => LF && S.listing ? LF.byId(S.listing) : null;
+  const ownCats = () => (S.cats || []).filter(c => VERTICALS[S.v].offers.some(o => o.id === c));
+  // the listing starts in their category; with one category it starts on its own
+  function ensureListing() {
+    if (!LF || listing()) return listing();
+    const cats = ownCats(); if (cats.length !== 1) return null;
+    S.listing = LF.create(S.v, cats[0]).id; save(); return listing();
+  }
+  function pickListingCat(c) {
+    const L = listing();
+    if (!L) S.listing = LF.create(S.v, c).id;
+    else if (L.cat !== c) { L.cat = c; L.a = {}; L.titled = false; L.title = LF.suggestedTitle(L); L.updated = Date.now(); LF.save(); }
+    delete errors.cat; commit(`[data-ln-cat="${c}"]`);
+  }
+  function stepListing() {
+    const L = ensureListing(), cats = ownCats(), ctx = { errors, sec };
+    const n = L ? LF.noun(L.v, L.cat) : 'listing', g = L && LF.gateOf(L.cat);
+    let html = hero('Add your first listing', `${L ? `What customers will find — your ${esc(n)}, with photos and a price.` : 'What customers will find on UpNow.'} Optional — you can add it later.`, 'listing');
+    if (cats.length > 1) html += sec('ln-cat', 'What is it for?', LF.categories(S, L && L.cat, ctx));
+    if (!L) return html + `<p class="onboarding-private">${ico('spark')}<span>Pick a category to start — or tap <b>Add it later</b> and send your application now.</span></p>`;
+    if (g) html += `<p class="listing-notice is-amber">${ico('clock')}<span>This listing waits for your <b>${esc(g.t)}</b> — you can add it after you're approved.</span></p>`;
+    return html + LF.details(L, ctx) + LF.photos(L, ctx) + LF.words(L, ctx) + LF.price(L, ctx)
+      + `<p class="onboarding-private">${ico('shield')}<span>It goes live after we approve your business and check the listing — usually within 24 hours.</span></p>`;
+  }
+
   /* ---------- submit: a short confirmation, not a review page ---------- */
   function confirmSubmit() {
     const d = S.d, biz = isBiz(S), main = docsFor(S)[0], t = typeOf(S);
@@ -520,6 +550,8 @@
         ${item('Verified with', esc(main ? main.t.replace(/^your /i, '').replace(/^./, c => c.toUpperCase()) : 'Your document'), esc([idNo && 'ending ' + String(idNo).replace(/[^0-9A-Za-z]/g, '').slice(-4), until && 'valid to ' + niceDate(until), biz && d.legal].filter(Boolean).join(' · ')), 2, `<span class="onboarding-confirm-avatar">${ico(biz ? 'doc' : 'user')}</span>`)}
         ${item('Customers see', esc(shown), esc([(d.langs || []).join(', '), d.photo ? '' : `No ${biz ? 'logo' : 'photo'} yet`].filter(Boolean).join(' · ')), 3,
           `<span class="onboarding-confirm-avatar">${d.photo ? `<img src="${d.photo}" alt="">` : esc(initials(shown) || '?')}</span>`)}
+      ${(() => { const L = listing(), ready = L && LF.started(L) && !A.listingLater; return item('Your first listing', ready ? esc(L.title || LF.titleOf(L)) : 'Adding it later', ready ? esc([offerLabel(L.cat), LF.whereOf(L)].filter(Boolean).join(' · ')) : 'You can add it from your account any time', 4,
+          `<span class="onboarding-confirm-avatar">${ready && L.img[0] ? `<img src="${L.img[0]}" alt="">` : ico(ready ? VERTICALS[S.v].icon : 'clock')}</span>`); })()}
       </div>
       ${later.length ? `<p class="onboarding-confirm-later">${ico('clock')}<span>You can add your ${esc(later.map(x => x.t).join(', '))} later — those listings wait in draft until approved.</span></p>` : ''}
       <label class="onboarding-confirm-agree"><input type="checkbox" data-cfagree ${S.agree ? 'checked' : ''}><span>These details are correct${biz ? `, I'm authorised to act for ${esc(d.legal || 'this business')}` : ''} and I agree to the <a class="text-link" href="#" onclick="return false">Provider terms</a>.</span></label>
@@ -535,7 +567,8 @@
   document.addEventListener('click', e => {
     const g = e.target.closest('[data-cfgoto]');
     if (g) { UPUI.closeModal(); go(+g.dataset.cfgoto); return; }
-    if (e.target.closest('[data-cfsubmit]') && S.agree) { UPUI.closeModal(); S.status = 'submitted'; save(); A.dir = 'forward'; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    if (e.target.closest('[data-cfsubmit]') && S.agree) { UPUI.closeModal(); S.status = 'submitted'; save();
+      const L = listing(); if (L && LF.started(L) && !A.listingLater && !Object.keys(LF.validate(L, 'all')).length) LF.submit(L); A.dir = 'forward'; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   });
 
   /* ---------- after submitting: under review ---------- */
@@ -547,8 +580,8 @@
       <ol class="onboarding-timeline"><li class="is-done" style="--i:0"><i>${ico('check')}</i><span><b>Details checked</b><small>You confirmed what we read from your documents</small></span></li>
         <li class="is-done" style="--i:1"><i>${ico('check')}</i><span><b>Application sent</b><small>We have everything we need</small></span></li>
         <li class="is-now" style="--i:2"><i>3</i><span><b>Team review</b><small>We're checking your ${isBiz(S) ? 'licence and signatory ID' : 'ID'}</small></span></li>
-        <li style="--i:3"><i>4</i><span><b>You're approved</b><small>Then you can add your first ${esc(VERTICALS[S.v].label)} listing</small></span></li></ol>
-      <div class="onboarding-done-actions"><a class="btn btn-outline" href="${PATHS.href.home}">Back to ${esc(SITE.name)}</a></div>
+        ${(() => { const L = listing(), sent = L && L.status !== 'draft'; return `<li style="--i:3"><i>4</i><span><b>You're approved</b><small>${sent ? `Then “${esc(L.title || LF.titleOf(L))}” goes to review${L.status === 'licence' ? ' once its licence is added' : ''}` : `Then you can add your first ${esc(VERTICALS[S.v].label)} listing`}</small></span></li>`; })()}</ol>
+      <div class="onboarding-done-actions"><a class="btn btn-outline" href="${PATHS.href.home}">Back to ${esc(SITE.name)}</a>${PATHS.href.listingNew ? (listing() && listing().status !== 'draft' ? `<a class="btn btn-primary" href="${PATHS.href.listingNew}#mine">Your listings</a>` : `<a class="btn btn-primary" href="${PATHS.href.listingNew}#new">Add your first listing</a>`) : ''}</div>
       ${S.email ? `<p class="onboarding-done-note">We've emailed a copy to <b>${esc(S.email)}</b></p>` : ''}</div>`;
   }
 
@@ -557,6 +590,7 @@
     const d = S.d;
     if (n === 1) return [S.cats.length, S.role, typeOf(S), ...(typeOf(S) ? sizeQs(S).map(([k]) => S.d['size_' + k]) : [0])];
     if (n === 2) return docsFor(S).filter(x => x.req).map(settled);
+    if (n === 4) { const L = listing(); return L ? [...LF.parts(L, 'details'), ...LF.parts(L, 'photos'), ...LF.parts(L, 'price')] : []; }
     return [String(d.display || '').trim(), String(d.bio || '').trim().length >= 60, (d.langs || []).length, S.channels.length]; // photo is optional: not counted
   }
   // a bar shows how much of its own step is answered — steps you haven't reached yet stay empty
@@ -565,6 +599,7 @@
     if (n === 1) return [VERTICALS[S.v].label, typeOf(S) ? typeOf(S).t : roleOf(S) && roleOf(S)[1]].filter(Boolean).join(' · ');
     if (n === 2) return legalName() || '';
     if (n === 3) return [S.d.display, S.d.photo && 'photo'].filter(Boolean).join(' · ');
+    if (n === 4) { const L = listing(); return L && LF.started(L) ? L.title : ''; }
     return '';
   }
   const progress = () => `<div class="onboarding-header"><div class="onboarding-progress"><span><b>Step ${S.step} of ${LAST}</b> · ${STEPS[S.step - 1][0]}</span><span>About ${MINUTES[S.step - 1]} min left</span></div>
@@ -609,6 +644,12 @@
       </div>`;
   }
   function preview() {
+    const L = S.step === 4 && S.status === 'draft' ? listing() : null;
+    if (L) return `<div class="onboarding-preview"><div class="onboarding-preview-header">${ico('eye')}Live preview<span>On the search page</span></div>
+      <div class="listing-preview-card">${LF.cardOf(L)}</div>
+      <div class="onboarding-card-status is-review">${ico('shield')}Goes live after we approve you and the listing</div>
+      <ul class="onboarding-why"><li>${ico('shield')}<span><b>Your verified profile</b>Your name, contact and licence come with it.</span></li>
+        <li>${ico('bolt')}<span><b>Direct leads</b>Customers call or WhatsApp you — no booking fees.</span></li></ul></div>`;
     const docs = docsFor(S).filter(x => x.req), ok = docs.filter(settled).length;
     const status = S.status === 'submitted' ? `${ico('shield')}In review — your “Verified” badge appears once you're approved`
       : `${ico('shield')}Documents checked · ${ok}/${docs.length || '—'}<span class="onboarding-mini-progress"><span style="width:${docs.length ? Math.round(ok / docs.length * 100) : 0}%"></span></span>`;
@@ -641,6 +682,7 @@
       doc.fields.forEach(([k, , kind]) => { if (!String(d[k] || '').trim()) { if (!OPTIONAL_FIELDS.includes(k)) e[k] = 'This can’t be empty'; } else if (kind === 'date' && expired(d[k])) e[k] = 'This date has passed — upload a current document'; });
       if (!f.ok) e['ok_' + doc.id] = 'Check the details, then tick this box';
     });
+    if (step === 4) { const L = listing(); if (L && LF.started(L)) Object.assign(e, LF.validate(L, 'all')); }
     if (step === 3) {
       if (!String(d.display || '').trim()) e.display = 'Add the name customers will see';
       if (String(d.bio || '').trim().length < 60) e.bio = 'Add a little more — at least 60 characters, or tap “Write it for me”';
@@ -707,7 +749,7 @@
     if (A.dir) A.entering = true;
     A.revealed = '';
     const flow = S.status === 'draft', done = !flow;
-    const body = S.status === 'submitted' ? stepSubmitted() : [stepBusiness, stepVerify, stepProfile][S.step - 1]();
+    const body = S.status === 'submitted' ? stepSubmitted() : [stepBusiness, stepVerify, stepProfile, stepListing][S.step - 1]();
     const pv = preview();
     const wasMode = root.firstElementChild && root.firstElementChild.dataset.mode;
     paint(`<div class="onboarding-grid ${done ? 'is-done' : ''} ${locked ? 'is-locked' : ''}" data-mode="${S.status}"><main class="onboarding-main">
@@ -715,7 +757,7 @@
       <div class="onboarding-panel ${done ? 'is-done' : ''}"><div class="onboarding-scroll"><div class="onboarding-step ${A.dir ? 'is-in-' + A.dir : ''}">${body}</div></div>
         ${done ? '' : `<div class="onboarding-nav">${S.step > 1 ? `<button type="button" class="btn btn-ghost" data-act="back">${ico('chevL')}Back</button>` : '<span></span>'}
           <span class="onboarding-save ${A.saved ? 'is-on' : ''}">${ico('check')}Draft saved</span>
-          ${locked ? `<button type="button" class="btn btn-primary onboarding-next" data-act="signin">Continue with your mobile${ico('chevR')}</button>` : `<button type="button" class="btn btn-primary onboarding-next" data-act="next">${S.step === LAST ? 'Review and send' : 'Continue'}${ico('chevR')}</button>`}</div>`}</div>
+          ${locked ? `<button type="button" class="btn btn-primary onboarding-next" data-act="signin">Continue with your mobile${ico('chevR')}</button>` : S.step === LAST ? `<span class="listing-nav-end"><button type="button" class="btn btn-ghost" data-act="later">Add it later</button><button type="button" class="btn btn-primary onboarding-next" data-act="next">Review and send${ico('chevR')}</button></span>` : `<button type="button" class="btn btn-primary onboarding-next" data-act="next">Continue${ico('chevR')}</button>`}</div>`}</div>
     </main>
       <aside class="onboarding-aside ${previewOpen ? 'is-open' : ''}"><button type="button" class="onboarding-preview-toggle" data-act="preview">${ico('eye')}<span>${previewOpen ? 'Hide profile preview' : 'Preview your profile'}</span>${ico('chev')}</button>${pv}</aside></div>`, !!A.dir || (wasMode && wasMode !== S.status));
     // motion: keep the reading position, fill the bar, spring the control just picked, bring a new part into view
@@ -739,7 +781,7 @@
       } else opened.scrollIntoView({ block: 'nearest', behavior });
     }, 140);
     if (A.preview && A.preview !== pv && !A.dir) { const c = root.querySelector('.onboarding-preview .agent-card'); if (c) c.classList.add('is-bump'); }
-    fitBio();
+    fitBio(); if (LF) LF.fit();
     A.preview = pv; A.pop = ''; A.dir = ''; A.entering = false; A.saved = false;
   }
   // after a change in the current step: save, show "Saved", redraw
@@ -769,6 +811,7 @@
       return;
     }
     if (S.step < LAST) return go(S.step + 1);
+    A.listingLater = !(listing() && LF.started(listing()));
     confirmSubmit();
   }
 
@@ -886,6 +929,7 @@
       else if (a === 'preview') { previewOpen = !previewOpen; render(); }
       else if (a === 'signin') signIn();
       else if (a === 'starter') typeAbout(aboutStarter());
+      else if (a === 'later') { errors = {}; A.listingLater = true; render(); confirmSubmit(); }
       else if (a === 'rmphoto') { delete S.d.photo; commit(); }
       return;
     }
@@ -925,7 +969,11 @@
     if ((x = b('[data-hours]'))) { S.hours = x.dataset.hours; commit(`[data-hours="${S.hours}"]`); }
   });
 
-  document.addEventListener('upnow:auth', () => render());
+  if (LF) LF.bind(root, {
+    get: () => S.step === 4 && S.status === 'draft' ? listing() : null, errors: () => errors,
+    commit: pop => commit(pop), saved: () => { flashSaved(); refreshPreview(); }, cat: pickListingCat
+  });
+  document.addEventListener('upnow:auth', () => { if (LF) LF.reload(); render(); });
   render();
   // a document still being read when the page was left: finish reading it
   Object.keys(S.docs).forEach(id => { if (S.docs[id].state === 'scan') setTimeout(() => readInto(id), 900); });

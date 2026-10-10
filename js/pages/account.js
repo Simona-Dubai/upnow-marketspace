@@ -129,7 +129,10 @@
   const unread = () => feed().filter(n => !isRead(n)).length;
 
   /* ---------- routing ---------- */
-  const SECTIONS = [['overview', 'Home', 'home'], ['enquiries', 'My enquiries', 'list'], ['messages', 'Messages', 'msg'], ['saved', 'Saved', 'heart'], ['documents', 'Documents', 'doc'], ['alerts', 'Alerts', 'bell'], ['profile', 'Profile & privacy', 'user']];
+  // Documents is hidden for now (kept for later): set to true to bring back the section, its badge, reminders and alerts
+  const SHOW_DOCS = false;
+  const SECTIONS = [['overview', 'Home', 'home'], ['enquiries', 'My enquiries', 'list'], ['messages', 'Messages', 'msg'], ['saved', 'Saved', 'heart'], ['documents', 'Documents', 'doc'], ['alerts', 'Notifications', 'bell'], ['profile', 'Profile & privacy', 'user']]
+    .filter(x => SHOW_DOCS || x[0] !== 'documents');
   const route = () => {
     const h = decodeURIComponent(location.hash.slice(1));
     if (h.startsWith('enquiry=')) return { s: 'enquiries', id: h.slice(8) };
@@ -145,7 +148,7 @@
     const u = user();
     return `<aside class="account-sidebar">
       <div class="account-user">${meAvatar(u)}<div><b>${esc(u.name || u.email || 'Your account')}</b><small>${u.phone ? `${ico('shield')}Verified mobile` : esc(u.email || '')}</small></div></div>
-      <nav class="account-nav" aria-label="Account">${SECTIONS.map(([id, l, i]) => `${id === 'documents' ? '<small class="account-nav-group">Account</small>' : ''}<a href="#${id}" class="${cur === id ? 'is-active' : ''}">${ico(i)}<span>${l}</span>${badge[id] ? `<em class="${id === 'messages' ? 'is-red' : id === 'enquiries' || id === 'alerts' || id === 'documents' ? 'is-hot' : ''}">${badge[id]}</em>` : ''}</a>`).join('')}</nav>
+      <nav class="account-nav" aria-label="Account">${SECTIONS.map(([id, l, i]) => `${SHOW_DOCS && id === 'documents' ? '<small class="account-nav-group">Account</small>' : !SHOW_DOCS && id === 'profile' ? '<hr class="account-nav-rule">' : ''}<a href="#${id}" class="${cur === id ? 'is-active' : ''}">${ico(i)}<span>${l}</span>${badge[id] ? `<em class="${id === 'messages' ? 'is-red' : id === 'enquiries' || id === 'alerts' || id === 'documents' ? 'is-hot' : ''}">${badge[id]}</em>` : ''}</a>`).join('')}</nav>
       <a class="account-explore" href="${SITE.homeHref || HREF.home}">${ico('compass')}Explore marketplace</a>
     </aside>`;
   }
@@ -175,6 +178,8 @@
     const R = route();
     const body = { overview, enquiries: () => R.id ? tracking(R.id) : enquiries(), messages: () => messages(R.id), saved, documents, alerts: alertsView, profile }[R.s]();
     root.innerHTML = nav(R.s) + `<section class="account-main">${body}</section>`;
+    root.querySelectorAll('.dashboard-pick-row').forEach(row => { const nav = row.closest('.dashboard-picks').querySelectorAll('[data-pick-go]');
+      const f = () => { nav[0].disabled = row.scrollLeft < 4; nav[1].disabled = row.scrollLeft + row.clientWidth > row.scrollWidth - 4; }; f(); row.addEventListener('scroll', f, { passive: true }); });
     root.querySelectorAll('.account-enquiry-filters .lead-bar').forEach(b => { const f = () => b.classList.toggle('is-overflowing', b.scrollWidth > b.clientWidth + 1 && b.scrollLeft + b.clientWidth < b.scrollWidth - 1); f(); b.addEventListener('scroll', f, { passive: true }); });
     document.title = `${R.s === 'overview' ? 'My account' : (SECTIONS.find(x => x[0] === R.s) || [])[1]} | ${SITE.name}`;
     // the header's chat badge shows unread replies — the same number as Messages here
@@ -223,6 +228,42 @@
       b: m.S.nudged ? `${wa}<a class="btn btn-ghost btn-sm" href="${esc(similarHref(r))}">See similar</a>` : `<button class="btn btn-primary btn-sm" type="button" data-act="nudge" data-id="${id}">${ico('bell')}Nudge ${esc(m.who)}</button>${wa}` };
     return null;
   }
+  /* ---------- picks — the site's listing cards on Home, in a row that scrolls sideways (small previous / next buttons;
+     swipe on phones). Search works one category at a time, so the row does too and "See all" opens the same results:
+     - they showed interest (last enquiry, else last saved, else last viewed): more of that category, in search's own
+       Recommended order (featured first, then best rated);
+     - otherwise the whole marketplace, as Featured · Top rated · New this week — one per category, so it reads as a tour.
+     Never what they already contacted. */
+  function picks(L) {
+    const seen = new Set(L.map(m => m.r.lid)), lead = L.find(m => m.l);
+    const all = LISTINGS.filter(l => l.img.length && !seen.has(l.id));
+    const hint = lead ? [lead.l, 'you enquired about ' + lead.r.title] : [byId(savedList().slice(-1)[0]), 'you saved ' + ((byId(savedList().slice(-1)[0]) || {}).title || '')];
+    if (!hint[0]) { const r = byId((store.get('recent') || [])[0]); if (r) hint.splice(0, 2, r, 'you viewed ' + r.title); }
+    const rec = (a, b) => (b.featured - a.featured) || (b.rating * Math.log(b.reviews + 2)) - (a.rating * Math.log(a.reviews + 2));
+    const same = hint[0] ? all.filter(l => l.v === hint[0].v && l.cat === hint[0].cat).sort(rec).slice(0, 10) : [];
+    let head, sub, href, tabsHtml = '', list;
+    if (same.length >= 4) {
+      const O = offerOf(hint[0].v, hint[0].cat);
+      head = 'More ' + (/^[A-Z][a-z]/.test(O.h1) ? O.h1.charAt(0).toLowerCase() + O.h1.slice(1) : O.h1); // "AC maintenance" stays as is
+      sub = 'Because ' + hint[1]; list = same;
+      href = `${HREF.search}?v=${hint[0].v}&o=${hint[0].cat}`;
+    } else {
+      const oneEach = a => a.filter((l, k) => a.findIndex(x => x.cat === l.cat) === k);
+      const TABS = [['featured', 'Featured', l => l.featured, rec, ''],
+        ['top', 'Top rated', l => l.rating >= 4.6 && l.reviews >= 40, (a, b) => b.rating - a.rating || b.reviews - a.reviews, ''],
+        ['new', 'New this week', l => l.posted <= 7, (a, b) => a.posted - b.posted, '&sort=new']]
+        .map(([k, t, f, so, q]) => [k, t, oneEach(all.filter(f).sort(so)).slice(0, 10), q]).filter(x => x[2].length >= 4);
+      if (!TABS.length) return '';
+      const cur = TABS.find(x => x[0] === A.ptab) || TABS[0];
+      head = 'Explore ' + SITE.name; sub = 'Picked from across the marketplace'; list = cur[2];
+      href = `${HREF.search}?v=all${cur[3]}`;
+      if (TABS.length > 1) tabsHtml = `<div class="dashboard-pick-tabs">${TABS.map(([k, t]) => `<button class="chip ${k === cur[0] ? 'is-active' : ''}" type="button" data-tab="ptab" data-v="${k}">${t}</button>`).join('')}</div>`;
+    }
+    return `<section class="dashboard-picks"><div class="dashboard-panel-header"><div><h2>${esc(head)}</h2><small>${esc(sub)}</small></div>
+        <div class="dashboard-pick-nav"><a href="${href}">See all${ico('chevR')}</a><button class="dashboard-pick-arrow" type="button" data-pick-go="-1" aria-label="Previous" disabled>${ico('chevL')}</button><button class="dashboard-pick-arrow" type="button" data-pick-go="1" aria-label="Next">${ico('chevR')}</button></div></div>
+      ${tabsHtml}<div class="dashboard-pick-row">${list.map(l => U.card(l)).join('')}</div></section>`;
+  }
+
   function overview() {
     const u = user(), L = all(), open = L.filter(m => m.stage !== 'closed');
     const follow = L.filter(m => m.stage === 'direct' && m.S.heard !== false);
@@ -234,7 +275,7 @@
     const name = esc(first(u.first || u.name) || 'there');
 
     // new account: nothing empty — where to start
-    if (!L.length) return `<header class="dashboard-header"><div><h1>${hi}, ${name}</h1><p>Let’s get you started.</p></div></header>${ES.home()}`;
+    if (!L.length) return `<header class="dashboard-header"><div><h1>${hi}, ${name}</h1><p>Let’s get you started.</p></div></header>${ES.home()}${picks(L)}`;
 
     // 1 · needs your attention
     const rows = L.map(homeAction).filter(Boolean);
@@ -302,6 +343,7 @@
         <a class="btn btn-outline btn-sm" href="${HREF.search}">${ico('search')}Search ${esc(SITE.name)}</a></header>
       ${needBox}
       <div class="dashboard-grid"><div class="dashboard-main">${enqBox}</div>${side ? `<aside class="dashboard-side">${side}</aside>` : ''}</div>
+      ${picks(L)}
       ${discover}`;
   }
 
@@ -508,7 +550,7 @@ ${channels}</div>`;
     const body = {
       items: () => ids.length ? `${filters}${results}
           <p class="account-footer">${ico('grid4')}Tick up to 3 listings to compare them side by side.</p>`
-        : ES.saved(),
+        : ES.saved() + picks(L), // tap a heart in the row and the listing lands right here
       searches: () => searches.length ? `<div class="account-searches">${searches.map(q => { const s = searchInfo(q), a = alertMeta(q), off = a.freq === 'paused'; return `<div class="account-box account-search">
           <div class="account-search-top"><span class="account-search-icon">${ico('search')}</span><div class="account-search-text"><b>${esc(s.title)}</b><small>${[s.sub, s.count + ' ' + (s.count === 1 ? 'listing' : 'listings')].filter(Boolean).map(esc).join(' · ')}</small></div>
             ${s.fresh.length && !off ? `<span class="status-pill is-success">${s.fresh.length} new</span>` : ''}</div>
@@ -580,7 +622,7 @@ ${channels}</div>`;
      new ones apart from earlier ones; how we reach you as plain channel switches per kind of alert ---------- */
   function alertsView() {
     const F = feed(), n = unread();
-    if (!F.length) return `${head('Alerts', '')}<div class="account-alerts"><div>${ES.alerts()}</div>${alertSettings()}</div>`;
+    if (!F.length) return `${head('Notifications', '')}<div class="account-alerts"><div>${ES.alerts()}</div>${alertSettings()}</div>`;
     const KINDS = [['all', 'All'], ['reply', 'Replies'], ['remind', 'Reminders'], ['listing', 'New listings'], ['document', 'Documents']]
       .map(([k, t]) => [k, t, k === 'all' ? F.length : F.filter(x => x.kind === k).length]).filter(k => k[0] === 'all' || k[2]);
     const cur = KINDS.some(k => k[0] === A.ntab) ? A.ntab : 'all', list = cur === 'all' ? F : F.filter(x => x.kind === cur);
@@ -600,7 +642,7 @@ ${channels}</div>`;
     const startOf = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return +x; }, today = startOf(now());
     const bucket = t => t >= today ? 'Today' : t >= today - 864e5 ? 'Yesterday' : t >= today - 6 * 864e5 ? 'This week' : 'Earlier';
     const groups = ['Today', 'Yesterday', 'This week', 'Earlier'].map(g => [g, list.filter(x => bucket(x.t) === g)]).filter(g => g[1].length);
-    return `${head('Alerts', n ? `${n} new since you last looked` : 'You’re up to date', n ? `<button class="btn btn-outline btn-sm" type="button" data-act="readall">${ico('check')}Mark all as read</button>` : '')}
+    return `${head('Notifications', n ? `${n} new since you last looked` : 'You’re up to date', n ? `<button class="btn btn-outline btn-sm" type="button" data-act="readall">${ico('check')}Mark all as read</button>` : '')}
       <div class="account-alerts"><div>
         ${KINDS.length > 2 ? `<div class="lead-bar account-alert-kinds">${KINDS.map(([k, t, c]) => `<button class="chip ${cur === k ? 'is-active' : ''}" data-tab="ntab" data-v="${k}">${t}<em>${c}</em></button>`).join('')}</div>` : ''}
         ${groups.map(([g, xs]) => `<section class="account-feed-group"><h2>${g}</h2><div class="account-box account-alert-list">${xs.map(item).join('')}</div></section>`).join('')}</div>
@@ -612,7 +654,7 @@ ${channels}</div>`;
     const CHN = [['wa', 'WhatsApp', 'wa'], ['push', 'Push', 'bell'], ['email', 'Email', 'mail']];
     const pref = k => D.notify[k] || (D.notify[k] = { on: false, ch: [] });
     const nSearch = alerts().length;
-    return `<aside class="account-box account-preferences"><h3>How we reach you</h3><p class="account-preferences-note">Pick any channels — or none to turn an alert off.</p>
+    return `<aside class="account-box account-preferences"><h3>How we reach you</h3><p class="account-preferences-note">Pick any channels — or none to turn it off.</p>
       ${TYPES.map(([k, t, sub]) => `<div class="account-preference"><b>${t}</b><small>${sub}</small>
         <div class="account-channels">${CHN.map(([c, l, i]) => `<label class="account-channel"><input type="checkbox" data-pref="${k}" data-ch="${c}" ${pref(k).ch.includes(c) ? 'checked' : ''}><span>${ico(i)}${ico('check', 'channel-tick')}${l}</span></label>`).join('')}</div>
         ${k === 'matches' && nSearch ? `<a class="account-preference-link" href="#saved" data-tab="stab" data-v="searches">${nSearch} saved ${nSearch === 1 ? 'search' : 'searches'} · set how often for each${ico('chevR')}</a>` : ''}</div>`).join('')}
@@ -621,7 +663,7 @@ ${channels}</div>`;
 
   /* ---------- profile & privacy ----------
      Verification beside personal details; family (Programs, Health) beside addresses (Services, home visits);
-     how we reach you (a summary of Alerts) beside privacy and your data, then sign out. ID documents live in Documents only. */
+     how we reach you (a summary of Notifications) beside privacy and your data, then sign out. ID documents live in Documents only. */
   const familyOf = () => D.family || (D.family = []);
   const placesOf = () => D.places || (D.places = []);
   function profile() {
@@ -758,7 +800,7 @@ ${channels}</div>`;
     messages: () => emptyState({ art: 'messages', title: 'No conversations yet', sub: 'Replies from listers come straight here — no digging through WhatsApp to find them.', steps: ['Contact a lister from any listing', 'Their replies appear here, next to the listing', 'Answer from here — it opens WhatsApp and keeps a copy'], mock: 'reply' }),
     saved: () => emptyState({ art: 'saved', title: 'You have no saved listings yet', sub: 'Saving helps you compare and come back to places faster.', steps: ['Browse listings', 'Tap the heart on the ones you like', 'Compare them side by side and add notes here'], mock: 'heart' }),
     searches: () => emptyState({ art: 'searches', title: 'You have no saved searches yet', sub: 'Saving a search helps you find the right place faster.', steps: ['Start a search with the filters you need', 'Select Save search', 'Get new matches on WhatsApp — and return here anytime'], mock: 'save' }),
-    alerts: () => emptyState({ art: 'alerts', title: 'No alerts yet', sub: 'We tell you the moment something happens — never more than you choose.', steps: ['Contact a lister or save a search', 'We alert you when they reply or something new matches', 'Choose WhatsApp, push or email in the panel'], mock: 'bell', chips: false }),
+    alerts: () => emptyState({ art: 'alerts', title: 'No notifications yet', sub: 'We tell you the moment something happens — never more than you choose.', steps: ['Contact a lister or save a search', 'We let you know when they reply or something new matches', 'Choose WhatsApp, push or email in the panel'], mock: 'bell', chips: false }),
     documents: () => emptyState({ art: 'documents', title: 'Keep your documents ready', sub: 'Owners and providers often ask for your ID before a contract or sign-up. Upload once and it’s ready when you need it.', steps: ['Upload your Emirates ID or passport', 'We read the details — you just check them', 'Share it yourself when a lister asks — never automatically'], mock: 'scan', chips: false })
   };
 
@@ -822,7 +864,7 @@ ${channels}</div>`;
   const daysTo = v => Math.round((new Date(isoD(v)) - new Date().setHours(0, 0, 0, 0)) / 864e5);
   const expOf = doc => { const f = doc.fields.find(x => x[2] === 'date'), v = f && (idocs()[doc.id] || {}).d; return v ? v[f[0]] : ''; };
   // documents expiring within 60 days (or expired) — shown as a banner and a sidebar badge
-  const docsDue = () => IDOCS.filter(doc => { const f = idocs()[doc.id], e = f && f.ok && expOf(doc); return e && daysTo(e) <= 60; });
+  const docsDue = () => !SHOW_DOCS ? [] : IDOCS.filter(doc => { const f = idocs()[doc.id], e = f && f.ok && expOf(doc); return e && daysTo(e) <= 60; });
   // demo reader: what a scan returns. '' = not on the document; '?' = unsure, please check
   function readIdoc(id) {
     const u = user() || {}, name = u.name || 'Aisha Al Mansoori', T = new Date(), y = n => { const d = new Date(T); d.setFullYear(d.getFullYear() + n); return isoD(d); };
@@ -967,6 +1009,7 @@ ${channels}</div>`;
     const mo = e.target.closest('[data-more]'); if (mo) { (A.emore = A.emore || {})[mo.dataset.more] = true; render(); return; }
     const sf = e.target.closest('[data-saved-filter]'); if (sf) { A.stab = 'items'; A.sv = 'all'; A.sstat = sf.dataset.savedFilter; }
     const sv = e.target.closest('[data-sview]'); if (sv) { D.sview = sv.dataset.sview; save(); render(); return; }
+    const pg = e.target.closest('[data-pick-go]'); if (pg) { const row = pg.closest('.dashboard-picks').querySelector('.dashboard-pick-row'); row.scrollBy({ left: +pg.dataset.pickGo * row.clientWidth * 0.8, behavior: 'smooth' }); return; }
     const tab = e.target.closest('[data-tab]'); if (tab) { A[tab.dataset.tab] = tab.dataset.v; render(); return; }
     const rd = e.target.closest('[data-read]'); if (rd && !D.read.includes(rd.dataset.read)) { D.read.push(rd.dataset.read); save(); }
     // contacting the agent from here is logged on the enquiry, like the provider's timeline

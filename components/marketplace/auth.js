@@ -307,6 +307,7 @@
         <a href="${HREF.account}#profile">${ico('user')}Profile &amp; privacy</a>
         <span class="account-drop-divider"></span>
         <a href="${HREF.join}">${ico('brief')}${applied || approved ? 'Provider application · in review' : draft ? 'Finish your provider application' : 'Become a provider'}</a>
+        ${(applied || approved) && HREF.listingNew ? `<a href="${HREF.listingNew}#new">${ico('plus')}Create listing</a><a href="${HREF.listingNew}#mine">${ico('list')}Your listings</a>` : ''}
         <button type="button" data-auth-out>${ico('x')}Sign out</button></div></div>`;
   };
 
