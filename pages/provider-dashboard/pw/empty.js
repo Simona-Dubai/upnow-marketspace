@@ -73,6 +73,15 @@
     .pe ol li.now b{color:#8a5a14}
     .pe-acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
     .pe-acts .btn-o{background:#fff}
+    /* the steps play in one by one, the current one pulses, and the part of the track still ahead flows towards it */
+    .pe ol li{opacity:0;animation:pe-step .5s cubic-bezier(.2,.7,.2,1) forwards}
+    .pe ol li:nth-child(1){animation-delay:.25s}.pe ol li:nth-child(2){animation-delay:.5s}.pe ol li:nth-child(3){animation-delay:.75s}
+    @keyframes pe-step{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+    .pe ol li>i{animation:pe-pin .45s cubic-bezier(.3,1.6,.5,1) both;animation-delay:inherit}
+    .pe ol li.now>i{animation:pe-pin .45s cubic-bezier(.3,1.6,.5,1) both,pe-now 2.2s 1s ease-in-out infinite}
+    @keyframes pe-pin{from{transform:scale(.4)}to{transform:none}}
+    .pe ol:before{background:repeating-linear-gradient(180deg,#cfe2d7 0 6px,transparent 6px 12px);background-size:2px 12px;animation:pe-flow 1.2s linear infinite}
+    @keyframes pe-flow{to{background-position:0 12px}}
     .pe-art{justify-self:center;width:100%;max-width:380px}.pe-art svg{display:block;width:100%;height:auto;overflow:visible}
     .pe-art svg *{transform-box:fill-box}
     /* illustrations that play the page out on a 6s loop */
@@ -104,6 +113,12 @@
     .pe-tips>h3 small,.pe-ghost>h3 small{font-size:12.5px;font-weight:600;color:var(--ink3)}
     .pe-tipgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
     .pe-tip{display:flex;flex-direction:column;gap:6px;padding:18px;border-radius:18px;background:#fff;border:1px solid var(--line);transition:transform .18s,box-shadow .18s,border-color .18s}
+    .pe-real .att,.pe-real .kpi{cursor:default}.pe-real .att>div:hover{background:none}.pe-real .kpi:hover{border-color:var(--line)}
+    .pe-real .att{animation:pe-step .5s cubic-bezier(.2,.7,.2,1) both}.pe-real .kpi .d{color:var(--ink3);font-weight:600}
+    .pe-real .kpi{animation:pe-step .5s cubic-bezier(.2,.7,.2,1) both}.pe-real .kpi:nth-child(1){animation-delay:.1s}.pe-real .kpi:nth-child(2){animation-delay:.2s}.pe-real .kpi:nth-child(3){animation-delay:.3s}.pe-real .kpi:nth-child(4){animation-delay:.4s}
+    .pe-tip,.pe-tile{animation:pe-step .5s cubic-bezier(.2,.7,.2,1) both}
+    .pe-tip:nth-child(2),.pe-tile:nth-child(2){animation-delay:.1s}.pe-tip:nth-child(3),.pe-tile:nth-child(3){animation-delay:.2s}.pe-tile:nth-child(4){animation-delay:.3s}
+    .pe-tip>i{transition:transform .2s}.pe-tip:hover>i{transform:scale(1.08) rotate(-4deg)}
     .pe-tip:hover{transform:translateY(-2px);border-color:#bfe3cf;box-shadow:0 14px 30px -20px rgba(11,61,42,.4)}
     .pe-tip>i{width:38px;height:38px;margin-bottom:6px;display:grid;place-items:center;border-radius:12px;background:var(--g1);color:var(--g7)}
     .pe-tip>i svg{width:18px;height:18px}.pe-tip.is-amber>i{background:#fbf1e2;color:#a8701a}
@@ -129,7 +144,7 @@
     @media(max-width:1000px){.pe-tipgrid{grid-template-columns:1fr}}
     @media(max-width:900px){.pe{grid-template-columns:1fr;padding:26px 22px}.pe-art{grid-row:1;max-width:280px}.pe h2{font-size:28px}.pe-tiles,.pe-cols{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(prefers-reduced-motion:reduce){.pe-page *,.pe-page>*{animation-duration:.01s!important;animation-delay:0s!important;animation-iteration-count:1!important}
-      .pe-pop,.pe-fill,.pe-msg,.pe-drop{opacity:1}.pe-draw{stroke-dashoffset:0}.pe ol:after{height:var(--h)}}
+      .pe-pop,.pe-fill,.pe-msg,.pe-drop,.pe ol li{opacity:1}.pe-draw{stroke-dashoffset:0}.pe ol:after{height:var(--h)}}
   </style>`;
   if (!document.getElementById('pe-style')) document.head.insertAdjacentHTML('beforeend', css);
 
@@ -201,6 +216,15 @@
       ${tipBox}${preview}</div>`;
   const first = String((user && user.first) || ((app.d || {}).display) || app.name || '').split(' ')[0];
   const hi = () => { const h = new Date().getHours(); return (h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening') + (first ? ', ' + esc(first) : ''); };
+  const demandPreview = () => {
+    const K = X().kpis, sub = { 0: 'Customers who contacted you', 1: 'Target 15 min', 2: 'From your leads', 3: 'Deals you closed' };
+    return `<div class="pe-real"><div class="att">
+        <div class="hl"><small>Waiting for first reply</small><b>0 leads</b><span>None past your 15-min target</span></div>
+        <div><small>Today's ${sp() ? 'viewings & visits' : 'jobs & appointments'}</small><b>0 scheduled</b><span>Next: —</span></div>
+        <div><small>Open pipeline</small><b>AED 0</b><span>0 active opportunities</span></div>
+        <div><small>Listings needing attention</small><b>${items().filter(x => x.status !== 'live').length}</b><span>${items().filter(x => x.status === 'review').length} in review</span></div></div>
+      <div class="g4">${K.map((k, i) => `<div class="kpi"><small>${esc(k[0])}</small><b>${i === 1 ? '—' : /AED/.test(k[1]) ? 'AED 0' : '0'}</b><span class="d">${sub[i]}</span><svg class="spk" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0 26H100" fill="none" stroke="#cfe2d7" stroke-width="1.8" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/></svg></div>`).join('')}</div></div>`;
+  };
   const tile = (t, e) => `<div class="pe-tile"><span>${t}</span><i class="pe-sh"></i><em>${e}</em></div>`;
   const CHAT = !!P.CHAT; // in-app chat is on hold site-wide while SITE.chat is false (data/site.js)
   const X = () => P.VX(), sp = () => S.v === 'spaces', visit = () => sp() ? 'viewing' : 'visit';
@@ -215,7 +239,7 @@
         ['image', 'Make your listing easy to choose', 'Bright photos of every room, the real price and what’s included answer most questions before anyone asks.', 'Open your listings', toListings],
         ['bolt', 'Be the first to reply', 'Customers often contact a few providers at once — the one who answers first usually gets the ' + visit() + '. Aim for 15 minutes.', 'Set up alerts', toAlerts, true],
         ['link', 'Bring every channel in', 'Connect WhatsApp Business, Instagram and the portals you use, so every enquiry lands here and nothing gets missed.', 'Connect channels', toChannels]]),
-      ghost(`<div class="pe-tiles">${tile('New leads', 'Customers who contacted you')}${tile('First response', 'Target 15 min')}${tile(S.v === 'services' ? 'Jobs booked' : 'Viewings booked', 'From your leads')}${tile('Won value', 'Deals you closed')}</div>`)),
+      ghost(demandPreview())),
     leads: () => page('Leads', 'Every customer who contacts you, from first message to won.', 'leads', 'No leads yet',
       `When a customer calls, WhatsApps${CHAT ? ', chats' : ''} or emails you from a listing, they appear here as a card — with how they reached you and what they asked.`,
       ['Reply within 15 minutes', 'Then move them along until they’re won'],

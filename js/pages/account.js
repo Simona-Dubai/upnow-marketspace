@@ -151,6 +151,7 @@
       <div class="account-user">${meAvatar(u)}<div><b>${esc(u.name || u.email || 'Your account')}</b><small>${u.phone ? `${ico('shield')}Verified mobile` : esc(u.email || '')}</small></div></div>
       <nav class="account-nav" aria-label="Account">${SECTIONS.map(([id, l, i]) => `${SHOW_DOCS && id === 'documents' ? '<small class="account-nav-group">Account</small>' : !SHOW_DOCS && id === 'profile' ? '<hr class="account-nav-rule">' : ''}<a href="#${id}" class="${cur === id ? 'is-active' : ''}">${ico(i)}<span>${l}</span>${badge[id] ? `<em class="${id === 'messages' ? 'is-red' : id === 'enquiries' || id === 'alerts' || id === 'documents' ? 'is-hot' : ''}">${badge[id]}</em>` : ''}</a>`).join('')}</nav>
       <a class="account-explore" href="${SITE.homeHref || HREF.home}">${ico('compass')}Explore marketplace</a>
+      ${sampleOn() ? '' : `<button class="account-sample-on" type="button" data-sample-on>${ico('eye')}Show sample data</button>`}
     </aside>`;
   }
 
@@ -178,7 +179,7 @@
     if (store.get('session') === 'login' && !D.seeded && !leads().length && !favs.size && !alerts().length) return sample(true);
     const R = route();
     const body = { overview, enquiries: () => R.id ? tracking(R.id) : enquiries(), messages: () => messages(R.id), saved, documents, alerts: alertsView, profile }[R.s]();
-    root.innerHTML = nav(R.s) + `<section class="account-main">${body}</section>`;
+    root.innerHTML = sampleBanner() + nav(R.s) + `<section class="account-main">${body}</section>`;
     root.querySelectorAll('.dashboard-pick-row').forEach(row => { const nav = row.closest('.dashboard-picks').querySelectorAll('[data-pick-go]');
       const f = () => { nav[0].disabled = row.scrollLeft < 4; nav[1].disabled = row.scrollLeft + row.clientWidth > row.scrollWidth - 4; }; f(); row.addEventListener('scroll', f, { passive: true }); });
     root.querySelectorAll('.account-enquiry-filters .lead-bar').forEach(b => { const f = () => b.classList.toggle('is-overflowing', b.scrollWidth > b.clientWidth + 1 && b.scrollLeft + b.clientWidth < b.scrollWidth - 1); f(); b.addEventListener('scroll', f, { passive: true }); });
@@ -323,7 +324,9 @@
     // not contacted yet come first — they're the ones to act on; the tip then counts only those not already shown
     const savedTop = [...saved.filter(l => !contacted(l)), ...saved.filter(l => contacted(l))].slice(0, 3), notYetHidden = notYet - savedTop.filter(l => !contacted(l)).length;
     const savedBox = saved.length ? card(`Saved <em>${saved.length}</em>`, viewAll('#saved'), savedTop.map(l => `<a class="dashboard-saved-item" href="${HREF.listing}?id=${l.id}"><img src="${esc(l.img[0] || '')}" alt="" loading="lazy"><span><b>${esc(l.title)}</b><small>${contacted(l) ? `<span class="dashboard-contacted">${ico('check')}Contacted</span> · ` : ''}${esc(U.locText(l))}</small></span></a>`).join('')
-      + (notYetHidden > 0 ? `<a class="dashboard-saved-tip" href="#saved" data-saved-filter="new">${ico('msg')}<span>${notYetHidden} more saved but not contacted yet</span>${ico('chevR')}</a>` : ''), 'is-saved') : '';
+      + (notYetHidden > 0 ? `<a class="dashboard-saved-tip" href="#saved" data-saved-filter="new">${ico('msg')}<span>${notYetHidden} more saved but not contacted yet</span>${ico('chevR')}</a>` : ''), 'is-saved')
+      // nothing saved yet: the card stays, next to the enquiries, and says how saving works
+      : card('Saved', '', `<div class="dashboard-saved-empty"><i>${ico('heart')}</i><b>Nothing saved yet</b><small>Tap the heart on any listing to keep it here — compare later and contact when you’re ready.</small><a class="btn btn-outline btn-sm" href="${HREF.search}">${ico('search')}Browse listings</a></div>`, 'is-saved');
 
     // 6 · discover more — picked from what they enquired about, not another menu of the verticals
     const lastLead = L.find(m => m.l), near = lastLead ? lastLead.r.area : '';
@@ -959,6 +962,7 @@ ${channels}</div>`;
     set(recs[5], { ev: [{ k: 'reply', t: recs[5].t + 15 * 60000, text: 'Thanks for your interest! Let me check and come back to you.' }, { k: 'closed', t: recs[5].t + 2 * 864e5, text: 'Sorry — this one is no longer available.' }] });
     store.set('leads', [...recs, ...leads()]);
     const ids = [L[0], L[1], L[2], ...LISTINGS.filter(l => l.img.length && !used.has(l.id)).slice(0, 3)].map(l => l.id);
+    const was = { favs: new Set(favs), alerts: alerts().slice(), idocs: Object.keys(idocs()), family: familyOf().length, places: placesOf().length, recent: store.get('recent') || [] };
     ids.forEach(id => favs.add(id)); store.set('favs', [...favs]);
     // the saved search goes where most homes are listed, so the preview never shows "0 listings"
     const byArea = {}; LISTINGS.filter(l => l.v === 'spaces' && l.cat === 'residential').forEach(l => byArea[l.loc] = (byArea[l.loc] || 0) + 1);
@@ -968,8 +972,28 @@ ${channels}</div>`;
     if (!familyOf().length) familyOf().push({ id: 'f' + T, name: 'Sami ' + ((user() || {}).last || ''), rel: 'Child', age: '7' });
     if (!placesOf().length) placesOf().push({ id: 'p' + T, label: 'Home', addr: (L[0].building ? L[0].building + ', ' : '') + areaName(L[0].loc) });
     store.set('recent', [...ids.slice(2), ...(store.get('recent') || [])].slice(0, 12));
-    D.seeded = true; save(); if (!quiet) toast('Sample activity added'); render();
+    D.sample = { leads: recs.map(r => r.id), favs: ids.filter(id => !was.favs.has(id)), alerts: alerts().filter(a => !was.alerts.includes(a)),
+      idocs: Object.keys(idocs()).filter(k => !was.idocs.includes(k)), family: familyOf().slice(was.family).map(x => x.id), places: placesOf().slice(was.places).map(x => x.id),
+      recent: ids.slice(2).filter(id => !was.recent.includes(id)) };
+    D.seeded = true; save(); if (U.updateHdrCounts) U.updateHdrCounts(); if (!quiet) toast('Showing sample data'); render();
   }
+
+  // the sample is still here when any of its enquiries or saved places are
+  const sampleOn = () => !!D.sample && (leads().some(r => D.sample.leads.includes(r.id)) || D.sample.favs.some(id => favs.has(id)));
+  const sampleBanner = () => sampleOn() ? `<div class="account-sample">${ico('eye')}<span><b>You’re exploring with sample data.</b> These enquiries, replies and saved places are made up — yours appear here when you contact a provider or save a listing.</span><a data-sample-off role="button" tabindex="0">Hide sample data</a></div>` : '';
+  function hideSample() {
+    const S = D.sample; if (!S) return;
+    store.set('leads', leads().filter(r => !S.leads.includes(r.id))); S.leads.forEach(id => delete D.lead[id]);
+    S.favs.forEach(id => favs.delete(id)); store.set('favs', [...favs]);
+    setAlerts(alerts().filter(a => !S.alerts.includes(a)));
+    S.idocs.forEach(k => delete idocs()[k]);
+    D.family = familyOf().filter(x => !S.family.includes(x.id)); D.places = placesOf().filter(x => !S.places.includes(x.id));
+    store.set('recent', (store.get('recent') || []).filter(id => !S.recent.includes(id)));
+    D.sample = null; save(); if (U.updateHdrCounts) U.updateHdrCounts(); toast('Sample data hidden'); render();
+  }
+  // for a demo: switch the sample on (sidebar) and off (the notice) as often as needed — the account's own items stay
+  root.addEventListener('click', e => { if (e.target.closest('[data-sample-off]')) { e.preventDefault(); hideSample(); } else if (e.target.closest('[data-sample-on]')) { e.preventDefault(); if (!sampleOn()) sample(); } });
+  root.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('[data-sample-off]')) { e.preventDefault(); hideSample(); } });
 
   /* ---------- events ---------- */
   // on this page, Saved / My enquiries (header, account menu, phone tabs) open the sections instead of the side drawers

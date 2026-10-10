@@ -179,7 +179,7 @@
       .np-steps{grid-template-columns:1fr 1fr;row-gap:18px}.np-steps:before,.np-steps:after,.np-steps li.now:after{display:none}}
     @media(prefers-reduced-motion:reduce){.np-wrap *,.np-wrap>*{animation-duration:.01s!important;animation-delay:0s!important;animation-iteration-count:1!important;transition:none!important}
       .np-how svg *{animation:none!important}.np-res{opacity:1}
-      .np-hero:before,.np-hero:after,.np-ring:before,.np-steps:after,.np-steps li.now i:before{animation:none!important}.np-steps:after{width:calc(25% + 6px)}.np-steps li.now:after{animation:none!important;opacity:1}.np-hero:after{display:none}}
+      .np-dot:after,.np-hero:before,.np-hero:after,.np-ring:before,.np-steps:after,.np-steps li.now i:before{animation:none!important}.np-steps:after{width:calc(25% + 6px)}.np-steps li.now:after{animation:none!important;opacity:1}.np-hero:after{display:none}}
   </style>`;
   if (!document.getElementById('np-style')) document.head.insertAdjacentHTML('beforeend', css);
 

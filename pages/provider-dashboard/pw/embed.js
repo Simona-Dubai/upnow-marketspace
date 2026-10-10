@@ -42,7 +42,7 @@
     .em-body.ready .em-load{opacity:0;pointer-events:none}
     .em-load i{width:30px;height:30px;border-radius:50%;border:3px solid var(--g2);border-top-color:var(--g7);animation:em-spin .8s linear infinite}
     @keyframes em-spin{to{transform:rotate(360deg)}}
-    @media(max-width:640px){.em-bar{padding:8px 12px}.em-bar .em-save,.em-bar .em-help span{display:none}}
+    @media(max-width:640px){.em-bar{padding:8px 12px;flex-wrap:wrap;gap:8px}.em-bar .em-save,.em-bar .em-help span,.em-bar .em-crumb{display:none}}
   </style>`;
   if (!document.getElementById('em-style')) document.head.insertAdjacentHTML('beforeend', css);
 
@@ -131,7 +131,7 @@
     .lv-top .lv-info{padding:0;border:0;box-shadow:none;border-radius:0;min-width:0}
     .lv-hd{display:flex;align-items:flex-start;gap:16px}.lv-hd>div:first-child{flex:1;min-width:0}
     .lv-top .lv-acts{flex:none;flex-wrap:wrap;justify-content:flex-end;max-width:330px;margin:0;padding:0}
-    .lv-top .lv-meta{flex-basis:100%;text-align:right;margin-top:2px}
+    .lv-top .lv-meta{flex-basis:100%;text-align:right;margin:4px 0 0}
     .lv-top .lv-info h1{margin-top:8px;font-size:26px}.lv-top .lv-loc{margin-top:4px}
     .lv-line{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:10px}
     .lv-top .lv-price{margin:0;font-size:22px}.lv-top .lv-keys{margin:0;gap:6px}.lv-top .lv-keys span{padding:5px 10px;font-size:12.5px;border-radius:10px}
@@ -141,19 +141,20 @@
     .lv-thumb .cnt{position:absolute;left:8px;bottom:8px;display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:99px;background:rgba(255,255,255,.92);font-size:12px;font-weight:700;color:var(--ink)}.lv-thumb .cnt .ico{width:13px;height:13px}
     .lv-thumb.none{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:1.5px dashed var(--g2);color:var(--g7);font-size:12.5px;font-weight:700;text-decoration:none}.lv-thumb.none .ico{width:26px;height:26px}
     .lv-glance{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:stretch}.lv-glance.one{grid-template-columns:1fr}
-    .lv-kpis{grid-column:1 / -1;display:flex;align-items:center;gap:8px;margin-top:-4px;padding-top:12px;border-top:1px solid var(--line)}
-    .lv-kpis .lbl{flex:none;margin-right:auto;padding-right:12px;font-size:12px;color:var(--ink3);line-height:1.3}.lv-kpis .lbl b{display:block;font-size:13.5px;color:var(--ink)}
-    .lv-kpis .k{flex:1;max-width:170px;display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:12px;background:var(--bg)}
-    .lv-kpis .k .ico{width:15px;height:15px;color:var(--ink3);flex:none}
-    .lv-kpis .k b{font-size:17px;line-height:1;color:var(--ink3)}.lv-kpis.on .k b{color:var(--ink)}.lv-kpis .k small{font-size:12px;color:var(--ink3);font-weight:600}
-    .lv-gal{position:relative;display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr);grid-template-rows:repeat(2,minmax(0,1fr));gap:6px;height:300px;border-radius:14px;overflow:hidden;background:var(--g1)}
-    .lv-gal img{width:100%;height:100%;min-height:0;object-fit:cover;display:block}.lv-gal>*{min-width:0;min-height:0}
-    .lv-gal>img:first-child{grid-row:1 / 3}
-    .lv-gal.one{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr)}.lv-gal.two{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}.lv-gal.two>img:first-child{grid-row:auto}
-    .lv-gal .more{position:relative;overflow:hidden}.lv-gal .more b{position:absolute;inset:0;display:grid;place-items:center;background:rgba(8,32,22,.55);color:#fff;font-size:14px}
-    .lv-gal .cnt{position:absolute;left:12px;bottom:12px;display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:99px;background:rgba(255,255,255,.92);font-size:12px;font-weight:700;color:var(--ink)}.lv-gal .cnt .ico{width:14px;height:14px}
-    .lv-nophoto{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:1.5px dashed var(--g2);color:var(--g7);text-align:center;text-decoration:none}
-    .lv-nophoto>.ico{width:34px;height:34px}.lv-nophoto b{font-size:15px;color:var(--ink)}.lv-nophoto span{font-size:12.5px;color:var(--ink3)}.lv-nophoto em{font-style:normal;margin-top:8px}
+    .lv-strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:2px}
+    .lv-strip img{flex:none;height:128px;width:170px;object-fit:cover;border-radius:12px;display:block;background:var(--g1)}
+    .lv-add{flex:none;width:170px;height:128px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px;border-radius:12px;border:1.5px dashed var(--g2);color:var(--g7);text-align:center;text-decoration:none}
+    .lv-add:hover{border-color:var(--g6);background:var(--g1)}.lv-add .ico{width:20px;height:20px}.lv-add b{font-size:13px}.lv-add span{font-size:11.5px;color:var(--ink3);line-height:1.35}
+    .lv-card h2 small+a{margin-left:12px}
+    /* performance: the provider's numbers, set apart in a tinted panel */
+    .lv-kpis{grid-column:1 / -1;display:grid;grid-template-columns:auto repeat(4,minmax(0,1fr));gap:10px;align-items:stretch;margin-top:2px;padding:12px;border-radius:16px;background:linear-gradient(120deg,var(--g1),#f6fbf8 60%,#fff);border:1px solid var(--g2)}
+    .lv-kpis .lbl{display:flex;flex-direction:column;justify-content:center;padding:0 14px 0 6px;font-size:12px;color:var(--ink3);line-height:1.35}
+    .lv-kpis .lbl b{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--g9)}.lv-kpis .lbl b .ico{width:16px;height:16px;color:var(--g7)}
+    .lv-kpis .k{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:#fff;box-shadow:0 1px 2px rgba(11,61,42,.06),0 0 0 1px rgba(11,61,42,.05)}
+    .lv-kpis .k i{grid-row:1 / 3;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--g1);color:var(--g7)}.lv-kpis .k i .ico{width:17px;height:17px}
+    .lv-kpis .k b{font-size:21px;line-height:1.1;font-weight:800;letter-spacing:-.01em;color:var(--ink)}
+    .lv-kpis .k small{font-size:12px;color:var(--ink3);font-weight:600}
+    .lv-kpis.off{background:var(--bg);border-color:var(--line)}.lv-kpis.off .k b{color:var(--ink3)}.lv-kpis.off .k i{background:var(--bg);color:var(--ink3)}.lv-kpis.off .lbl b,.lv-kpis.off .lbl b .ico{color:var(--ink2)}
     .lv-info{display:flex;flex-direction:column}
     .lv-pill{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 10px;border-radius:99px;font-size:12px;font-weight:800;background:#fbf1e2;color:#8a5a14}
     .lv-pill i{position:relative;width:8px;height:8px;border-radius:50%;background:#e0a526}
@@ -174,6 +175,9 @@
     .lv-meta{margin-top:12px;font-size:12px;color:var(--ink3)}
     /* body: what the listing says (left) · where it stands (right) */
     .lv-main{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px;align-items:start}
+    .lv-main.lv-pair{grid-template-columns:repeat(2,minmax(0,1fr))}
+    /* live: Location sits up top, so the listing's own words get the full width — About across, Details and lists side by side */
+    .lv-main.lv-flow{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}.lv-main.lv-flow>.lv-card:first-child,.lv-main.lv-flow>.lv-card:nth-child(2):last-child{grid-column:1 / -1}
     .lv-col{display:flex;flex-direction:column;gap:18px;min-width:0}
     .lv-about{margin:0;font-size:14px;line-height:1.65;color:var(--ink2);white-space:pre-line}
     .lv-missing{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;border:1.5px dashed var(--line2);font-size:13px;color:var(--ink3)}.lv-missing a{margin-left:auto;font-weight:700;color:var(--g7)}
@@ -221,26 +225,26 @@
     .lv-pv-body{flex:1;min-height:0;display:flex;justify-content:center;padding:18px}
     .lv-pv-body iframe{width:100%;max-width:1280px;height:100%;border:0;border-radius:14px;background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.3);transition:max-width .3s}
     .lv-pv.phone .lv-pv-body iframe{max-width:390px;border-radius:28px;border:10px solid #14201a}
-    @media(max-width:1100px){.lv-main{grid-template-columns:1fr}}
-    @media(max-width:860px){.lv-top{grid-template-columns:1fr}.lv-hd{flex-direction:column}.lv-top .lv-acts{justify-content:flex-start;max-width:none}.lv-top .lv-meta{text-align:left}.lv-thumb{aspect-ratio:16/9}.lv-gal{height:240px}.lv-glance{grid-template-columns:1fr}.lv-kpis{flex-wrap:wrap}.lv-kpis .lbl{flex-basis:100%}.lv-kpis .k{max-width:none;flex-basis:calc(50% - 4px)}.lv{padding:16px 14px 40px}.lv-facts{grid-template-columns:1fr}.lv-place{grid-template-columns:1fr}}
+    @media(max-width:1100px){.lv-main,.lv-main.lv-pair,.lv-main.lv-flow{grid-template-columns:1fr}}
+    @media(max-width:860px){.lv-top{grid-template-columns:1fr}.lv-hd{flex-direction:column}.lv-top .lv-acts{justify-content:flex-start;max-width:none}.lv-top .lv-meta{text-align:left}.lv-thumb{aspect-ratio:16/9}.lv-glance{grid-template-columns:1fr}.lv-kpis{grid-template-columns:1fr 1fr}.lv-kpis .lbl{grid-column:1 / -1;padding:0 4px 2px}.lv-strip img,.lv-add{width:160px;height:120px}.lv{padding:16px 14px 40px}.lv-facts{grid-template-columns:1fr}.lv-place{grid-template-columns:1fr}}
     @media(prefers-reduced-motion:reduce){.lv,.lv-pv{animation:none}.lv-pill i:after{animation:none}.lv-score .fg{animation:none;stroke-dashoffset:var(--off)}}
   </style>`;
   // a small map of where it is, in the dashboard's greens (not a real map — the area name says where)
   const MAP = `<svg viewBox="0 0 150 100" aria-hidden="true"><rect width="150" height="100" fill="#eef7f2"/><path d="M0 62h150M0 30h150M44 0v100M104 0v100" stroke="#fff" stroke-width="6"/><path d="M0 84 150 50" stroke="#fff" stroke-width="3"/><rect x="108" y="6" width="40" height="20" rx="3" fill="#d8efe3"/><rect x="2" y="66" width="38" height="30" rx="3" fill="#d8efe3"/><path d="M75 22c-8 0-14 6-14 14 0 10 14 22 14 22s14-12 14-22c0-8-6-14-14-14z" fill="#136142"/><circle cx="75" cy="36" r="5" fill="#fff"/></svg>`;
-  function showListing(id) {
-    const L = own(id); if (!L) return false;
+  function showListing(id, given) {
+    const L = given || own(id); if (!L) return false;
+    const sample = !!L.sample; // the sample business: only what its data has, and nothing to edit or preview
     P.closeModal(); P.closeDrawer();
     if (!document.getElementById('lv-style')) document.head.insertAdjacentHTML('beforeend', lvCss);
     const O = offerOf(L), s = ST[L.status] || ST.draft, tier = s[1];
     const where = L.areas && L.areas.length && !L.loc ? L.areas.map(area).join(', ') : [L.building, area(L.loc)].filter(Boolean).join(', ');
-    const term = ({ yearly: 'year', monthly: 'month' })[[].concat((L.a || {}).term || (L.a || {}).terms || [])[0]] || '';
+    const term = L.term || ({ yearly: 'year', monthly: 'month' })[[].concat((L.a || {}).term || (L.a || {}).terms || [])[0]] || '';
     const imgs = (L.img || []).filter(Boolean), minP = ({ spaces: 5, experiences: 5 })[L.v] || 3;
-    const editHref = '../listing-new.html#edit=' + encodeURIComponent(L.id);
-    const gal = imgs.length ? `<div class="lv-gal ${imgs.length === 1 ? 'one' : imgs.length === 2 ? 'two' : ''}">${imgs.slice(0, 3).map((src, i) => i === 2 && imgs.length > 3 ? `<span class="more"><img src="${src}" alt=""><b>+${imgs.length - 3}</b></span>` : `<img src="${src}" alt="">`).join('')}<span class="cnt">${ico('image')}${imgs.length} photo${imgs.length === 1 ? '' : 's'}</span></div>`
-      : `<a class="lv-gal one lv-nophoto" href="${editHref}">${ico('image')}<b>No photos yet</b><span>Listings with ${minP}+ photos get more enquiries</span><em class="btn btn-o btn-sm">${ico('plus')}Add photos</em></a>`;
+    const editLabel = L.status === 'draft' ? 'Continue' : L.status === 'changes' ? 'Fix and resubmit' : 'Edit listing';
+    const editHref = sample ? '#sample' : '../listing-new.html#edit=' + encodeURIComponent(L.id);
     const thumb = imgs.length ? `<button class="lv-thumb" type="button" data-lv="photos"><img src="${imgs[0]}" alt=""><span class="cnt">${ico('image')}${imgs.length}</span></button>`
       : `<a class="lv-thumb none" href="${editHref}">${ico('image')}<span>Add photos</span></a>`;
-    const { facts, lists } = factsOf(L, O), keys = O ? keyFacts(L, O) : [];
+    const { facts, lists } = factsOf(L, O), keys = L.keys || (O ? keyFacts(L, O) : []);
     // the way to live: sent → business approved → listing checked → live (and when each happened, from its history)
     const at = { draft: 0, licence: 1, verify: 1, review: 2, changes: 2, rejected: 2, live: 4 }[L.status] ?? 0;
     const when = st => { const h = (L.history || []).filter(x => x.st === st).pop(); return h ? day(h.t) : ''; };
@@ -253,44 +257,52 @@
       [!!(L.loc || (L.areas || []).length), 'Location', L.loc || (L.areas || []).length ? 'Set' : 'Add where it is'],
       ...(L.v === 'spaces' ? [[!!L.permit, 'Permit number', L.permit ? 'Added' : 'Needed to go live']] : [])];
     const ok = Q.filter(q => q[0]).length, off = (138.2 * (1 - ok / Q.length)).toFixed(1), live = L.status === 'live';
+    const wayCard = `<section class="lv-card"><h2>On its way to live</h2><ol class="lv-way">${way.map(([t, sub], i) => `<li class="${i < at ? 'done' : i === at ? (tier === 'risk' ? 'risk' : 'now') : ''}"><i>${i < at ? tick : ''}</i><span><b>${t}</b>${esc(sub)}</span></li>`).join('')}</ol></section>`;
+    const qualCard = `<section class="lv-card"><h2>Listing quality</h2>
+              <div class="lv-score"><svg viewBox="0 0 54 54"><circle class="bg" cx="27" cy="27" r="22"/><circle class="fg" cx="27" cy="27" r="22" style="--off:${off}"/></svg><div><b>${ok} of ${Q.length}</b><small>${ok === Q.length ? 'Ready to do well' : 'A few things to improve'}</small></div></div>
+              <ul class="lv-q">${Q.map(([y, t, sub]) => `<li class="${y ? 'ok' : ''}"><i>${y ? tick : '!'}</i><span>${esc(t)}</span><small>${esc(sub)}</small></li>`).join('')}</ul></section>`;
+    const locCard = `<section class="lv-card"><h2>Location</h2><div class="lv-place">${MAP}<div><b>${esc(where || 'Not set yet')}</b><span>${esc(L.unit ? 'Unit ' + L.unit + ' · ' : '')}${esc(L.v === 'spaces' ? 'Customers see the area; the exact address is shared when they contact you' : 'Where customers find you')}</span></div></div>
+              ${L.v === 'spaces' ? (L.permit ? `<div class="lv-permit">${ico('shield')}<span><b>DLD permit ${esc(L.permit)}</b>Checked by our team before the listing goes live</span></div>` : `<div class="lv-permit no">${ico('alert')}<span><b>No permit number yet</b>Every property ad in Dubai needs a Trakheesi permit</span></div>`) : ''}</section>`;
+    // photos: a strip at their real proportions (one photo isn't blown up to fill a card), and room for more
+    const need = Math.max(0, minP - imgs.length);
+    const photoCard = `<section class="lv-card" id="lv-photos"><h2>Photos<small>${imgs.length} of ${minP}+ recommended</small><a href="${editHref}">${ico('edit')}Edit</a></h2>
+      <div class="lv-strip">${imgs.map(src => `<img src="${src}" alt="">`).join('')}${need || !imgs.length ? `<a class="lv-add" href="${editHref}">${ico('plus')}<b>${imgs.length ? `Add ${need} more` : 'Add photos'}</b><span>Listings with ${minP}+ photos get more enquiries</span></a>` : ''}</div></section>`;
+    const left = `            ${sample && !L.desc ? '' : `<section class="lv-card"><h2>About<a href="${editHref}">${ico('edit')}Edit</a></h2>${L.desc ? `<p class="lv-about">${esc(L.desc)}</p>` : `<div class="lv-missing">${ico('edit')}No description yet — a few lines help customers decide.<a href="${editHref}">Add</a></div>`}</section>`}
+            ${facts.length ? `<section class="lv-card"><h2>Details</h2><div class="lv-facts">${facts.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div></section>` : ''}
+            ${lists.length ? `<section class="lv-card"><h2>${esc(lists.length === 1 ? lists[0][0] : 'Features')}</h2>${lists.map(([k, vs]) => `<div class="lv-list">${lists.length > 1 ? `<small>${esc(k)}</small>` : ''}<div class="lv-chips">${vs.map(x => `<span>${ico('check')}${esc(x)}</span>`).join('')}</div></div>`).join('')}</section>` : ''}
+`;
     const view = document.getElementById('view');
     view.className = 'view em';
     view.innerHTML = `<div class="em-bar"><button class="em-back" type="button" data-em="back">${ico('chevL')}Portfolio</button>
         <span class="em-crumb">${ico('chevR')}<b>${esc(L.title || 'Your listing')}</b></span><span class="sp"></span>
-        <button class="btn btn-o btn-sm" type="button" data-lv="preview">${ico('eye')}Customer preview</button><a class="btn btn-g btn-sm" href="${editHref}">${ico('edit')}Edit listing</a></div>
+        ${sample ? '' : `<button class="btn btn-o btn-sm" type="button" data-lv="preview">${ico('eye')}Customer preview</button>`}<a class="btn btn-g btn-sm" href="${editHref}">${ico('edit')}${editLabel}</a></div>
       <div class="lv-scroll"><div class="lv">
         <div class="lv-top">${thumb}
           <section class="lv-card lv-info"><div class="lv-hd"><div><span class="lv-pill ${tier}"><i></i>${esc(s[0])}</span>
             <h1>${esc(L.title || 'Your listing')}</h1>
             <span class="lv-loc">${ico('pin')}${esc([where, O && O.label].filter(Boolean).join(' · '))}</span></div>
-            <div class="lv-acts"><a class="btn btn-g btn-sm" href="${editHref}">${ico('edit')}${L.status === 'draft' ? 'Continue' : L.status === 'changes' ? 'Fix and resubmit' : 'Edit listing'}</a>
-              <button class="btn btn-o btn-sm" type="button" data-lv="preview">${ico('eye')}See it as a customer</button>
-              <span class="lv-meta">Ref ${esc(L.id)}${L.updated ? ' · Updated ' + esc(day(L.updated)) : ''}</span></div></div>
+            <div class="lv-acts"><span class="lv-meta">Ref ${esc(L.id)}${L.updated ? ' · Updated ' + esc(day(L.updated)) : ''}</span></div></div>
             <div class="lv-line">${+L.price ? `<div class="lv-price">AED ${Number(L.price).toLocaleString()}${term ? `<small> / ${term}</small>` : ''}</div>` : ''}
             ${keys.length ? `<div class="lv-keys">${keys.slice(0, 4).map(([i, t]) => `<span>${MI(i)}${esc(t)}</span>`).join('')}</div>` : ''}</div>
             <p class="lv-note ${tier === 'warn' ? '' : tier}">${esc(L.status === 'changes' && L.reason ? L.reason : s[2])}</p></section>
-          <div class="lv-kpis ${live ? 'on' : ''}"><span class="lbl"><b>Performance</b>${live ? 'Last 30 days' : 'Starts when it\'s live'}</span>${[['eye', 'Views'], ['phone', 'Contacts'], ['kanban', 'Leads'], ['heart', 'Saved']].map(([i, t]) => `<span class="k">${ico(i)}<b>${live ? '0' : '—'}</b><small>${t}</small></span>`).join('')}</div></div>
-        <div class="lv-glance ${live ? 'one' : ''}">${live ? '' : `<section class="lv-card"><h2>On its way to live</h2><ol class="lv-way">${way.map(([t, sub], i) => `<li class="${i < at ? 'done' : i === at ? (tier === 'risk' ? 'risk' : 'now') : ''}"><i>${i < at ? tick : ''}</i><span><b>${t}</b>${esc(sub)}</span></li>`).join('')}</ol></section>`}
-            <section class="lv-card"><h2>Listing quality</h2>
-              <div class="lv-score"><svg viewBox="0 0 54 54"><circle class="bg" cx="27" cy="27" r="22"/><circle class="fg" cx="27" cy="27" r="22" style="--off:${off}"/></svg><div><b>${ok} of ${Q.length}</b><small>${ok === Q.length ? 'Ready to do well' : 'A few things to improve'}</small></div></div>
-              <ul class="lv-q">${Q.map(([y, t, sub]) => `<li class="${y ? 'ok' : ''}"><i>${y ? tick : '!'}</i><span>${esc(t)}</span><small>${esc(sub)}</small></li>`).join('')}</ul></section></div>
-        <div class="lv-main">
-          <div class="lv-col">
-            <section class="lv-card"><h2>About<a href="${editHref}">${ico('edit')}Edit</a></h2>${L.desc ? `<p class="lv-about">${esc(L.desc)}</p>` : `<div class="lv-missing">${ico('edit')}No description yet — a few lines help customers decide.<a href="${editHref}">Add</a></div>`}</section>
-            ${facts.length ? `<section class="lv-card"><h2>Details</h2><div class="lv-facts">${facts.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div></section>` : ''}
-            ${lists.length ? `<section class="lv-card"><h2>${esc(lists.length === 1 ? lists[0][0] : 'Features')}</h2>${lists.map(([k, vs]) => `<div class="lv-list">${lists.length > 1 ? `<small>${esc(k)}</small>` : ''}<div class="lv-chips">${vs.map(x => `<span>${ico('check')}${esc(x)}</span>`).join('')}</div></div>`).join('')}</section>` : ''}
-          </div>
-          <div class="lv-col">
-            <section class="lv-card" id="lv-photos"><h2>Photos<a href="${editHref}">${ico('edit')}Edit</a></h2>${gal}</section>
-            <section class="lv-card"><h2>Location</h2><div class="lv-place">${MAP}<div><b>${esc(where || 'Not set yet')}</b><span>${esc(L.unit ? 'Unit ' + L.unit + ' · ' : '')}${esc(L.v === 'spaces' ? 'Customers see the area; the exact address is shared when they contact you' : 'Where customers find you')}</span></div></div>
-              ${L.v === 'spaces' ? (L.permit ? `<div class="lv-permit">${ico('shield')}<span><b>DLD permit ${esc(L.permit)}</b>Checked by our team before the listing goes live</span></div>` : `<div class="lv-permit no">${ico('alert')}<span><b>No permit number yet</b>Every property ad in Dubai needs a Trakheesi permit</span></div>`) : ''}</section>
-          </div>
-        </div>
+          <div class="lv-kpis ${live ? '' : 'off'}"><span class="lbl"><b>${ico('trend')}Performance</b>${live ? 'Last 30 days' : 'Starts when it\'s live'}</span>${[['eye', 'Views', 'views'], ['phone', 'Contacts', 'contacts'], ['kanban', 'Leads', 'leads'], ['heart', 'Saved', 'saved']].map(([i, t, k]) => `<span class="k"><i>${ico(i)}</i><b>${live ? (L.perf ? (L.perf[k] != null ? Number(L.perf[k]).toLocaleString() : '—') : '0') : '—'}</b><small>${t}</small></span>`).join('')}</div></div>
+        <div class="lv-glance">${live ? `${qualCard}${locCard}` : `${wayCard}${qualCard}`}</div>
+        ${photoCard}
+        ${left.trim() ? (live ? `<div class="lv-main lv-flow">${left}</div>` : `<div class="lv-main"><div class="lv-col">${left}</div><div class="lv-col">${locCard}</div></div>`) : live ? '' : `<div class="lv-main lv-pair">${locCard}</div>`}
       </div></div>`;
     document.querySelectorAll('#sb .ni').forEach(a => a.classList.toggle('on', a.dataset.go === 'portfolio'));
     open = 'listing:' + L.id;
     return true;
   }
+  // a sample listing (pw/data.js) in the shape of a real one: only what it has — title, area, price, photo, status, its facts
+  const SAMPLE_CAT = { apartment: 'residential', padel: 'court', dentist: 'dental' }, SAMPLE_V = { dentist: 'health' };
+  const SAMPLE_ICON = [[/studio|bed/i, 'bed'], [/bath/i, 'bath'], [/sq ?ft|sqm/i, 'area'], [/guest|people|pax/i, 'users'], [/pool/i, 'wave']];
+  const fromSample = l => { const c = (window.PW && PW.CONTENT && PW.CONTENT[l.id]) || {}; return { id: l.id, v: SAMPLE_V[l.cat] || l.v, cat: SAMPLE_CAT[l.cat] || l.cat, title: l.t, loc: l.area, price: l.price, term: l.basis,
+    img: [l.img, ...(c.img || [])].filter(Boolean), a: c.a || {}, desc: c.desc || '', building: c.building || '', permit: c.permit || '', sample: true,
+    status: ({ pending: 'review', paused: 'live' })[l.status] || l.status, history: l.status === 'pending' ? [{ st: 'review', t: Date.now() - 5 * 36e5 }] : [],
+    keys: (l.meta || []).map(m => [(SAMPLE_ICON.find(([re]) => re.test(m)) || [0, 'check'])[1], m]), perf: { views: l.views, contacts: l.contacts, leads: l.leads } }; };
+  P.openListing = id => { const l = P.listingById(id); if (l) showListing(l.id, fromSample(l)); };
+
   // the customer preview window
   function preview(id, phone) {
     closePreview();
@@ -305,6 +317,7 @@
   // capture phase: before the dashboard's own handlers, for every link to an editor
   document.addEventListener('click', e => {
     if (e.target.closest('[data-em="back"]')) { e.preventDefault(); close(); return; }
+    if (e.target.closest('a[href="#sample"]')) { e.preventDefault(); P.toast('This is the sample business — editing works on your own listings'); return; }
     const lv = e.target.closest('[data-lv]');
     if (lv) { const k = lv.dataset.lv, id = (open || '').replace(/^listing:/, '');
       if (k === 'preview' || k === 'desk') preview(id, false); else if (k === 'phone') preview(id, true); else if (k === 'close') closePreview(); else if (k === 'photos') { const ph = document.getElementById('lv-photos'); if (ph) ph.scrollIntoView({ behavior: 'smooth', block: 'start' }); }

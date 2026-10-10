@@ -144,5 +144,52 @@ window.PW = (function () {
     services: ['Share available slots', 'Send quote', 'Confirm arrival window', 'Ask for photos of the unit', 'Send service checklist']
   };
 
-  return { SOURCES, V, LISTINGS, LEADS, MSGS, EVENTS, ETYPE, TEAM, DEALS, CHANNELS, QUICK };
+  // what each sample listing says, in the listing form's own fields (data/listings.js defs) — so its page reads like a
+  // real provider's: description, details, amenities, more photos and the building (pw/embed.js, fromSample)
+  const CONTENT = {
+    S1: { building: 'Avenue Residence', permit: '7120458391', img: ['img/apt2.jpg', 'img/apt3.jpg', 'img/apt4.jpg', 'img/office1.jpg'],
+      desc: 'Bright two-bedroom apartment on a high floor with full marina views from the living room and the master bedroom. Open kitchen, two full bathrooms and a balcony along the living area. Chiller-free, with covered parking for one car. Available on a yearly lease in 2 or 4 cheques.',
+      a: { terms: 'yearly', ptype: ['apartment'], beds: ['2'], baths: '2', sqft: 1280, furnishing: 'unfurnished', cheques: '4', amenities: ['Balcony', 'Shared pool', 'Gym', 'Covered parking', 'Built-in wardrobes', 'Central A/C', '24h security', 'Sea view'], chiller: true } },
+    S2: { building: 'Marina Gate 2', permit: '7120461177', img: ['img/apt2.jpg', 'img/apt4.jpg'],
+      desc: 'Fully furnished one-bedroom in Marina Gate with a walk-in wardrobe, a second guest bathroom and a balcony over the marina walk. Ready to move in; the building has a pool, gym and direct access to the marina.',
+      a: { terms: 'yearly', ptype: ['apartment'], beds: ['1'], baths: '2', sqft: 860, furnishing: 'furnished', cheques: '4', amenities: ['Balcony', 'Shared pool', 'Gym', 'Covered parking', 'Concierge', '24h security'] } },
+    S3: { building: 'Frond G', permit: '9002318845', img: ['img/villa3.jpg', 'img/hotel2.jpg', 'img/apt4.jpg', 'img/villa1.jpg'],
+      desc: 'Five-bedroom beach villa on the Palm with a private pool and direct beach access. Sleeps ten, with a full kitchen, a large garden and parking for three cars. Self check-in; minimum stay of three nights.',
+      a: { maxGuests: '10', ptype: 'villa', beds: '5', amenities: ['Private pool', 'Beach access', 'Fast Wi-Fi', 'Full kitchen', 'Free parking', 'Sea view', 'Self check-in', 'Washer'], minNights: '3', cancellation: 'moderate' } },
+    S4: { building: 'Burj Royale', permit: '9002320413', img: ['img/hotel2.jpg', 'img/apt3.jpg'],
+      desc: 'Compact studio in Downtown with a direct view of Burj Khalifa and the fountain. Queen bed, kitchenette and a work desk; the building has a pool and gym. A short walk to Dubai Mall and the metro.',
+      a: { maxGuests: '2', ptype: 'studio', beds: '0', amenities: ['Fast Wi-Fi', 'Self check-in', 'Washer'], minNights: '2', cancellation: 'free' } },
+    S5: { building: 'Marina Rooftop, Level 42', img: ['img/venue2.jpg', 'img/venue1.jpg'],
+      desc: 'Open-air rooftop on the 42nd floor with views over the marina and the Palm. Up to 120 guests standing, with an in-house catering team, a sound system and a screen for presentations. Valet parking at the entrance.',
+      a: { eventType: ['corporate', 'birthday', 'launch'], capacity: '100', slots: 'evening', venueType: 'rooftop', setting: 'outdoor', catering: 'inhouse', equipment: ['AV & screen', 'Sound system', 'Lighting rig', 'Wi-Fi'], parking: 'valet' } },
+    S6: { building: 'Al Quoz Industrial 3', permit: '6104472210', img: ['img/padel2.jpg', 'img/padel1.jpg'],
+      desc: 'Indoor, air-conditioned panoramic padel courts in Al Quoz. Rackets and balls to rent at reception, changing rooms with showers, and coaching on request. Book by the hour, mornings to late evening.',
+      a: { sport: ['padel'], slots: 'evening', setting: 'indoor', courts: '4', amenities: ['Racket / ball rental', 'Changing rooms', 'Showers', 'Coaching', 'Café', 'Parking'] } },
+    S7: { building: 'Dubai Harbour Marina', img: [],
+      desc: '55 ft Azimut for private charters from Dubai Harbour, with a captain and crew. Up to 18 guests, a sun deck and a swimming stop off the Palm. Soft drinks included; BBQ on board on request.',
+      a: { minHours: '3', capacity: '20', length: '60', ytype: 'motor', crew: 'full', food: ['Soft drinks', 'BBQ onboard'], activities: ['Swimming stop', 'Fishing'], cancellation: 'moderate' } },
+    S8: { building: 'Bay Square', permit: '7120470026', img: ['img/office2.jpg', 'img/office3.jpg'],
+      desc: 'Furnished one-bedroom loft in Business Bay with double-height windows and a mezzanine bedroom. Monthly rent includes DEWA and Wi-Fi. A short walk to the Business Bay metro.',
+      a: { terms: 'monthly', ptype: ['apartment'], beds: ['1'], baths: '1', sqft: 920, furnishing: 'furnished', amenities: ['Gym', 'Covered parking', 'Built-in wardrobes', 'Central A/C', 'Pets allowed'] } },
+    V1: { img: ['img/clean2.jpg', 'img/clean1.jpg'],
+      desc: 'Top-to-bottom deep clean for apartments and villas: kitchen degreasing, bathrooms descaled, windows, inside cupboards and the balcony. A team of two brings all supplies and equipment.',
+      a: { service: 'Deep clean', frequency: 'once', ptype: 'Villa', maxBeds: '5', materials: true, team: '2', minHours: '4' } },
+    V2: { img: ['img/clean1.jpg'],
+      desc: 'Regular home cleaning by the hour, weekly or every two weeks, with the same cleaner each visit. Dusting, floors, kitchen and bathrooms; ironing on request.',
+      a: { service: 'Regular clean', frequency: 'weekly', ptype: 'Apartment', maxBeds: '3', materials: false, team: '1', minHours: '2' } },
+    V3: { img: ['img/ac2.jpg'],
+      desc: 'AC servicing for split and ducted units: filters and coils cleaned, drain line flushed and gas topped up where needed. Same-day visits across Dubai when booked before noon.',
+      a: { model: 'once', property: 'Apartment', maxUnits: '6', acType: ['Split', 'Ducted / central'], emergency: true, parts: 'extra', sla: '24' } },
+    V4: { img: ['img/ac1.jpg'],
+      desc: 'Annual AC maintenance contract with four scheduled visits a year and priority call-outs between them. Parts are included up to the contract limit.',
+      a: { model: 'annual', property: 'Villa', maxUnits: '10', acType: ['Split', 'Ducted / central'], emergency: true, visits: '4', parts: 'included', sla: '4' } },
+    V5: { img: ['img/salon2.jpg'],
+      desc: 'Cuts and styling for women and men at our JLT salon, with three stylists. Wash, cut and blow-dry in about 45 minutes; colour by appointment.',
+      a: { treatment: "Women's cut & style", slots: 'afternoon', setting: 'salon', duration: '45' } },
+    V6: { img: ['img/dental2.jpg'],
+      desc: 'Routine dental check-up with scaling and polishing at our Al Barsha clinic. Most major insurers accepted, with direct billing.',
+      a: { treatment: 'Check-up & cleaning', slots: 'morning', clinic: 'family', insurance: ['Daman', 'AXA', 'Bupa', 'Direct billing'], language: ['English', 'Arabic', 'Hindi'] } }
+  };
+
+  return { SOURCES, V, LISTINGS, LEADS, MSGS, EVENTS, ETYPE, TEAM, DEALS, CHANNELS, QUICK, CONTENT };
 })();

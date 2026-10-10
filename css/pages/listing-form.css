@@ -3383,6 +3383,19 @@ button.listing-strength-item:hover { background: var(--color-primary-tint-light)
   opacity: .45;
 }
 
+/* phones: the explanation goes under the title, without the dash */
+@media (max-width: 640px) {
+  .listing-sub-inline {
+    display: block;
+    flex-basis: 100%;
+    margin: 2px 0 0;
+  }
+
+  .listing-sub-inline::before {
+    display: none;
+  }
+}
+
 .listing-flow .onboarding-section-header {
   margin-bottom: 14px;
 }
