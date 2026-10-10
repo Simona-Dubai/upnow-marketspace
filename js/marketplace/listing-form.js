@@ -43,7 +43,8 @@
   const MAX_PHOTOS = 12;
   // fields that belong with the price rather than the details
   const PRICE_IDS = ['term', 'billing', 'cheques', 'minNights', 'cancellation', 'deductible', 'copay'];
-  const SKIP = ['price', 'rating', 'listedBy', 'verified'];
+  // not facts about a listing: the listing page doesn't show them (search-only time of day, derived or platform values)
+  const SKIP = ['price', 'rating', 'listedBy', 'verified', 'time'];
   const OPTIONAL_IDS = ['amenities', 'equipment', 'facilities', 'food', 'activities', 'classes', 'insurance', 'meals'];
   function fieldOf(d) {
     const key = d.field || d.id;
@@ -167,18 +168,20 @@
   let SEC = (id, title, body, aside = '') => `<section class="onboarding-section" data-sec="${id}">${title || aside ? `<div class="onboarding-section-header"><h2>${title}</h2>${aside}</div>` : ''}${body}</section>`;
   const use = ctx => { E = (ctx && ctx.errors) || {}; if (ctx && ctx.sec) SEC = ctx.sec; };
 
-  function control(L, f) {
-    const v = L.a[f.key], k = 'a_' + f.key;
-    if (f.kind === 'number') return field(k, esc(f.label) + (f.unit ? ` <small>(${f.unit})</small>` : ''), `<input id="ln-${k}" type="number" inputmode="numeric" min="0" data-ln-num="${f.key}" value="${v === undefined || v === '' ? '' : esc(v)}" placeholder="0">`);
-    if (f.kind === 'bool') return `<label class="toggle listing-toggle"><span><b>${esc(f.label)}</b></span><input type="checkbox" data-ln-bool="${f.key}" ${v ? 'checked' : ''}><i></i></label>`;
-    const opts = f.d.options || [];
-    if (f.kind === 'one') {
-      const cur = f.arr ? [].concat(v || [])[0] : v;
-      const inner = opts.map(o => `<button type="button" class="${String(cur) === o.v && cur !== '' && cur !== undefined ? 'is-active' : ''}" data-ln-one="${f.key}" data-v="${esc(o.v)}">${esc(o.l)}</button>`).join('');
-      return `<div class="listing-q ${E[k] ? 'has-error' : ''}" data-f="${k}"><span>${esc(f.label)}</span><div class="onboarding-segmented-control">${inner}</div>${err(k)}</div>`;
+  // one field. Choices are chips (the onboarding's "What do you offer?" style); counts get − / + ; sizes an inline unit.
+  // titled: the field sits in its own section whose heading is the label, so it isn't repeated
+  function control(L, f, titled) {
+    const v = L.a[f.key], k = 'a_' + f.key, label = esc(f.label);
+    if (f.kind === 'number') {
+      const val = v === undefined || v === '' ? '' : esc(v), input = `<input id="ln-${k}" type="number" inputmode="numeric" min="0" data-ln-num="${f.key}" value="${val}" placeholder="${f.unit ? 'e.g. 1,200' : ''}">`;
+      return field(k, label, f.unit || f.d.type === 'range' ? `<div class="listing-unit">${input}${f.unit ? `<span>${f.unit}</span>` : ''}</div>`
+        : `<div class="listing-stepper"><button type="button" data-ln-step="${f.key}" data-d="-1" aria-label="Fewer">−</button>${input}<button type="button" data-ln-step="${f.key}" data-d="1" aria-label="More">+</button></div>`);
     }
-    const cur = [].concat(v || []).map(String);
-    return `<div class="listing-q is-many ${E[k] ? 'has-error' : ''}" data-f="${k}"><span>${esc(f.label)}${f.req ? '' : ' <small>optional</small>'}</span><div class="onboarding-categories listing-chips">${opts.map(o => `<button type="button" class="onboarding-chip ${cur.includes(o.v) ? 'is-active' : ''}" data-ln-many="${f.key}" data-v="${esc(o.v)}"><span>${esc(o.l)}</span><span class="onboarding-tick">${ico('check')}</span></button>`).join('')}</div>${err(k)}</div>`;
+    if (f.kind === 'bool') return `<label class="toggle listing-toggle"><span><b>${label}</b></span><input type="checkbox" data-ln-bool="${f.key}" ${v ? 'checked' : ''}><i></i></label>`;
+    const opts = f.d.options || [], one = f.kind === 'one';
+    const cur = one ? [String(f.arr ? [].concat(v || [])[0] : v)] : [].concat(v || []).map(String);
+    const chips = `<div class="onboarding-categories listing-chips ${E[k] ? 'has-error' : ''}" ${one ? 'role="radiogroup"' : ''}>${opts.map(o => `<button type="button" class="onboarding-chip ${cur.includes(o.v) && v !== '' && v !== undefined ? 'is-active' : ''}" data-ln-${one ? 'one' : 'many'}="${f.key}" data-v="${esc(o.v)}"><span>${esc(o.l)}</span><span class="onboarding-tick">${ico('check')}</span></button>`).join('')}</div>${err(k)}`;
+    return titled ? chips : `<div class="listing-q" data-f="${k}"><span>${label}${f.req ? '' : ' <small>optional</small>'}</span>${chips}</div>`;
   }
   function location(L) {
     const O = offerOf(L.v, L.cat), kind = locKind(O), n = noun(L.v, L.cat);
@@ -199,11 +202,13 @@
   function _details(L, ctx) {
     use(ctx);
     const O = offerOf(L.v, L.cat), F = detailFields(O);
-    const main = F.filter(f => f.req && f.kind !== 'many'), lists = F.filter(f => f.req && f.kind === 'many'), extra = F.filter(f => !f.req);
-    return `${main.length ? SEC('ln-basics', 'The basics', `<div class="listing-basics">${main.filter(f => f.kind !== 'number').map(f => control(L, f)).join('')}</div>${main.some(f => f.kind === 'number') ? `<div class="form-grid listing-grid">${main.filter(f => f.kind === 'number').map(f => control(L, f)).join('')}</div>` : ''}`) : ''}
-      ${lists.map(f => SEC('ln-m_' + f.key, '', control(L, f))).join('')}
+    const choices = F.filter(f => f.req && (f.kind === 'one' || f.kind === 'many')), nums = F.filter(f => f.req && f.kind === 'number'), extra = F.filter(f => !f.req);
+    return `${choices.map(f => SEC('ln-q_' + f.key, esc(f.label) + (f.kind === 'many' ? ' <small class="listing-hint">Choose all that apply</small>' : ''), control(L, f, true))).join('')}
+      ${nums.length ? SEC('ln-nums', L.v === 'spaces' ? 'Size and capacity' : 'Key numbers', `<div class="form-grid listing-grid">${nums.map(f => control(L, f)).join('')}</div>`) : ''}
       ${location(L)}
-      ${extra.length ? SEC('ln-extra', 'Extras', `${extra.filter(f => f.kind === 'many').map(f => control(L, f)).join('')}${extra.some(f => f.kind === 'bool') ? `<div class="listing-toggles">${extra.filter(f => f.kind === 'bool').map(f => control(L, f)).join('')}</div>` : ''}`, '<small>Optional — they help customers choose</small>') : ''}`;
+      ${extra.length ? (() => { const picked = extra.filter(f => f.kind === 'bool' ? L.a[f.key] : (L.a[f.key] || []).length).length;
+        return SEC('ln-extra', '', `<details class="listing-extras" ${picked ? 'open' : ''}><summary><b>Extras</b><small>${picked ? picked + ' added' : 'Optional — amenities and features customers filter by'}</small></summary>
+          ${extra.filter(f => f.kind === 'many').map(f => control(L, f)).join('')}${extra.some(f => f.kind === 'bool') ? `<div class="listing-toggles">${extra.filter(f => f.kind === 'bool').map(f => control(L, f)).join('')}</div>` : ''}</details>`); })() : ''}`;
   }
   function photos(L, ctx) { return cx(_photos(L, ctx)); }
   function _photos(L, ctx) {
@@ -378,6 +383,7 @@
         L.a[f.key] = list.some(y => String(y) === String(v)) ? list.filter(y => String(y) !== String(v)) : [...list, v];
         clearErr('a_' + f.key); touch(L, `[data-ln-many="${f.key}"][data-v="${x.dataset.v}"]`); return;
       }
+      if ((x = b('[data-ln-step]'))) { const key = x.dataset.lnStep; L.a[key] = Math.max(0, (+L.a[key] || 0) + +x.dataset.d); clearErr('a_' + key); touch(L); return; }
       if ((x = b('[data-ln-area]'))) { const id = x.dataset.lnArea; L.areas = L.areas.includes(id) ? L.areas.filter(y => y !== id) : [...L.areas, id]; clearErr('areas'); touch(L, `[data-ln-area="${id}"]`); return; }
       if ((x = b('[data-ln-day]'))) { const d = x.dataset.lnDay; L.days = L.days.includes(d) ? L.days.filter(y => y !== d) : DAYS.filter(y => y === d || L.days.includes(y)); clearErr('days'); touch(L, `[data-ln-day="${d}"]`); return; }
       if ((x = b('[data-ln-hours]'))) { L.hours = x.dataset.lnHours; touch(L); return; }

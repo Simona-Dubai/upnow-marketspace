@@ -285,7 +285,14 @@
       <g class="ob-art-shield"><path d="M112 44l22 8v16c0 15-10 24-22 28-12-4-22-13-22-28V52z" fill="#136142"/><path d="m102 70 7 7 13-14" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>
       <g><rect x="30" y="76" width="22" height="18" rx="4" fill="#e0a526"/><path d="M35 76v-5a6 6 0 0 1 12 0v5" fill="none" stroke="#e0a526" stroke-width="3"/><circle cx="41" cy="85" r="2.5" fill="#fff"/></g></svg>`
   };
-  ART.listing = ART.profile;
+  // step 4: a listing card — photo, title, price tag
+  ART.listing = `<svg viewBox="0 0 160 120" aria-hidden="true"><circle cx="80" cy="62" r="50" fill="#eef7f2"/>
+      <rect x="38" y="24" width="84" height="80" rx="10" fill="#fff" stroke="#d8efe3" stroke-width="2"/>
+      <rect x="44" y="30" width="72" height="44" rx="6" fill="#d8efe3"/><path d="M44 66l18-16 12 10 10-7 32 21v2a6 6 0 0 1-6 6H50a6 6 0 0 1-6-6z" fill="#25946a"/>
+      <circle cx="104" cy="40" r="5" fill="#e0a526"/>
+      <rect x="48" y="81" width="46" height="5" rx="2.5" fill="#136142"/><rect x="48" y="91" width="30" height="4" rx="2" fill="#d3dad5"/>
+      <g class="ob-art-star"><path d="M112 82h22a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4h-22l-7-9z" fill="#e0a526"/><circle cx="113" cy="91" r="2" fill="#fff"/><rect x="118" y="89" width="14" height="4" rx="2" fill="#fff"/></g>
+      <path class="ob-art-spark" d="M28 34v8M24 38h8M138 22v6M135 25h6" stroke="#25946a" stroke-width="2" stroke-linecap="round"/></svg>`;
   const hero = (title, sub, art) => `<div class="ob-hero"><div><h1 class="ob-h1">${title}</h1><p class="ob-sub">${sub}</p></div><div class="ob-art">${ART[art]}</div></div>`;
 
   /* ---------- step 1: your business — what it does (location belongs to each listing) ---------- */
@@ -441,15 +448,24 @@
     else if (L.cat !== c) { L.cat = c; L.a = {}; L.titled = false; L.title = LF.suggestedTitle(L); L.updated = Date.now(); LF.save(); }
     delete errors.cat; commit(`[data-ln-cat="${c}"]`);
   }
+  // three short parts instead of one long page: Details → Photos → Price
+  const PARTS = [['details', 'Details'], ['photos', 'Photos'], ['price', 'Price']];
+  const partName = (i, L) => i === 2 && L && VERTICALS[L.v].offers.find(o => o.id === L.cat).tile ? 'Description' : PARTS[i - 1][1];
+  const part = () => Math.min(Math.max(S.lnPart || 1, 1), PARTS.length);
+  function goPart(n) { A.dir = n > part() ? 'fwd' : 'back'; S.lnPart = n; errors = {}; save(); render(); const sc = root.querySelector('.ob-scroll'); if (sc) sc.scrollTop = 0; window.scrollTo({ top: 0, behavior: calm.matches ? 'auto' : 'smooth' }); }
   function stepListing() {
-    const L = ensureListing(), cats = ownCats(), ctx = { errors, sec };
+    const L = ensureListing(), cats = ownCats(), ctx = { errors, sec }, p = part();
     const n = L ? LF.noun(L.v, L.cat) : 'listing', g = L && LF.gateOf(L.cat);
-    let html = hero('Add your first listing', `${L ? `What customers will find — your ${esc(n)}, with photos and a price.` : 'What customers will find on UpNow.'} Optional — you can add it later.`, 'listing');
-    if (cats.length > 1) html += sec('ln-cat', 'What is it for?', LF.categories(S, L && L.cat, ctx));
+    const tile = L && VERTICALS[L.v].offers.find(o => o.id === L.cat).tile;
+    const SUB = { 1: [`Tell customers about your ${esc(n)}`, 'Optional — you can add it later.'], 2: tile ? ['Description', `Say what makes your ${esc(n)} worth a call.`] : ['Photos and description', `Photos sell a ${esc(n)} — then say what makes it worth a call.`], 3: ['Price and availability', 'Customers agree the details with you directly.'] }[L ? p : 1];
+    let html = hero(L && p > 1 ? SUB[0] : 'Add your first listing', L && p > 1 ? SUB[1] : `${L ? `What customers will find — your ${esc(n)}${tile ? ' and its price' : ', with photos and a price'}.` : 'What customers will find on UpNow.'} Optional — you can add it later.`, 'listing');
+    if (L) html += `<ol class="listing-parts">${PARTS.map((_, k) => { const i = k + 1, t = partName(i, L), st = i < p ? 'is-done' : i === p ? 'is-now' : ''; return `<li class="${st}">${i < p ? `<button type="button" data-lnpart="${i}">` : '<span>'}<i>${i < p ? ico('check') : i}</i>${t}${i < p ? '</button>' : '</span>'}</li>`; }).join('')}</ol>`;
+    if (p === 1 && cats.length > 1) html += sec('ln-cat', 'What is it for?', LF.categories(S, L && L.cat, ctx));
     if (!L) return html + `<p class="ob-private">${ico('spark')}<span>Pick a category to start — or tap <b>Add it later</b> and send your application now.</span></p>`;
-    if (g) html += `<p class="listing-notice is-amber">${ico('clock')}<span>This listing waits for your <b>${esc(g.t)}</b> — you can add it after you're approved.</span></p>`;
-    return html + LF.details(L, ctx) + LF.photos(L, ctx) + LF.words(L, ctx) + LF.price(L, ctx)
-      + `<p class="ob-private">${ico('shield')}<span>It goes live after we approve your business and check the listing — usually within 24 hours.</span></p>`;
+    if (p === 1 && g) html += `<p class="listing-notice is-amber">${ico('clock')}<span>This listing waits for your <b>${esc(g.t)}</b> — you can add it after you're approved.</span></p>`;
+    if (p === 1) return html + LF.details(L, ctx);
+    if (p === 2) return html + LF.photos(L, ctx) + LF.words(L, ctx);
+    return html + LF.price(L, ctx) + `<p class="ob-private">${ico('shield')}<span>It goes live after we approve your business and check the listing — usually within 24 hours.</span></p>`;
   }
   // the listing goes with the application only when it is complete and not left for later
   const listingReady = () => { const L = listing(); return !!(L && LF.started(L) && !A.listingLater && !Object.keys(LF.validate(L, 'all')).length); };
@@ -487,7 +503,7 @@
   });
   document.addEventListener('click', e => {
     const g = e.target.closest('[data-cfgoto]');
-    if (g) { UPUI.closeModal(); go(+g.dataset.cfgoto); return; }
+    if (g) { UPUI.closeModal(); if (+g.dataset.cfgoto === LAST) S.lnPart = 1; go(+g.dataset.cfgoto); return; }
     if (e.target.closest('[data-cfsubmit]') && S.agree) {
       UPUI.closeModal(); if (listingReady()) LF.submit(listing());
       S.status = 'submitted'; save();
@@ -605,7 +621,7 @@
       doc.fields.forEach(([k, , kind]) => { if (!String(d[k] || '').trim()) e[k] = 'This can’t be empty'; else if (kind === 'date' && expired(d[k])) e[k] = 'This date has passed — upload a current document'; });
       if (!f.ok) e['ok_' + doc.id] = 'Check the details, then tick this box';
     });
-    if (step === 4) { const L = listing(); if (L && LF.started(L)) Object.assign(e, LF.validate(L, 'all')); }
+    if (step === 4) { const L = listing(); if (L && LF.started(L)) Object.assign(e, LF.validate(L, PARTS[part() - 1][0])); }
     if (step === 3) {
       if (!String(d.display || '').trim()) e.display = 'Add the name customers will see';
       if (String(d.bio || '').trim().length < 60) e.bio = 'Add a little more — at least 60 characters, or tap “Write it for me”';
@@ -680,7 +696,7 @@
       <div class="ob-panel ${done ? 'is-done' : ''}"><div class="ob-scroll"><div class="ob-step ${A.dir ? 'is-in-' + A.dir : ''}">${body}</div></div>
         ${done ? '' : `<div class="ob-nav">${S.step > 1 ? `<button type="button" class="btn btn-ghost" data-act="back">${ico('chevL')}Back</button>` : '<span></span>'}
           <span class="ob-save ${A.saved ? 'is-on' : ''}">${ico('check')}Draft saved</span>
-          ${locked ? `<button type="button" class="btn btn-primary ob-next" data-act="signin">Continue with your mobile${ico('chevR')}</button>` : S.step === LAST ? `<span class="listing-nav-end"><button type="button" class="btn btn-ghost" data-act="later">Add it later</button><button type="button" class="btn btn-primary ob-next" data-act="next">Review and send${ico('chevR')}</button></span>` : `<button type="button" class="btn btn-primary ob-next" data-act="next">Continue${ico('chevR')}</button>`}</div>`}</div>
+          ${locked ? `<button type="button" class="btn btn-primary ob-next" data-act="signin">Continue with your mobile${ico('chevR')}</button>` : S.step === LAST ? `<span class="listing-nav-end"><button type="button" class="btn btn-ghost" data-act="later">Add it later</button><button type="button" class="btn btn-primary ob-next" data-act="next">${listing() && LF.started(listing()) && part() < PARTS.length ? 'Continue' : 'Review and send'}${ico('chevR')}</button></span>` : `<button type="button" class="btn btn-primary ob-next" data-act="next">Continue${ico('chevR')}</button>`}</div>`}</div>
     </main>
       <aside class="ob-aside ${previewOpen ? 'is-open' : ''}"><button type="button" class="ob-preview-toggle" data-act="preview">${ico('eye')}<span>${previewOpen ? 'Hide profile preview' : 'Preview your profile'}</span>${ico('chev')}</button>${pv}</aside></div>`, !!A.dir || (wasMode && wasMode !== S.status));
     // motion: keep the reading position, fill the bar, spring the control just picked, bring a new part into view
@@ -732,7 +748,9 @@
       return;
     }
     if (S.step < LAST) return go(S.step + 1);
-    A.listingLater = !(listing() && LF.started(listing()));
+    const L = listing();
+    if (L && LF.started(L) && part() < PARTS.length) return goPart(part() + 1);
+    A.listingLater = !(L && LF.started(L));
     confirmSubmit();
   }
 
@@ -843,7 +861,7 @@
     if ((x = b('[data-act]'))) {
       const a = x.dataset.act;
       if (a === 'next') next();
-      else if (a === 'back') go(S.step - 1);
+      else if (a === 'back') { if (S.step === LAST && listing() && part() > 1) goPart(part() - 1); else go(S.step - 1); }
       else if (a === 'preview') { previewOpen = !previewOpen; render(); }
       else if (a === 'signin') signIn();
       else if (a === 'starter') typeAbout(aboutStarter());
@@ -852,6 +870,7 @@
       return;
     }
     if ((x = b('[data-goto]'))) return go(+x.dataset.goto);
+    if ((x = b('[data-lnpart]'))) return goPart(+x.dataset.lnpart);
     if ((x = b('[data-vert]'))) {
       const v = x.dataset.vert;
       // another kind of business: other offers, maybe other documents (company-only verticals, sector licence)
