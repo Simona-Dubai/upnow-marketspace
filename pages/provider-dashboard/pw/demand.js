@@ -36,7 +36,7 @@
       </section>
       <section class="pn"><div class="pn-h"><h2>Marketplace funnel</h2><span class="sub">UpNow listings</span></div>
         <div class="fun">${X.funnel.map((f, i) => `<div class="r"><span>${f[0]}</span><i style="--w:${Math.max(6, Math.pow(f[1] / fmax, 0.35) * 100)}%"></i><b>${f[1].toLocaleString()}${i ? `<em>${(f[1] / X.funnel[i - 1][1] * 100).toFixed(i < 3 ? 1 : 0)}%</em>` : ''}</b></div>`).join('')}</div>
-        <p class="hint" style="margin:14px 0 0">Contact actions = calls, WhatsApp taps, chat and request forms from your UpNow listings.</p>
+        <p class="hint" style="margin:14px 0 0">Contact actions = calls, WhatsApp taps${PWA.CHAT ? ', chats' : ''}, SMS and emails from your UpNow listings.</p>
       </section>
     </div>
     <div class="gd mt">

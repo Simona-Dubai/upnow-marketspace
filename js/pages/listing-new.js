@@ -7,7 +7,7 @@
      3 Price    — price on the category's basis, availability, the per-listing permit
      Review     — the real search card, a summary, who customers contact, then "Submit for review"
    There is no admin tool yet, so "Your listings" carries a clearly marked prototype control to simulate the review.
-   Views by hash: #new · #edit=ID · #done=ID · #mine. */
+   Views by hash: #new · #new=<vertical>:<category> (starts that listing) · #edit=ID · #done=ID · #mine. */
 (function () {
   const { VERTICALS, offerOf } = UP;
   const U = UPUI, { ico, esc, toast, initials, auth } = U;
@@ -38,6 +38,8 @@
   /* ---------- routing ---------- */
   function route() {
     const h = decodeURIComponent(location.hash.slice(1));
+    // the provider dashboard's Portfolio keeps every listing
+    if (h === 'mine' && HREF.portfolio) { location.replace(HREF.portfolio); return { view: 'mine' }; }
     if (h === 'mine') return { view: 'mine' };
     if (h.startsWith('edit=') && F.byId(h.slice(5))) return { view: 'edit', id: h.slice(5) };
     if (h.startsWith('done=') && F.byId(h.slice(5))) return { view: 'done', id: h.slice(5) };
@@ -86,7 +88,7 @@
     const unit = O.unit(F.asListing(L), F.viewState(L)) || '';
     const checks = [['Details', true], [O.tile ? 'Logo shown instead of photos' : `${L.img.length} photos`, true], ['Price and availability', true],
       ...(P ? [['Permit ' + L.permit, true]] : []), ...(g ? [[`Add your ${g.t} — the listing waits for it`, false]] : []),
-      [F.verified() ? 'Your business is verified' : 'Your business is in review — the listing waits for it', F.verified()]];
+      [F.verified(L.v) ? 'Your business is verified' : 'Your business is in review — the listing waits for it', F.verified(L.v)]];
     return `${hero('Check and submit', `This is how customers will see your ${esc(n)}. Our team reviews every listing before it goes live.`)}
       ${sec('card', 'On the search page', `<div class="listing-review-card">${F.cardOf(L)}</div>`)}
       ${sec('sum', 'Your listing', `<div class="listing-review">
@@ -114,7 +116,7 @@
 
   /* ---------- submitted ---------- */
   function viewDone(L) {
-    const n = F.noun(L.v, L.cat), g = F.gateOf(L.cat), a = F.app() || {}, ok = F.verified();
+    const n = F.noun(L.v, L.cat), g = F.gateOf(L.cat), a = F.app() || {}, ok = F.verified(L.v);
     const bits = Array.from({ length: 18 }, (_, k) => { const ang = k / 18 * Math.PI * 2, r = 70 + (k % 3) * 22; return `<span style="--x:${Math.round(Math.cos(ang) * r)}px;--y:${Math.round(Math.sin(ang) * r)}px;--r:${k * 47}deg;--d:${(k % 4) * 40}ms" class="c${k % 4}"></span>`; }).join('');
     const H = { review: ['Listing sent for review', `Thanks${firstName() ? ', ' + esc(firstName()) : ''}. Our team checks it against your details — usually within 24 hours. We'll ${a.phone ? 'WhatsApp you' : 'let you know'} as soon as it's live.`],
       verify: ['Listing saved — it goes to review once you\'re verified', `Your business is still being verified. As soon as it's approved, this ${esc(n)} goes to review on its own — nothing else to do.`],
@@ -166,7 +168,7 @@
 
   /* ---------- live preview (right column) ---------- */
   function preview(L) {
-    const g = L && F.gateOf(L.cat), ok = F.verified();
+    const g = L && F.gateOf(L.cat), ok = F.verified(L && L.v);
     const status = !L ? `${ico('eye')}Your listing appears here as you fill it in` : g ? `${ico('clock')}Waits for your ${esc(g.t)} before review` : !ok ? `${ico('shield')}Goes to review once your business is verified` : `${ico('shield')}Reviewed by our team before it goes live`;
     return `<div class="onboarding-preview"><div class="onboarding-preview-header">${ico('eye')}Live preview<span>On the search page</span></div>
       ${L ? `<div class="listing-preview-card">${F.cardOf(L)}</div>` : `<div class="listing-preview-empty">${ART}</div>`}
@@ -214,6 +216,9 @@
     // signed out, no application or one not yet sent: onboarding handles all of it (sign-in, and the first listing is its
     // step 4) — so go there instead of showing a screen of our own
     if (!auth.user() || appState(a) !== 'sent') { location.replace(HREF.join); return; }
+    // #new=<vertical>:<category> from the provider dashboard's Add listing: start that listing straight away
+    const nw = /^new=([a-z]+):([a-z-]+)$/.exec(decodeURIComponent(location.hash.slice(1)));
+    if (nw && VERTICALS[nw[1]] && offerOf(nw[1], nw[2])) { location.replace('#edit=' + F.create(nw[1], nw[2]).id); return; }
     F.settle();
     const L = r.id ? F.byId(r.id) : null;
     const whole = lastView !== r.view + (r.id || '') || !!A.dir; lastView = r.view + (r.id || '');

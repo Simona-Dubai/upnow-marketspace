@@ -208,7 +208,7 @@
 
 .onboarding-section-header small {
   font-size: 12.5px;
-  font-weight: 600;
+  /* font-weight: 600; */
   color: var(--color-text-muted);
 }
 
@@ -2874,7 +2874,7 @@
 /* ---------- desktop: only the step card scrolls; it stops short of the screen bottom ---------- */
 @media (min-width: 1001px) {
   .onboarding-body {
-    --onboarding-free: 96px; /* room under the card: gap + footer line */
+    --onboarding-free: 56px; /* room under the card: gap + footer line */
   }
 
   .onboarding-grid:not(.is-done) {
@@ -2934,7 +2934,9 @@
 
   .onboarding-grid:not(.is-done) + * ,
   .onboarding-footer {
-    padding-top: 24px;
+    margin: 4px 0 0;
+    padding-top: 10px;
+    padding-bottom: 6px;
   }
 
   .onboarding-grid:not(.is-done) .onboarding-aside {

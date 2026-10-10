@@ -531,6 +531,11 @@
   box-shadow: var(--shadow);
 }
 
+/* a wider crop than in search, so the column stays short */
+.listing-preview-card .card .photo {
+  aspect-ratio: 16 / 9;
+}
+
 .listing-preview-empty {
   display: grid;
   place-items: center;
@@ -958,4 +963,2507 @@
   .listing-grid:has(.listing-money) {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* ---------- listing questions: compact, one clear selected state ---------- */
+/* tighter sections: the listing step asks many short questions */
+.onboarding-section[data-sec^="ln-"] {
+  padding-top: 14px;
+  margin-top: 14px;
+}
+
+.onboarding-section[data-sec^="ln-"] .onboarding-section-header {
+  margin-bottom: 8px;
+}
+
+.onboarding-section[data-sec^="ln-"] .onboarding-section-header h2 {
+  font-size: 15px;
+}
+
+/* chips: small picture, selected is solid green */
+.listing-chips {
+  gap: 7px;
+}
+
+.listing-chips .onboarding-chip {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 13px;
+  gap: 7px;
+  font-size: 13.5px;
+}
+
+.listing-chips .onboarding-chip > .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-primary);
+}
+
+.listing-chips .onboarding-chip.is-active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.listing-chips .onboarding-chip.is-active > .icon {
+  color: #fff;
+}
+
+.listing-chips .onboarding-chip.is-active .onboarding-tick {
+  background: rgba(255, 255, 255, .25);
+  color: #fff;
+}
+
+/* short counts (Studio · 1 · 2 · 3 …): small number pills */
+.listing-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.listing-counts button {
+  min-width: 44px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 99px;
+  background: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color .2s, background .2s, color .2s, transform .2s;
+}
+
+.listing-counts button:hover {
+  border-color: var(--color-primary-light);
+  color: var(--color-text);
+}
+
+.listing-counts button:active {
+  transform: scale(.95);
+}
+
+.listing-counts button.is-active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.listing-counts.has-error button {
+  border-color: var(--color-danger);
+}
+
+/* numbers side by side, compact − / + */
+.onboarding-section[data-sec="ln-nums"] .listing-grid {
+  grid-template-columns: repeat(auto-fill, minmax(170px, 220px));
+}
+
+.listing-stepper,
+.listing-unit {
+  height: 42px;
+  border-radius: 10px;
+}
+
+.listing-stepper {
+  padding: 0 4px;
+}
+
+.listing-stepper button {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.listing-stepper button:disabled {
+  color: var(--color-text-muted);
+  opacity: .45;
+  cursor: default;
+}
+
+.listing-stepper button:disabled:hover {
+  background: none;
+}
+
+@media (max-width: 640px) {
+  .onboarding-section[data-sec="ln-nums"] .listing-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .listing-counts {
+    gap: 5px;
+  }
+
+  .listing-counts button {
+    min-width: 38px;
+    padding: 0 10px;
+  }
+}
+
+/* =====================================================================
+   First listing — design pass (Listing Flow): card header, sections with a
+   line under the heading, help lines, photos with a large cover, a writer box,
+   price helpers, availability chips, listing strength, the review sheet.
+   ===================================================================== */
+.listing-head {
+  padding: 2px 0 8px;
+}
+
+.listing-head small {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.listing-head .onboarding-title {
+  margin: 0;
+}
+
+.listing-head p {
+  max-width: 520px;
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.listing-sub {
+  margin: -6px 0 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.listing-aside {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.listing-aside.is-ok {
+  color: var(--color-primary);
+}
+
+/* help lines under fields */
+.listing-help {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 7px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.listing-help .icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  margin-top: 1px;
+}
+
+.listing-help.is-error { color: var(--color-danger); }
+.listing-help.is-warn { color: var(--color-warning-text); }
+.listing-help.is-ok { color: var(--color-primary); }
+
+.listing-help-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.listing-count {
+  margin-top: 7px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.listing-count.is-warn { color: var(--color-warning-text); }
+
+.listing-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* fields */
+.listing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.listing-grid.is-two {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: start;
+}
+
+.listing-narrow {
+  max-width: 360px;
+  margin-top: 16px;
+}
+
+.listing-select {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.listing-select > .icon {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.listing-select > .icon:first-child { left: 12px; }
+.listing-select > .icon:last-child { right: 12px; }
+
+.listing-select select {
+  width: 100%;
+  padding-left: 34px !important;
+  padding-right: 34px !important;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.listing-private {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 4px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.listing-private .icon {
+  width: 11px;
+  height: 11px;
+}
+
+/* size: sqft · sqm beside the label */
+.onboarding-field > label:has(.listing-unit-switch) {
+  display: flex;
+  align-items: center;
+}
+
+.listing-unit-switch {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: auto;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+}
+
+.listing-unit-switch button {
+  height: 22px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.listing-unit-switch button.is-active {
+  background: #fff;
+  color: var(--color-primary-dark);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.listing-unit span.is-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.listing-unit span.is-ok .icon {
+  width: 13px;
+  height: 13px;
+}
+
+.listing-stepper {
+  max-width: 160px;
+}
+
+.listing-stepper button {
+  display: grid;
+  place-items: center;
+}
+
+.listing-stepper button .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.listing-stepper button:disabled {
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+  background: none;
+}
+
+.listing-q + .listing-grid,
+.listing-q + .listing-q {
+  margin-top: 14px;
+}
+
+/* amenities and Yes / No features */
+.listing-showhide {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.listing-showhide span {
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.listing-showhide .icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s;
+}
+
+.listing-showhide[aria-expanded="true"] .icon {
+  transform: rotate(180deg);
+}
+
+.listing-extras-body .onboarding-chip {
+  min-height: 32px;
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: 13px;
+}
+
+.listing-switches {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.listing-switch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.listing-switch span {
+  flex: 1;
+}
+
+.listing-switch i {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  flex: none;
+  border-radius: 99px;
+  background: #d5dbd8;
+  transition: background 0.2s;
+}
+
+.listing-switch i::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: left 0.2s;
+}
+
+.listing-switch.is-on {
+  border-color: var(--color-primary-tint);
+  background: var(--color-primary-tint-light);
+}
+
+.listing-switch.is-on i { background: var(--color-primary); }
+.listing-switch.is-on i::after { left: 19px; }
+
+/* photos: progress to the recommended number, the cover large, actions on hover */
+.listing-photo-bar {
+  height: 5px;
+  margin-bottom: 14px;
+  border-radius: 9px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.listing-photo-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary-lighter);
+  transition: width 0.3s;
+}
+
+.listing-photos {
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+}
+
+.listing-photo {
+  border: 1px solid var(--color-border);
+}
+
+.listing-photo.is-cover {
+  grid-column: span 2;
+  grid-row: span 2;
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.listing-photo em {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.listing-photo em .icon {
+  width: 11px;
+  height: 11px;
+}
+
+.listing-photo-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.listing-photo:hover .listing-photo-actions,
+.listing-photo:focus-within .listing-photo-actions {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .listing-photo-actions { opacity: 1; }
+}
+
+.listing-photo-actions button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+.listing-photo-actions .icon {
+  width: 13px;
+  height: 13px;
+}
+
+.listing-photo-add {
+  aspect-ratio: 4 / 3;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 1.5px dashed var(--color-border-strong);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--color-primary);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.listing-photo-add:hover,
+.listing-photos.is-drag .listing-photo-add {
+  border-color: var(--color-primary-lighter);
+  background: var(--color-primary-tint-light);
+}
+
+.listing-photo-add .icon {
+  width: 18px;
+  height: 18px;
+  margin-bottom: 4px;
+}
+
+.listing-photo-add b {
+  font-size: 12.5px;
+}
+
+.listing-photo-add small {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.listing-photos > .listing-photo-add:only-child {
+  aspect-ratio: auto;
+  min-height: 140px;
+}
+
+/* description: a writer box with its tools underneath */
+.listing-writer {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.listing-writer.has-error {
+  border-color: var(--color-danger);
+}
+
+.listing-writer textarea {
+  display: block;
+  width: 100%;
+  min-height: 150px;
+  padding: 14px;
+  border: 0 !important;
+  outline: 0;
+  box-shadow: none !important;
+  resize: vertical;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.listing-writer-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.listing-writer-bar .listing-count {
+  margin: 0 0 0 auto;
+}
+
+.listing-writer-bar .listing-link {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.listing-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--color-primary-tint);
+  border-radius: 99px;
+  background: var(--color-primary-tint-light);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  cursor: pointer;
+}
+
+.listing-pill .icon {
+  width: 13px;
+  height: 13px;
+}
+
+/* availability: Available now · From a date */
+.listing-avail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.listing-date {
+  width: 200px;
+  height: 44px;
+}
+
+/* listing strength (preview column) */
+.listing-strength {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.listing-strength-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13.5px;
+}
+
+.listing-strength-head span {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.listing-strength-head span.is-ok { color: var(--color-primary); }
+
+.listing-strength-done {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.listing-strength-done .icon {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  color: var(--color-primary);
+}
+
+.listing-strength-bar {
+  height: 6px;
+  margin: 10px 0 10px;
+  border-radius: 9px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.listing-strength-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary-lighter);
+  transition: width 0.35s;
+}
+
+.listing-strength-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 4px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--color-text);
+}
+
+button.listing-strength-item { cursor: pointer; }
+button.listing-strength-item:hover { background: var(--color-primary-tint-light); }
+
+.listing-strength-item span { flex: 1; }
+
+.listing-strength-item > i {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 50%;
+  color: #fff;
+}
+
+.listing-strength-item.is-done {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.listing-strength-item.is-done > i {
+  border: 0;
+  background: var(--color-primary);
+}
+
+.listing-strength-item > i .icon { width: 11px; height: 11px; }
+.listing-strength-item > .icon { width: 13px; height: 13px; color: var(--color-text-muted); }
+
+/* listing step: one quiet line instead of the three reasons (already seen in the earlier steps) */
+.listing-preview-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.listing-preview-note .icon {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  color: var(--color-primary);
+}
+
+.onboarding-why li.is-amber > .icon {
+  color: var(--color-warning-text);
+}
+
+/* nav: how many things to fix */
+.listing-fix {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-danger);
+}
+
+/* the four steps on top; on step 4 the last one splits into its three parts */
+.onboarding-step-bar.has-parts {
+  grid-template-columns: 1fr 1fr 1fr 2.2fr;
+}
+
+.listing-substep {
+  min-width: 0;
+}
+
+.listing-subbar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+}
+
+.listing-subbar i {
+  display: block;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--color-border);
+  transition: background 0.3s;
+}
+
+.listing-subbar i.is-done { background: #5fbf96; }
+.listing-subbar i.is-now { background: var(--color-primary); }
+
+.listing-sublabels {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  margin-top: 7px;
+}
+
+.listing-sublabels > * {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text-muted);
+}
+
+.listing-sublabels button { cursor: pointer; }
+.listing-sublabels .is-done { color: var(--color-primary-dark); }
+.listing-sublabels .is-now { font-weight: 700; color: var(--color-text); }
+.listing-sublabels em { font-style: normal; font-size: 11px; opacity: 0.7; }
+.listing-sublabels .icon { width: 12px; height: 12px; flex: none; }
+
+/* review sheet: the listing, line by line */
+.onboarding-confirm.has-listing {
+  max-width: 560px;
+}
+
+.listing-review-sheet {
+  margin: 16px 0 14px;
+  padding: 4px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  text-align: left;
+}
+
+.listing-review-title {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 0 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.listing-review-title small {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.listing-review-line {
+  display: grid;
+  grid-template-columns: 100px 1fr auto;
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.listing-review-line:last-child { border-bottom: 0; }
+
+.listing-review-line small {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 700px) {
+  .onboarding-step-bar.has-parts {
+    grid-template-columns: repeat(3, minmax(0, 0.6fr)) minmax(0, 2fr);
+  }
+
+  .listing-sublabels > * { font-size: 11px; }
+
+  .listing-review-line {
+    grid-template-columns: 1fr auto;
+  }
+
+  .listing-review-line small { grid-column: 1 / -1; }
+}
+
+/* the step bar's own rule (li > * is a block) would stack these: keep the three parts side by side */
+.onboarding-step-bar .listing-substep > .listing-subbar,
+.onboarding-step-bar .listing-substep > .listing-sublabels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  width: 100%;
+}
+
+.onboarding-step-bar .listing-substep > .listing-sublabels {
+  margin-top: 7px;
+}
+
+.onboarding-step-bar .listing-subbar > i {
+  display: block;
+  height: 6px;
+  border-radius: 99px;
+}
+
+/* wider last segment while it holds the three parts (beats the plain four-column rule) */
+.onboarding-step-bar.has-parts:has(> li:nth-child(4)) {
+  grid-template-columns: 1fr 1fr 1fr 2.2fr;
+}
+
+@media (max-width: 700px) {
+  .onboarding-step-bar.has-parts:has(> li:nth-child(4)) {
+    grid-template-columns: repeat(3, minmax(0, 0.55fr)) minmax(0, 2fr);
+  }
+}
+
+@media (max-width: 640px) {
+  /* phones, while the listing parts are open: the first three steps show only their bars */
+  .onboarding-step-bar.has-parts > li:not(.listing-substep) small,
+  .onboarding-step-bar.has-parts > li:not(.listing-substep) em {
+    display: none;
+  }
+
+  /* the nav: Back is just its arrow, so "Add it later" and the main button fit */
+  .onboarding-nav:has(.listing-nav-end) > [data-act="back"] .nav-label {
+    display: none;
+  }
+
+  .onboarding-nav:has(.listing-nav-end) > [data-act="back"] {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+}
+
+/* =====================================================================
+   First listing — lighter: the three parts as a small stepper inside the
+   card (the bar on top keeps the four onboarding steps), sections without
+   rules between them, a proper date field.
+   ===================================================================== */
+.listing-steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.listing-steps li {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+/* the connector between two parts */
+.listing-steps li + li::before {
+  content: '';
+  width: 28px;
+  height: 2px;
+  margin: 0 8px;
+  border-radius: 2px;
+  background: var(--color-border);
+}
+
+.listing-steps li.is-done + li::before,
+.listing-steps li.is-done + li.is-now::before {
+  background: var(--color-primary-lighter);
+}
+
+.listing-steps li > * {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.listing-steps li > button {
+  cursor: pointer;
+}
+
+.listing-steps li > button:hover {
+  color: var(--color-primary-dark);
+}
+
+.listing-steps i {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 50%;
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.listing-steps i .icon {
+  width: 12px;
+  height: 12px;
+}
+
+.listing-steps .is-now > * {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.listing-steps .is-now i {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.listing-steps .is-done > * {
+  color: var(--color-primary-dark);
+}
+
+.listing-steps .is-done i {
+  border-color: var(--color-primary-tint);
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+}
+
+.listing-head {
+  padding-bottom: 4px;
+}
+
+.listing-head .onboarding-title {
+  font-size: 23px;
+}
+
+.listing-head p {
+  margin-top: 6px;
+  font-size: 13.5px;
+}
+
+/* sections inside the listing: space instead of rules, quieter headings */
+.listing-flow .onboarding-section {
+  margin-top: 26px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.listing-flow > .onboarding-section:first-child {
+  margin-top: 20px;
+}
+
+.listing-flow .onboarding-section-header {
+  margin-bottom: 10px;
+}
+
+.listing-flow .onboarding-section-header h2 {
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.listing-flow .listing-sub {
+  margin: -4px 0 12px;
+  font-size: 12.5px;
+}
+
+.listing-flow .listing-q > span {
+  font-size: 13px;
+}
+
+.listing-flow .onboarding-field > label {
+  font-size: 13px;
+}
+
+/* the date: same height and look as the chips beside it */
+.listing-date {
+  width: auto;
+  min-width: 170px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-text);
+  outline: 0;
+}
+
+.listing-date:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-tint);
+}
+
+.listing-date.has-error {
+  border-color: var(--color-danger);
+}
+
+.listing-date::-webkit-calendar-picker-indicator {
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .listing-steps li + li::before {
+    width: 14px;
+    margin: 0 6px;
+  }
+
+  .listing-steps li > * {
+    font-size: 12px;
+  }
+}
+
+/* =====================================================================
+   First listing — calm: light selected states (tint + outline + small tick,
+   not solid green), no icons in chips, regular weights, softer borders.
+   Scoped to the listing step so onboarding's other steps are unchanged.
+   ===================================================================== */
+.listing-flow .listing-chips .onboarding-chip,
+.listing-flow .listing-counts button {
+  height: 36px;
+  min-height: 36px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  box-shadow: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.listing-flow .listing-chips .onboarding-chip {
+  padding: 0 14px;
+  gap: 6px;
+}
+
+.listing-flow .listing-chips .onboarding-chip > .icon {
+  display: none;
+}
+
+.listing-flow .listing-chips .onboarding-chip:hover,
+.listing-flow .listing-counts button:hover {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.listing-flow .listing-chips .onboarding-chip.is-active,
+.listing-flow .listing-counts button.is-active {
+  border-color: var(--color-primary-lighter);
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+.listing-flow .listing-chips .onboarding-chip.is-active {
+  padding-right: 10px;
+}
+
+.listing-flow .listing-chips .onboarding-chip.is-active .onboarding-tick {
+  width: 16px;
+  height: 16px;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.listing-flow .listing-chips .onboarding-chip.is-active .onboarding-tick .icon {
+  width: 10px;
+  height: 10px;
+}
+
+.listing-flow .listing-counts {
+  gap: 6px;
+}
+
+.listing-flow .listing-counts button {
+  min-width: 40px;
+  padding: 0 12px;
+}
+
+/* headings and labels: one quiet weight each */
+.listing-flow .onboarding-section-header h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.listing-flow .listing-q > span,
+.listing-flow .onboarding-field > label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+/* fields: one soft border, the same height everywhere */
+.listing-flow .onboarding-field input:not([type="checkbox"]),
+.listing-flow .onboarding-field select,
+.listing-flow .listing-stepper,
+.listing-flow .listing-unit,
+.listing-flow .listing-money {
+  height: 42px;
+  border-color: var(--color-border);
+  border-width: 1px;
+  border-radius: 10px;
+  box-shadow: none;
+  font-weight: 500;
+}
+
+.listing-flow .listing-unit input,
+.listing-flow .listing-stepper input,
+.listing-flow .listing-money input {
+  height: 100%;
+  font-weight: 600;
+}
+
+.listing-flow .listing-stepper button {
+  color: var(--color-text-muted);
+}
+
+.listing-flow .listing-stepper button:not(:disabled):hover {
+  color: var(--color-primary);
+  background: var(--color-primary-tint-light);
+}
+
+.listing-flow .listing-unit-switch {
+  border-color: var(--color-border);
+}
+
+.listing-flow .has-error .listing-unit,
+.listing-flow .has-error .listing-stepper,
+.listing-flow .has-error .listing-money,
+.listing-flow .onboarding-field.has-error input {
+  border-color: var(--color-danger);
+}
+
+.listing-flow .listing-switch {
+  border-color: var(--color-border);
+  font-weight: 500;
+}
+
+/* each question group is its own light panel: clear where one starts and ends */
+.listing-flow .onboarding-section {
+  margin-top: 12px;
+  padding: 16px 18px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.listing-flow > .onboarding-section:first-child {
+  margin-top: 18px;
+}
+
+.listing-flow .onboarding-section-header {
+  margin-bottom: 12px;
+}
+
+.listing-flow .listing-sub {
+  margin: -8px 0 14px;
+}
+
+.listing-flow .listing-q + .listing-grid,
+.listing-flow .listing-q + .listing-q {
+  margin-top: 16px;
+}
+
+.listing-flow .listing-photo-bar {
+  margin-bottom: 12px;
+}
+
+@media (max-width: 640px) {
+  .listing-flow .onboarding-section {
+    padding: 14px 14px 16px;
+  }
+}
+
+/* compact: tighter panels, shorter chips and fields */
+.listing-flow .onboarding-section {
+  margin-top: 10px;
+  padding: 12px 14px 14px;
+  border-radius: 12px;
+}
+
+.listing-flow > .onboarding-section:first-child {
+  margin-top: 14px;
+}
+
+.listing-flow .onboarding-section-header {
+  margin-bottom: 8px;
+}
+
+.listing-flow .listing-sub {
+  margin: -6px 0 10px;
+}
+
+.listing-qs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.listing-flow .listing-q > span {
+  margin-bottom: 6px;
+}
+
+.listing-flow .listing-q > span + .listing-chips,
+.listing-flow .listing-q > span + .listing-counts {
+  margin-top: 0;
+}
+
+.listing-flow .listing-hint {
+  margin-left: 4px;
+  font-size: 11.5px;
+  font-weight: 400;
+}
+
+.listing-flow .listing-chips,
+.listing-flow .listing-counts {
+  gap: 6px;
+}
+
+.listing-flow .listing-chips .onboarding-chip,
+.listing-flow .listing-counts button {
+  height: 32px;
+  min-height: 32px;
+  font-size: 13px;
+}
+
+.listing-flow .listing-chips .onboarding-chip {
+  padding: 0 12px;
+}
+
+.listing-flow .listing-counts button {
+  min-width: 36px;
+  padding: 0 10px;
+}
+
+.listing-flow .onboarding-field input:not([type="checkbox"]),
+.listing-flow .onboarding-field select,
+.listing-flow .listing-stepper,
+.listing-flow .listing-unit,
+.listing-flow .listing-money {
+  height: 38px;
+}
+
+.listing-flow .listing-stepper {
+  max-width: 140px;
+}
+
+.listing-flow .listing-stepper button {
+  width: 38px;
+}
+
+.listing-flow .listing-grid {
+  gap: 10px 14px;
+}
+
+.listing-flow .onboarding-field > label {
+  margin-bottom: 4px;
+}
+
+.listing-flow .listing-q + .listing-grid,
+.listing-flow .listing-q + .listing-q {
+  margin-top: 12px;
+}
+
+.listing-flow .listing-help {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.listing-flow .listing-switches {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.listing-flow .listing-switch {
+  padding: 9px 12px;
+  font-size: 13px;
+}
+
+.listing-flow .listing-photos {
+  gap: 8px;
+}
+
+.listing-flow .listing-writer textarea {
+  min-height: 88px;
+  padding: 12px;
+  font-size: 13.5px;
+}
+
+.listing-head {
+  padding-bottom: 0;
+}
+
+.listing-steps {
+  margin-bottom: 10px;
+}
+
+.listing-head .onboarding-title {
+  font-size: 21px;
+}
+
+.listing-head p {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+/* no stray gaps between questions inside a panel */
+.listing-flow .listing-q {
+  padding: 0;
+}
+
+.listing-flow .listing-qs > .listing-q + .listing-q {
+  margin-top: 0;
+}
+
+.listing-flow .listing-q + .listing-grid {
+  margin-top: 12px;
+}
+
+/* rooms and size: one row — the counts, then the numbers — every label the same height, every control on one line */
+.listing-rooms {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 20px;
+}
+
+.listing-rooms > .onboarding-field {
+  margin: 0;
+}
+
+.listing-rooms > .onboarding-field > label {
+  display: block;
+  height: 18px;
+  margin-bottom: 6px;
+  line-height: 18px;
+}
+
+/* the count chips sit at the same height as the fields beside them */
+.listing-rooms-chips .listing-counts {
+  min-height: 38px;
+  align-items: center;
+}
+
+.listing-rooms .listing-stepper {
+  width: 132px;
+}
+
+.listing-rooms .listing-unit {
+  width: 200px;
+}
+
+/* the unit switch inside the size field */
+.listing-unit.has-switch {
+  padding-right: 4px;
+}
+
+.listing-unit.has-switch .listing-unit-switch {
+  margin-left: auto;
+  flex: none;
+}
+
+@media (max-width: 640px) {
+  .listing-rooms .listing-unit {
+    width: 100%;
+  }
+
+  .listing-rooms > .onboarding-field:last-child {
+    flex: 1 1 160px;
+  }
+}
+
+.listing-unit.has-switch .listing-unit-switch {
+  border: 0;
+  background: var(--color-bg);
+}
+
+.listing-flow .listing-unit-switch button,
+.listing-flow .listing-unit-switch button.is-active {
+  border: 0 !important;
+  outline: 0;
+  height: 26px;
+}
+
+.listing-flow .listing-unit-switch button.is-active {
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  color: var(--color-primary-dark);
+}
+
+/* the 1 · 2 · 3 stepper stays pinned at the top of the card while the provider scrolls */
+.onboarding-step > .listing-steps {
+  position: sticky;
+  top: -22px;
+  z-index: 6;
+  margin: -22px -26px 12px;
+  padding: 14px 26px 12px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--color-border);
+}
+
+@media (max-width: 1000px) {
+  /* no inner scroll here: pinned under the top of the window instead */
+  .onboarding-step > .listing-steps {
+    top: 0;
+    margin: 0 0 12px;
+    padding: 10px 0;
+  }
+}
+
+/* photos: one quiet panel — no frame on each photo, no ring on the cover, a soft add tile */
+.listing-flow .listing-photo {
+  border: 0;
+  border-radius: 10px;
+}
+
+.listing-flow .listing-photo.is-cover {
+  outline: 0;
+}
+
+.listing-flow .listing-photo em {
+  top: 8px;
+  left: 8px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--color-primary-dark);
+  font-size: 11px;
+}
+
+.listing-flow .listing-photo-add {
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 10px;
+  background: var(--color-bg);
+}
+
+.listing-flow .listing-photo-bar {
+  height: 3px;
+  margin-bottom: 10px;
+}
+
+/* ---------- price step: money box with the yearly / monthly switch inside, cheques on one line, deposit beside ---------- */
+.listing-pr-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+  align-items: start;
+}
+
+.listing-pr-grid > .onboarding-field,
+.listing-pr-grid > .listing-q {
+  margin: 0;
+}
+
+.listing-money.has-switch {
+  padding-right: 4px;
+}
+
+.listing-money.has-switch .listing-unit-switch {
+  margin-left: auto;
+  flex: none;
+  border: 0;
+  background: var(--color-bg);
+}
+
+.listing-money.has-switch .listing-unit-switch button,
+.listing-money.has-switch .listing-unit-switch button.is-active {
+  border: 0 !important;
+  height: 26px;
+}
+
+.listing-money.has-switch .listing-unit-switch button.is-active {
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .1) !important;
+  color: var(--color-primary-dark);
+}
+
+/* Payable in 1 · 2 · 4 · 6 · 12 cheques — AED … each */
+.listing-pr-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-top: 14px;
+  font-size: 13.5px;
+  color: var(--color-text-secondary);
+}
+
+.listing-pr-line .listing-counts {
+  gap: 6px;
+}
+
+.listing-pr-line em {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--color-primary-tint-light);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--color-primary-dark);
+}
+
+.listing-pr-line.has-error .listing-counts button {
+  border-color: var(--color-danger);
+}
+
+/* the typical deposit, one tap */
+.listing-pr-use {
+  display: inline-flex;
+  align-self: flex-start;
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border: 1px dashed var(--color-primary-lighter);
+  border-radius: 99px;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  cursor: pointer;
+}
+
+.listing-pr-use .icon {
+  width: 13px;
+  height: 13px;
+}
+
+.listing-pr-use small {
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.listing-pr-use:hover {
+  border-style: solid;
+  background: var(--color-primary-tint-light);
+}
+
+/* availability: Now / From a date, the date beside it */
+.listing-pr-when {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.listing-pr-when .onboarding-segmented-control {
+  margin: 0;
+  flex: none;
+}
+
+.listing-pr-when .listing-date {
+  flex: 1 1 130px;
+  min-width: 0;
+  height: 38px;
+  max-width: 170px;
+}
+
+@media (max-width: 640px) {
+  .listing-pr-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .listing-pr-line em {
+    margin-left: 0;
+  }
+}
+
+/* =====================================================================
+   Review and send — the listing as one compact card, then the application
+   ===================================================================== */
+.onboarding-confirm.has-listing {
+  width: min(600px, 100%);
+  max-width: 600px;
+}
+
+.listing-review-card2 {
+  margin: 14px 0 6px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  text-align: left;
+}
+
+.listing-review-main {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.listing-review-main img,
+.listing-review-noimg {
+  width: 96px;
+  height: 72px;
+  flex: none;
+  border-radius: 10px;
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+}
+
+.listing-review-main > div {
+  min-width: 0;
+}
+
+.listing-review-main b {
+  display: block;
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.listing-review-main small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.listing-review-main small .icon {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+
+.listing-review-main strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 14px;
+}
+
+.listing-review-facts {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.listing-review-facts span {
+  color: var(--color-text-muted);
+}
+
+.listing-review-more {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.listing-review-edits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+  font-size: 13px;
+}
+
+.listing-review-edits span {
+  color: var(--color-border-strong);
+}
+
+.listing-review-label {
+  margin: 14px 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--color-text-muted);
+}
+
+/* the application lines: compact when they follow the listing */
+.onboarding-confirm.has-listing .onboarding-confirm-summary {
+  margin-top: 0;
+}
+
+.onboarding-confirm.has-listing .onboarding-confirm-item {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.onboarding-confirm.has-listing .onboarding-confirm-item b {
+  font-size: 13.5px;
+}
+
+.onboarding-confirm.has-listing .onboarding-confirm-item small,
+.onboarding-confirm.has-listing .onboarding-confirm-item em {
+  font-size: 12px;
+}
+
+.onboarding-confirm.has-listing .onboarding-confirm-avatar {
+  width: 32px;
+  height: 32px;
+}
+
+.listing-review-main strong em {
+  display: block;
+  margin-top: 1px;
+  font-style: normal;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+/* =====================================================================
+   Photos & text: open — no panels, just three headed groups and space.
+   The description box is the only frame on the page.
+   ===================================================================== */
+.listing-flow.is-part-2 .onboarding-section {
+  margin-top: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.listing-flow.is-part-2 > .onboarding-section:first-child {
+  margin-top: 18px;
+}
+
+.listing-flow.is-part-2 .onboarding-section-header h2 {
+  font-size: 15px;
+}
+
+.listing-flow.is-part-2 .listing-photo-bar {
+  display: none;
+}
+
+/* title: the count sits inside the field */
+.listing-titlebox {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  padding-right: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.listing-titlebox:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-tint);
+}
+
+.has-error .listing-titlebox {
+  border-color: var(--color-danger);
+}
+
+.listing-flow .listing-titlebox input {
+  flex: 1;
+  min-width: 0;
+  height: 100% !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  background: none;
+  padding: 0 12px !important;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.listing-titlebox .listing-count {
+  margin: 0;
+  flex: none;
+}
+
+.listing-flow.is-part-2 .listing-writer {
+  border-color: var(--color-border);
+}
+
+/* =====================================================================
+   Photos — a large drop area to start, then a tidy 4-column grid with the
+   cover large, numbered photos, an add tile the size of a photo, and a
+   short list of suggested shots.
+   ===================================================================== */
+.listing-flow .listing-photos {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.listing-photo-status {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.listing-photo-status.is-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-primary);
+}
+
+.listing-photo-status .icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* empty: one big, friendly drop area */
+.listing-photo-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 190px;
+  padding: 24px;
+  border: 1.5px dashed var(--color-border-strong);
+  border-radius: 14px;
+  background: var(--color-bg);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.listing-photo-drop:hover,
+.listing-photos.is-drag .listing-photo-drop {
+  border-color: var(--color-primary-lighter);
+  background: var(--color-primary-tint-light);
+}
+
+.listing-photo-drop-ic {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 6px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--color-primary);
+  box-shadow: 0 1px 3px rgba(15, 40, 28, 0.1);
+}
+
+.listing-photo-drop-ic .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.listing-photo-drop b {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.listing-photo-drop b u {
+  color: var(--color-primary);
+  text-underline-offset: 2px;
+}
+
+.listing-photo-drop small {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+/* with photos: 8 small columns — seven photos and the add tile fit in one short row */
+.listing-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.listing-photo-grid .listing-photo {
+  aspect-ratio: 4 / 3;
+  border: 0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* the cover is the same size as the rest — marked by its badge and a green ring, so seven photos sit in one short row */
+.listing-photo-grid .listing-photo.is-cover {
+  grid-column: auto;
+  grid-row: auto;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* the photo fills its tile and never sizes it: a tall or wide upload is cropped, not stretching the grid */
+.listing-photo-grid .listing-photo img {
+  position: absolute;
+  inset: 0;
+}
+
+.listing-photo-num {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  border-radius: 99px;
+  background: rgba(20, 32, 26, 0.6);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.listing-photo-grid .listing-photo-add {
+  aspect-ratio: 4 / 3;
+  min-height: 0;
+  flex-direction: column;
+  gap: 2px;
+  border: 1.5px dashed var(--color-border-strong);
+  border-radius: 10px;
+  background: var(--color-bg);
+  color: var(--color-primary);
+}
+
+.listing-photo-grid .listing-photo-add .icon {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.listing-photo-grid .listing-photo-add b {
+  font-size: 12.5px;
+}
+
+/* suggested shots */
+.listing-shots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 0;
+}
+
+.listing-shots span {
+  margin-right: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.listing-shots em {
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  font-style: normal;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 900px) {
+  .listing-photo-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .listing-photo-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .listing-photo-drop {
+    min-height: 150px;
+  }
+}
+
+/* =====================================================================
+   Hierarchy: section title (bold) → one grey line → question labels
+   (dark, semi-bold) → chips and inputs (regular). More room between.
+   ===================================================================== */
+.listing-flow .onboarding-section {
+  padding: 16px 18px 18px;
+}
+
+.listing-flow .onboarding-section-header {
+  margin-bottom: 2px;
+}
+
+.listing-flow .onboarding-section-header h2,
+.listing-flow.is-part-2 .onboarding-section-header h2 {
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+.listing-flow .listing-sub {
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+/* a section with no subtitle still leaves room under its title */
+.listing-flow .onboarding-section-header + :not(.listing-sub) {
+  margin-top: 12px;
+}
+
+.listing-flow .listing-q > span,
+.listing-flow .onboarding-field > label,
+.listing-flow .listing-rooms > .onboarding-field > label {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.listing-flow .listing-hint {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.listing-qs {
+  gap: 18px;
+}
+
+/* the questions in a group are spaced by the gap alone (no padding or margin stacked on top) */
+.listing-qs > .listing-q {
+  padding: 0;
+}
+
+.listing-qs > .listing-q + .listing-q {
+  margin-top: 0;
+}
+
+.listing-flow .listing-rooms > .onboarding-field > label {
+  height: 18px;
+}
+
+.listing-flow .listing-help {
+  color: var(--color-text-muted);
+}
+
+/* the provider's own extras: an "Add your own" field at the end of the chips */
+.listing-own {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 4px 0 12px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 99px;
+  background: #fff;
+}
+
+.listing-own:focus-within {
+  border-style: solid;
+  border-color: var(--color-primary-lighter);
+  box-shadow: 0 0 0 3px var(--color-primary-tint);
+}
+
+/* not scoped to .listing-flow: the new-listing page renders these chips without that wrapper */
+.listing-own input,
+.listing-flow .listing-own input {
+  width: 120px;
+  min-width: 0;
+  height: 100% !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0;
+  box-shadow: none !important;
+  background: none;
+  appearance: none;
+  font: inherit;
+  font-size: 13px;
+}
+
+.listing-own button {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.listing-own button .icon {
+  width: 13px;
+  height: 13px;
+}
+
+/* their own chips look exactly like the other selected chips (tap to unselect, as with any chip) */
+
+/* Hide / Show: the focus ring only for keyboard users */
+.listing-showhide:focus {
+  outline: 0;
+}
+
+.listing-showhide:focus-visible {
+  outline: 2px solid var(--color-primary-lighter);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* =====================================================================
+   Subtext — easier to read and clearly apart from what follows
+   ===================================================================== */
+.listing-flow .listing-sub {
+  margin: 2px 0 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.listing-flow .listing-help {
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+}
+
+/* photos: a thin edge so light photos and screenshots don't melt into the page */
+.listing-photo-grid .listing-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(20, 32, 26, 0.08);
+  pointer-events: none;
+}
+
+/* the add tile carries the suggested shots once photos are in */
+.listing-photo-grid .listing-photo-add {
+  padding: 8px;
+  text-align: center;
+}
+
+.listing-photo-grid .listing-photo-add small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+/* small tiles: tighter add tile, badges and actions */
+.listing-photo-grid .listing-photo-add { padding: 4px; }
+.listing-photo-grid .listing-photo-add b { font-size: 11.5px; }
+.listing-photo-grid .listing-photo-add small { display: block; margin-top: 1px; font-size: 10.5px; line-height: 1.25; }
+.listing-flow .listing-photo-grid .listing-photo em { top: 4px; left: 4px; padding: 2px 6px; font-size: 10.5px; }
+.listing-flow .listing-photo-grid .listing-photo em .icon { width: 10px; height: 10px; }
+.listing-photo-grid { padding: 2px; }
+.listing-photo-grid .listing-photo-num { left: 4px; bottom: 4px; min-width: 18px; height: 18px; font-size: 10.5px; }
+
+/* =====================================================================
+   Listing step — tighter vertical rhythm so a part fits a laptop screen
+   without scrolling (doubled classes: these must win over the layers above)
+   ===================================================================== */
+.onboarding-grid:not(.is-done) .onboarding-scroll:has(.listing-flow) {
+  padding-top: 16px;
+  padding-bottom: 14px;
+}
+
+.onboarding-step .listing-steps {
+  margin-top: -16px;
+  margin-bottom: 6px;
+  padding-top: 8px;
+  padding-bottom: 7px;
+}
+
+.onboarding-step .listing-head h1 {
+  font-size: 22px;
+}
+
+.onboarding-step .listing-head p {
+  margin-top: 2px;
+}
+
+.listing-flow.listing-flow .onboarding-section {
+  margin-top: 16px;
+}
+
+.listing-flow.listing-flow > .onboarding-section:first-child {
+  margin-top: 12px;
+}
+
+.listing-flow.listing-flow .onboarding-section-header {
+  margin-bottom: 6px;
+}
+
+.listing-flow.listing-flow .onboarding-section > .field,
+.listing-flow.listing-flow .onboarding-section > .onboarding-field,
+.listing-flow.listing-flow .onboarding-section > .listing-writer {
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+.listing-flow.listing-flow .listing-sub {
+  margin: 0 0 8px;
+}
+
+.listing-flow.listing-flow .listing-help {
+  margin-top: 6px;
+}
+
+.onboarding-panel:has(.listing-flow) .onboarding-nav {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* the description: a slimmer toolbar */
+
+.listing-flow .listing-writer-bar {
+  padding: 5px 8px;
+}
+
+.listing-flow .listing-writer-bar .listing-pill {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+}
+
+/* secondary text: readable grey, its own space — a gap under the title, room before the content */
+.listing-flow .onboarding-section-header {
+  margin-bottom: 0;
+}
+
+.listing-flow .listing-sub,
+.listing-flow.is-part-2 .listing-sub {
+  margin: 5px 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.listing-flow .listing-help {
+  margin-top: 9px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.listing-flow .listing-help.is-error { color: var(--color-danger); }
+.listing-flow .listing-help.is-warn { color: var(--color-warning-text); }
+.listing-flow .listing-help.is-ok { color: var(--color-primary); }
+
+.listing-flow .listing-help .icon {
+  color: var(--color-text-muted);
+}
+
+.listing-flow .listing-help.is-error .icon,
+.listing-flow .listing-help.is-warn .icon,
+.listing-flow .listing-help.is-ok .icon {
+  color: currentColor;
+}
+
+/* the suggested shots sit a little further from the photos */
+.listing-flow .listing-shots {
+  margin-top: 16px;
+}
+
+/* =====================================================================
+   Title and its explanation on one line, set apart by a short dash; field labels a step quieter
+   than section titles, so the two levels read apart at a glance.
+   ===================================================================== */
+.listing-flow .onboarding-section-header h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+
+.listing-sub-inline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-left: 4px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--color-text-muted);
+}
+
+.listing-sub-inline::before {
+  content: "";
+  align-self: center;
+  width: 14px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: .45;
+}
+
+.listing-flow .onboarding-section-header {
+  margin-bottom: 14px;
+}
+
+/* field labels: smaller and softer than the section title above them */
+.listing-flow .listing-q > span,
+.listing-flow .onboarding-field > label,
+.listing-flow .listing-rooms > .onboarding-field > label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.listing-flow .onboarding-section-header h2,
+.listing-flow.is-part-2 .onboarding-section-header h2 {
+  color: var(--color-primary-darkest);
+}
+
+/* price step: the chosen option is clearly marked — the same green as the size questions in step 1 */
+.listing-money.has-switch .listing-unit-switch button.is-active,
+.listing-pr-when .onboarding-segmented-control button.is-active {
+  background: var(--onboarding-mint, #e3f4ec);
+  color: var(--color-primary-darkest);
+  box-shadow: inset 0 0 0 1.5px var(--color-primary-lighter) !important;
+}
+
+.listing-money.has-switch .listing-unit-switch button:not(.is-active),
+.listing-pr-when .onboarding-segmented-control button:not(.is-active) {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+/* photo actions (make cover, remove): small dark buttons over a light shade, readable on any photo */
+.listing-photo-grid .listing-photo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(20, 32, 26, 0.45), rgba(20, 32, 26, 0) 60%);
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+
+.listing-photo-grid .listing-photo:hover::before,
+.listing-photo-grid .listing-photo:focus-within::before {
+  opacity: 1;
+}
+
+.listing-photo-grid .listing-photo-actions {
+  z-index: 2;
+  top: 4px;
+  right: 4px;
+  gap: 3px;
+}
+
+.listing-photo-grid .listing-photo-actions button {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(20, 32, 26, 0.78);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: background 0.15s;
+}
+
+.listing-photo-grid .listing-photo-actions button:hover {
+  background: var(--color-primary);
+}
+
+.listing-photo-grid .listing-photo-actions button[data-ln-phrm]:hover {
+  background: var(--color-danger);
+}
+
+.listing-photo-grid .listing-photo-actions .icon {
+  width: 12px;
+  height: 12px;
+}
+
+.listing-photo-grid .listing-photo em,
+.listing-photo-grid .listing-photo-num {
+  z-index: 2;
 }

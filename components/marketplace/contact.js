@@ -1,4 +1,4 @@
-/* Contact flows (call, WhatsApp, email request), the Saved and My enquiries drawers, sign-in, and the click delegation for data-call / data-wa / data-email / data-fav / data-open. */
+/* Contact flows (call, WhatsApp, email), the Saved and My enquiries drawers, sign-in, and the click delegation for data-call / data-wa / data-email / data-fav / data-open. */
 (function () {
   const U = window.UPUI = window.UPUI || {};
   const { ico, esc, initials, store, byId, fmtPhone, favs, leads, toggleFav, updateHdrCounts, priceText, specOf, locText, card, openModal, closeModal, openSide, closeSide, toast } = U;
@@ -47,37 +47,27 @@
     tx.oninput = () => { go.href = 'https://wa.me/' + l.provider.phone.replace('+', '') + '?text=' + encodeURIComponent(tx.value); };
     go.onclick = () => { logLead('whatsapp', l, { name: me().name || 'Customer', phone: me().phone, msg: tx.value.split('\n')[0] }); setTimeout(closeModal, 250); toast('Opening WhatsApp…'); };
   }
-  // preferred day and time for a viewing / appointment request: the next 7 days and a few usual slots
-  const DW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const nextDays = () => Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i + 1); return `${DW[d.getDay()]} ${d.getDate()} ${MN[d.getMonth()]}`; });
-  const TIMES = ['10:00', '12:00', '14:00', '16:00', '18:30', '20:00'];
 
+  // the Email channel: a message to the provider (no day, time or viewing — UpNow doesn't book; the provider replies)
   function request(id) {
-    const l = byId(id), m = me(), fn = l.provider.name.split(' ')[0], O = offerOf(l.v, l.cat), lease = LEASE_CAT(l);
-    const asked = U.pendingReq && U.pendingReq.lid === l.id; // day and time already chosen in the request panel
-    const opt = a => a.map(x => `<option>${esc(x)}</option>`).join('');
+    const l = byId(id), m = me(), fn = l.provider.name.split(' ')[0];
     openModal(`${cHead(l)}
       <form class="contact-body" id="leadForm"><div class="form-grid">
           <div class="field"><label>Full name</label><input required name="name" value="${esc(m.name)}" placeholder="Your name"></div>
           <div class="field"><label>Mobile</label><input required name="phone" value="${esc(m.phone)}" inputmode="tel"></div>
           <div class="field is-full"><label>Email</label><input name="email" type="email" required value="${esc(m.email)}" placeholder="you@email.com"></div>
-          ${asked ? '' : `<div class="field"><label>Preferred day</label><select name="day">${opt(nextDays())}</select></div>
-          <div class="field"><label>Time</label><select name="time">${opt(TIMES)}</select></div>
-          ${lease ? `<div class="field is-full"><label>Viewing</label><select name="mode">${opt(['In person', 'Video call'])}</select></div>` : ''}`}
           <div class="field is-full"><label>Message</label><textarea name="msg" rows="4">${esc(`Hi ${fn}, I'm interested in ${l.title} (Ref ${l.ref}). Is it still available?`)}</textarea></div></div>
         <button class="btn btn-primary contact-submit">${ico('msg')}Send email to ${esc(fn)}</button>
         <p class="contact-tip">Shared only with ${esc(fn)}. ${SITE.name} never asks for payment.</p></form>`, 'contact-modal');
     document.getElementById('leadForm').onsubmit = e => {
       e.preventDefault(); const fd = Object.fromEntries(new FormData(e.target).entries());
       store.set('me', { name: fd.name, phone: fd.phone, email: fd.email });
-      const rec = logLead('email', l, { name: fd.name, phone: fd.phone, email: fd.email, msg: fd.msg, pref: 'Email', ...(fd.day ? { req: { title: O.action, when: fd.day + ' · ' + fd.time, mode: fd.mode || '' } } : {}) });
-      const when = rec.req ? rec.req.when : '', mode = rec.req ? rec.req.mode : '';
-      openModal(`<div class="contact-success"><button class="close-btn" aria-label="Close" data-close>${ico('x')}</button><div class="success-icon">${ico('check')}</div><h3>${esc(O.action)} sent to ${esc(fn)}</h3><p>${when ? `You asked for <b>${esc(when)}</b>${mode ? ' · ' + esc(mode) : ''}. ` : ''}${esc(fn)} usually replies within ~${l.provider.reply} min to confirm it or suggest another time — we’ll let you know on WhatsApp.</p>
-        <div class="contact-steps"><div class="is-active"><i>${ico('check')}</i><span>Sent</span></div><div><i>2</i><span>${esc(fn)} replies</span></div><div><i>3</i><span>${LEASE_CAT(l) ? 'Viewing' : 'Confirm'}</span></div></div>
+      const rec = logLead('email', l, { name: fd.name, phone: fd.phone, email: fd.email, msg: fd.msg, pref: 'Email' });
+      openModal(`<div class="contact-success"><button class="close-btn" aria-label="Close" data-close>${ico('x')}</button><div class="success-icon">${ico('check')}</div><h3>Email sent to ${esc(fn)}</h3><p>${esc(fn)} usually replies in ~${l.provider.reply} min, by email or on ${esc(fd.phone)}.</p>
+        <div class="contact-steps"><div class="is-active"><i>${ico('check')}</i><span>Sent</span></div><div><i>2</i><span>${esc(fn)} replies</span></div><div><i>3</i><span>You talk directly</span></div></div>
         <div class="contact-row"><button class="btn btn-outline" data-open="enq" data-enq="${rec.id}">${ico('msg')}Track in My enquiries</button><button class="btn btn-whatsapp" data-wa="${l.id}">${ico('wa')}Also WhatsApp</button></div><small>Reference ${rec.id}</small></div>`, 'contact-modal');
     };
   }
-  const LEASE_CAT = l => !!offerOf(l.v, l.cat).lease;
   /* customer-side status (preview of the customer dashboard) */
   function status(r) {
     const m = (Date.now() - r.t) / 60000;

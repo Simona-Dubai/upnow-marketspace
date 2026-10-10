@@ -114,7 +114,7 @@
     const out = [];
     all().forEach(m => {
       const { r } = m, at = '#enquiry=' + r.id, img = PATHS.img(r.img);
-      if (m.replyEv) out.push({ id: 'rep' + r.id + m.replyEv.t, kind: 'reply', type: 'reply', m, img, badge: 'msg', tone: 'info', t: m.replyEv.t, title: `${r.provider} replied`, text: `“${m.replyEv.text}”`, sub: r.title, go: '#messages=' + r.id, stale: m.stage === 'closed' });
+      if (m.replyEv) out.push({ id: 'rep' + r.id + m.replyEv.t, kind: 'reply', type: 'reply', m, img, badge: 'msg', tone: 'info', t: m.replyEv.t, title: `${r.provider} replied`, text: `“${m.replyEv.text}”`, sub: r.title, go: (SITE.chat ? '#messages=' : '#enquiry=') + r.id, stale: m.stage === 'closed' });
       if (m.late) out.push({ id: 'late' + r.id, kind: 'remind', type: 'late', m, img, badge: 'clock', tone: 'amber', t: r.t + SLA, title: `No reply yet from ${m.who}`, text: 'Nudge them, or try WhatsApp or a call.', sub: r.title, go: at });
       if (m.closedEv) out.push({ id: 'cls' + r.id, kind: 'reply', type: 'closed', m, img, badge: 'x', tone: 'red', t: m.closedEv.t, title: `${r.provider} closed your enquiry`, text: `“${m.closedEv.text}”`, sub: r.title, go: at });
     });
@@ -132,11 +132,12 @@
   // Documents is hidden for now (kept for later): set to true to bring back the section, its badge, reminders and alerts
   const SHOW_DOCS = false;
   const SECTIONS = [['overview', 'Home', 'home'], ['enquiries', 'My enquiries', 'list'], ['messages', 'Messages', 'msg'], ['saved', 'Saved', 'heart'], ['documents', 'Documents', 'doc'], ['alerts', 'Notifications', 'bell'], ['profile', 'Profile & privacy', 'user']]
-    .filter(x => SHOW_DOCS || x[0] !== 'documents');
+    .filter(x => (SHOW_DOCS || x[0] !== 'documents') && (SITE.chat || x[0] !== 'messages'));
   const route = () => {
     const h = decodeURIComponent(location.hash.slice(1));
     if (h.startsWith('enquiry=')) return { s: 'enquiries', id: h.slice(8) };
-    if (h.startsWith('messages=')) return { s: 'messages', id: h.slice(9) };
+    if (h.startsWith('messages=')) return SITE.chat ? { s: 'messages', id: h.slice(9) } : { s: 'enquiries', id: h.slice(9) };
+    if (h === 'messages' && !SITE.chat) return { s: 'enquiries' };
     return { s: SECTIONS.some(x => x[0] === h) ? h : 'overview' };
   };
   const go = h => { if (location.hash === '#' + h) render(); else location.hash = h; };
@@ -214,15 +215,13 @@
 
   /* ---------- home — a customer activity centre, in priority order:
      needs your attention → your enquiries → messages → continue where you left off → saved → discover more ---------- */
-  // one row per decision, with its own colour and button: replied → Review, no reply → Nudge (calls and WhatsApps are
+  // one row per decision, with its own colour and button: no reply → Nudge (replies happen outside the site) (calls and WhatsApps are
   // grouped into one "did you get through?" row; expiring documents ask for an update)
   function homeAction(m) {
     const { r } = m, id = r.id;
-    const call = `<a class="btn btn-outline btn-sm" href="tel:${esc(r.pphone)}" data-calllog="${id}">${ico('phone')}Call</a>`;
     const wa = `<a class="btn btn-outline btn-sm" target="_blank" rel="noopener" href="${waHref(r.pphone, `Hi ${m.who}, about ${r.title} (Ref ${r.ref}) on ${SITE.name}.`)}" data-walog="${id}">${ico('wa')}WhatsApp</a>`;
     const waited = ago(r.t).replace(' ago', '');
     const waGreen = `<a class="btn btn-whatsapp btn-sm" target="_blank" rel="noopener" href="${waHref(r.pphone, `Hi ${m.who}, about ${r.title} (Ref ${r.ref}) on ${SITE.name}.`)}" data-walog="${id}">${ico('wa')}WhatsApp</a>`;
-    if (m.stage !== 'closed' && m.replyEv && isUnreadMsg(m)) return { p: 1, t0: m.replyEv.t, m, kicker: 'New reply', one: `<a class="btn btn-primary btn-sm" href="#messages=${id}">${ico('msg')}Reply</a>`, href: `#messages=${id}`, icon: 'msg', tone: 'green', t: `${esc(m.who)} replied`, sub: `${ago(m.replyEv.t)} · ${r.title}`, quote: m.replyEv.text, b: `<a class="btn btn-primary btn-sm" href="#messages=${id}">${ico('msg')}Reply</a>${call}` };
     if (m.late) return { p: 2, t0: r.t, m, href: `#enquiry=${id}`, icon: 'clock', tone: 'red', t: m.S.nudged ? `${esc(m.who)} hasn’t replied in ${waited}` : `No reply from ${esc(m.who)} in ${waited}`, sub: m.S.nudged ? `You nudged ${ago(m.S.nudged)} · ${r.title}` : r.title,
       one: m.S.nudged ? waGreen : `<button class="btn btn-primary btn-sm" type="button" data-act="nudge" data-id="${id}">${ico('bell')}Nudge</button>`,
       b: m.S.nudged ? `${wa}<a class="btn btn-ghost btn-sm" href="${esc(similarHref(r))}">See similar</a>` : `<button class="btn btn-primary btn-sm" type="button" data-act="nudge" data-id="${id}">${ico('bell')}Nudge ${esc(m.who)}</button>${wa}` };
@@ -289,12 +288,8 @@
     docsDue().forEach(doc => { const d = daysTo(expOf(doc)); rows.push({ p: 4, href: '#documents', icon: 'doc', tone: d < 0 ? 'red' : 'amber', t: `Your ${doc.t} ${d < 0 ? 'has expired' : 'expires ' + niceD(expOf(doc))}`, sub: 'Upload the renewed one — listers ask for a valid ID', one: `<a class="btn btn-primary btn-sm" href="#documents">${ico('upload')}Update</a>`, b: `<a class="btn btn-primary btn-sm" href="#documents">Update</a>` }); });
     rows.sort((a, b) => a.p - b.p || (b.t0 || 0) - (a.t0 || 0));
     const nNeed = rows.length;
-    // the most urgent reply opens up: the lister's avatar, a kicker ("New reply · 20 h ago"), the whole message, the listing,
-    // Reply and Call; every other row is a tinted icon, what happened, and one button
-    const actionRow = (a, k) => { const featured = k === 0 && a.quote;
-      if (featured) return `<div class="dashboard-action is-${a.tone} is-featured"><a class="dashboard-action-link" href="${a.href}">${av(a.m.r.provider, 'is-lg')}<span><small class="dashboard-kicker">${ico(a.icon)}${esc(a.kicker)} · ${esc(ago(a.t0))}</small><b>${a.t}</b></span></a>
-        <blockquote class="dashboard-action-quote">“${esc(a.quote)}”</blockquote><a class="dashboard-action-listing" href="#enquiry=${a.m.r.id}">${thumb(a.m.r)}<span>${esc(a.m.r.title)}</span>${ico('chevR')}</a>
-        <div class="dashboard-action-body">${a.b}</div></div>`;
+    // each row is a tinted icon, what happened, and one button
+    const actionRow = a => {
       return `<div class="dashboard-action is-${a.tone}"><a class="dashboard-action-link" href="${a.href}">${a.stack ? `<span class="dashboard-stack">${a.stack}</span>` : `<i>${ico(a.icon)}</i>`}<span><b>${a.t}</b><small>${esc(a.quote ? '“' + a.quote + '”' : a.sub || '')}</small></span></a>
         <div class="dashboard-action-body">${a.one || a.b}</div></div>`; };
     const needBox = `<section class="dashboard-panel dashboard-needs ${nNeed ? 'is-need' : 'is-clear'}"><div class="dashboard-panel-header"><h2>Up next${nNeed ? ` <em>${nNeed}</em>` : ''}</h2>${nNeed > 1 ? '<span class="dashboard-hint">Most urgent first</span>' : ''}</div>
@@ -302,7 +297,7 @@
         : `<p class="dashboard-none">${ico('check')}You’re all caught up — we’ll tell you when a lister replies.</p>`}</section>`;
 
     // light glance figures — links, not tiles, so they don't compete with the actions
-    const glance = `<nav class="dashboard-glance" aria-label="At a glance">${[['#enquiries', open.length, 'active enquiries'], ['#enquiries', waiting, 'waiting for reply'], ['#messages', unreadMsgs(), 'unread messages'], ['#saved', favs.size, 'saved']].map(([href, v, l]) => `<a href="${href}"><b>${v}</b>${l}</a>`).join('')}</nav>`;
+    const glance = `<nav class="dashboard-glance" aria-label="At a glance">${[['#enquiries', open.length, 'active enquiries'], ['#enquiries', waiting, 'waiting for reply'], ...(SITE.chat ? [['#messages', unreadMsgs(), 'unread messages']] : []), ['#saved', favs.size, 'saved']].map(([href, v, l]) => `<a href="${href}"><b>${v}</b>${l}</a>`).join('')}</nav>`;
 
     const card = (title, link, body, cls = '') => `<section class="dashboard-panel ${cls}"><div class="dashboard-panel-header"><h2>${title}</h2>${link || ''}</div>${body}</section>`;
     const viewAll = (href, label = 'View all') => `<a href="${href}">${label}${ico('chevR')}</a>`;
@@ -354,18 +349,17 @@
      customers think "the cleaners", "the flat"; the channel is a tag on each card. */
   const COLS = [['sent', 'Waiting for reply', ['sent', 'direct']], ['talking', 'In touch', ['talking']], ['closed', 'Closed', ['closed']]];
   const colOf = m => COLS.findIndex(c => c[2].includes(m.stage));
-  const needsYou = m => m.stage !== 'closed' && (m.needs || (m.replyEv && isUnreadMsg(m)));
+  const needsYou = m => m.stage !== 'closed' && m.needs;
   // the one button that moves an enquiry on (the enquiry page has the rest)
   function enquiryAction(m) {
     const id = m.r.id;
-    if (m.stage !== 'closed' && m.replyEv && isUnreadMsg(m)) return `<a class="btn btn-primary btn-sm" href="#messages=${id}">${ico('msg')}Reply</a>`;
     if (m.late) return m.S.nudged ? `<a class="btn btn-outline btn-sm" href="${esc(similarHref(m.r))}">See similar</a>` : `<button class="btn btn-primary btn-sm" type="button" data-act="nudge" data-id="${id}">${ico('bell')}Nudge</button>`;
     if (m.stage === 'direct') return m.S.heard === false ? `<a class="btn btn-outline btn-sm" href="tel:${esc(m.r.pphone)}" data-calllog="${id}">${ico('phone')}Call again</a>` : `<button class="btn btn-primary btn-sm" type="button" data-act="heard" data-id="${id}">Yes, in touch</button>`;
     return '';
   }
   function enquiries() {
     const L = all();
-    if (!L.length) return head('My enquiries', `Everyone you called, WhatsApped, emailed, chatted with or texted on ${esc(SITE.name)}.`) + ES.enquiries();
+    if (!L.length) return head('My enquiries', `Everyone you called, WhatsApped, emailed${SITE.chat ? ', chatted with' : ''} or texted on ${esc(SITE.name)}.`) + ES.enquiries();
     const vOf = m => m.l ? m.l.v : '', verts = START.filter(([v]) => L.some(m => vOf(m) === v));
     const sv = verts.some(([v]) => v === A.ev) ? A.ev : 'all', q = (A.eq || '').trim().toLowerCase();
     // channel: how you contacted them (Phone · WhatsApp · Email · Chat · SMS), on top of vertical and search
@@ -458,7 +452,7 @@ ${channels}</div>`;
       ? st('is-current is-warn', ico(chIco), 'No answer yet', 'Listers often call back within the hour — or try another way in the card.', acts(`<button class="btn btn-outline btn-sm" data-act="heard" data-id="${r.id}">We’re in touch now</button>`))
       : st('is-current', ico(chIco), 'Did you get through?', `${chName} happens outside ${esc(SITE.name)} — tell us so we can keep track.`, acts(`<button class="btn btn-primary btn-sm" data-act="heard" data-id="${r.id}">Yes, we’re in touch</button>`, `<button class="btn btn-outline btn-sm" data-act="noanswer" data-id="${r.id}">No answer</button>`)));
     else items.push(st('is-done', ico('check'), m.replyEv ? 'They replied' : 'You’re in touch',
-      m.replyEv ? `${fmtSlot(m.replyEv.t)} · in ${m.replyMin} min` : 'You confirmed you got through', m.replyEv ? `<blockquote>“${esc(m.replyEv.text)}”</blockquote>` + (stage === 'closed' ? '' : acts(`<a class="btn btn-primary btn-sm" href="#messages=${r.id}">${ico('msg')}Reply</a>`)) : ''));
+      m.replyEv ? `${fmtSlot(m.replyEv.t)} · in ${m.replyMin} min` : 'You confirmed you got through', m.replyEv ? `<blockquote>“${esc(m.replyEv.text)}”</blockquote>` : ''));
     // 3 · closed
     if (stage === 'closed') items.push(st('is-done', ico(m.closedEv ? 'x' : 'check'), m.closedEv ? 'Closed by the lister' : esc(m.pill[0]),
       m.closedEv ? `${fmtSlot(m.closedEv.t)} · “${esc(m.closedEv.text)}”` : (S.closedAt ? fmtSlot(S.closedAt) : '') + (S.why ? ' · ' + esc(S.why) : ''),
@@ -628,7 +622,7 @@ ${channels}</div>`;
     const cur = KINDS.some(k => k[0] === A.ntab) ? A.ntab : 'all', list = cur === 'all' ? F : F.filter(x => x.kind === cur);
     const action = x => {
       const id = x.m && x.m.r.id;
-      if (x.type === 'reply') return x.m.stage === 'closed' ? '' : `<a class="btn btn-primary btn-sm" href="#messages=${id}">Reply</a>`;
+      if (x.type === 'reply') return x.m.stage === 'closed' ? '' : `<a class="btn btn-whatsapp btn-sm" target="_blank" rel="noopener" href="${waHref(x.m.r.pphone, `Hi ${x.m.who}, about ${x.m.r.title} (Ref ${x.m.r.ref}) on ${SITE.name}.`)}" data-walog="${id}">${ico('wa')}WhatsApp</a>`;
       if (x.type === 'late') return x.m.stage !== 'sent' ? '' : x.m.S.nudged ? `<a class="btn btn-outline btn-sm" href="${esc(similarHref(x.m.r))}">See similar</a>` : `<button class="btn btn-primary btn-sm" type="button" data-act="nudge" data-id="${id}">Nudge</button>`;
       if (x.type === 'closed') return `<a class="btn btn-outline btn-sm" href="${esc(similarHref(x.m.r))}">See similar</a>`;
       if (x.type === 'document') return `<a class="btn btn-primary btn-sm" href="#documents">Update</a>`;
@@ -795,8 +789,8 @@ ${channels}</div>`;
     </section>`;
   }
   const ES = {
-    home: () => emptyState({ art: 'home', title: 'Welcome to your account', sub: 'Everyone you contact on UpNow, their replies and the places you love — in one place.', steps: ['Find a space, service or provider across the seven verticals', 'Call, WhatsApp, email, chat or text the owner, manager or company', 'Follow every reply here and pick up where you left off'], mock: 'contact', cta: `<a class="btn btn-primary" href="${HREF.search}">${ico('search')}Start exploring</a><button class="btn btn-ghost" type="button" data-act="sample">Preview with sample activity</button>` }),
-    enquiries: () => emptyState({ art: 'enquiries', title: 'You haven’t contacted anyone yet', sub: 'Enquiries keep track of every lister you reach — so you always know who replied.', steps: ['Open any listing you like', 'Call, WhatsApp, email, chat or text the lister', 'Come back here to see who replied and close it when you’re done'], mock: 'contact' }),
+    home: () => emptyState({ art: 'home', title: 'Welcome to your account', sub: 'Everyone you contact on UpNow, their replies and the places you love — in one place.', steps: ['Find a space, service or provider across the seven verticals', (SITE.chat ? 'Call, WhatsApp, email, chat or text the owner, manager or company' : 'Call, WhatsApp, email or text the owner, manager or company'), 'Follow every reply here and pick up where you left off'], mock: 'contact', cta: `<a class="btn btn-primary" href="${HREF.search}">${ico('search')}Start exploring</a><button class="btn btn-ghost" type="button" data-act="sample">Preview with sample activity</button>` }),
+    enquiries: () => emptyState({ art: 'enquiries', title: 'You haven’t contacted anyone yet', sub: 'Enquiries keep track of every lister you reach — so you always know who replied.', steps: ['Open any listing you like', (SITE.chat ? 'Call, WhatsApp, email, chat or text the lister' : 'Call, WhatsApp, email or text the lister'), 'Come back here to see who replied and close it when you’re done'], mock: 'contact' }),
     messages: () => emptyState({ art: 'messages', title: 'No conversations yet', sub: 'Replies from listers come straight here — no digging through WhatsApp to find them.', steps: ['Contact a lister from any listing', 'Their replies appear here, next to the listing', 'Answer from here — it opens WhatsApp and keeps a copy'], mock: 'reply' }),
     saved: () => emptyState({ art: 'saved', title: 'You have no saved listings yet', sub: 'Saving helps you compare and come back to places faster.', steps: ['Browse listings', 'Tap the heart on the ones you like', 'Compare them side by side and add notes here'], mock: 'heart' }),
     searches: () => emptyState({ art: 'searches', title: 'You have no saved searches yet', sub: 'Saving a search helps you find the right place faster.', steps: ['Start a search with the filters you need', 'Select Save search', 'Get new matches on WhatsApp — and return here anytime'], mock: 'save' }),
@@ -954,7 +948,7 @@ ${channels}</div>`;
     if (L.some(x => !x)) return toast('Not enough listings for a preview');
     const mk = (l, type, t, msg) => { const O = offerOf(l.v, l.cat); return { id: 'Q' + (t.toString(36) + Math.random().toString(36).slice(2, 5)).toUpperCase(), type, lid: l.id, t, title: l.title, img: l.img[0], cat: l.cat, catLabel: O.label, area: areaName(l.loc), building: l.building, spec: U.specOf(l), provider: l.provider.name, org: l.provider.org, pphone: l.provider.phone, reply: l.provider.reply, ref: l.ref, msg }; };
     const T = now();
-    const recs = [mk(L[0], 'chat', T - 50 * 60000, 'Hi, is this still available? Is parking included?'), mk(L[1], 'email', T - 40 * 60000, 'Hello, do you cover Dubai Marina, and how soon can you start?'), mk(L[2], 'sms', T - 9 * 60000, 'Hi, is this available this weekend for 4 people?'),
+    const recs = [mk(L[0], SITE.chat ? 'chat' : 'whatsapp', T - 50 * 60000, 'Hi, is this still available? Is parking included?'), mk(L[1], 'email', T - 40 * 60000, 'Hello, do you cover Dubai Marina, and how soon can you start?'), mk(L[2], 'sms', T - 9 * 60000, 'Hi, is this available this weekend for 4 people?'),
       mk(L[3], 'call', T - 3 * 3600000), mk(L[4], 'whatsapp', T - 26 * 3600000, 'Hi, I’d like to know what’s covered.'), mk(L[5], 'email', T - 6 * 864e5, 'Hi, is this still open?')];
     const set = (r, S) => { D.lead[r.id] = S; };
     set(recs[0], { ev: [{ k: 'reply', t: recs[0].t + 7 * 60000, text: 'Hi! Yes, it’s available and one covered parking bay is included. Call me anytime.' }] });
@@ -1013,7 +1007,7 @@ ${channels}</div>`;
     const tab = e.target.closest('[data-tab]'); if (tab) { A[tab.dataset.tab] = tab.dataset.v; render(); return; }
     const rd = e.target.closest('[data-read]'); if (rd && !D.read.includes(rd.dataset.read)) { D.read.push(rd.dataset.read); save(); }
     // contacting the agent from here is logged on the enquiry, like the provider's timeline
-    const wl = e.target.closest('[data-walog],[data-calllog]'); if (wl) { logLine(wl.dataset.walog || wl.dataset.calllog, wl.dataset.walog ? 'WhatsApp message' : 'You called', wl.dataset.walog ? 'WhatsApp' : 'Phone'); save(); setTimeout(render, 300); return; }
+    const wl = e.target.closest('[data-walog],[data-calllog]'); if (wl) { (D.seen = D.seen || {})[wl.dataset.walog || wl.dataset.calllog] = now(); logLine(wl.dataset.walog || wl.dataset.calllog, wl.dataset.walog ? 'WhatsApp message' : 'You called', wl.dataset.walog ? 'WhatsApp' : 'Phone'); save(); setTimeout(render, 300); return; }
     const tr = e.target.closest('tr[data-href]'); if (tr && !e.target.closest('a,button')) { location.hash = tr.dataset.href; return; }
     const b = e.target.closest('[data-act]'); if (!b) return;
     const id = b.dataset.id, S = id && (D.lead[id] = D.lead[id] || {});

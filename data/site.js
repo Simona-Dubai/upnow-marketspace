@@ -10,6 +10,7 @@
     name: 'UpNow',
     logoMark: 'U',
     storageKey: 'upnow',            // prefix for everything kept in localStorage
+    chat: false,                    // in-app chat and the account's Messages are on hold — true brings both back
 
     /* display currencies: code → [rate from base, label, flag]; prices are stored in the first one (AED) */
     currencies: { AED: [1, 'AED', '🇦🇪'], USD: [.2723, 'USD', '🇺🇸'], EUR: [.2512, 'EUR', '🇪🇺'], GBP: [.2105, 'GBP', '🇬🇧'], SAR: [1.021, 'SAR', '🇸🇦'], INR: [22.7, 'INR', '🇮🇳'] },

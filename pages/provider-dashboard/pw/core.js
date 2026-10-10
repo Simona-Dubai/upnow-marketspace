@@ -77,10 +77,14 @@
   const save = () => localStorage.setItem(KEY, JSON.stringify(S));
 
   /* derived collections */
-  const ACTS = { request: ['Request a viewing', 'cal', ''], book: ['Request a booking', 'cal', ''], call: ['Call', 'phone', 'call'], wa: ['WhatsApp', 'wa', 'wa'], chat: ['UpNow chat', 'msg', 'chat'], form: ['Portal enquiry', 'mail', 'form'] };
-  const actOf = l => { if (l.src === 'wa' || l.src === 'ig') return 'wa'; if (l.src === 'phone') return 'call'; if (l.src !== 'upnow') return 'form'; const n = +l.id.replace(/\D/g, '') || 0; const r = ['request', 'call', 'wa', 'chat'][n % 4]; return r === 'request' && l.v === 'services' ? 'book' : r; };
+  // how a customer reached the provider: channels only — UpNow has no booking or request flows, every contact is a lead
+  // the in-app chat follows the website's switch (data/site.js SITE.chat — on hold while false)
+  const CHAT = !!(window.SITE && SITE.chat);
+  const ACTS = { call: ['Call', 'phone', 'call'], wa: ['WhatsApp', 'wa', 'wa'], ...(CHAT ? { chat: ['UpNow chat', 'msg', 'chat'] } : {}), sms: ['SMS', 'msg', 'chat'], form: ['Email', 'mail', 'form'] };
+  const actOf = l => { if (l.src === 'wa' || l.src === 'ig') return 'wa'; if (l.src === 'phone') return 'call'; if (l.src !== 'upnow') return 'form'; const n = +l.id.replace(/\D/g, '') || 0; return (CHAT ? ['chat', 'call', 'wa', 'sms'] : ['call', 'wa', 'sms', 'wa'])[n % 4]; };
   const leads = () => PW.LEADS.filter(l => l.v === S.v).map(l => ({ ...l, stage: S.stages[l.id] || l.stage, act: actOf(l) }));
-  const listings = () => [...PW.LISTINGS, ...S.extraListings].filter(l => l.v === S.v);
+  // the provider's own listings (pw/new-provider.js) first, then the sample ones
+  const listings = () => [...S.extraListings.filter(l => l.mine), ...PW.LISTINGS, ...S.extraListings.filter(l => !l.mine)].filter(l => l.v === S.v);
   const listingById = id => [...PW.LISTINGS, ...S.extraListings].find(l => l.id === id);
   const events = () => [...PW.EVENTS, ...S.extraEvents].filter(e => e.v === S.v);
   const VX = () => PW.V[S.v];
@@ -106,9 +110,13 @@
   const PKI = { spaces: 'building', services: 'wrench', experiences: 'compass', memberships: 'badge', programs: 'grad', health: 'heart', insurance: 'shield' };
   const PICO = ['grid', 'layers', 'brief', 'wrench', 'chart', 'alert', 'file'];
   const packNav = () => (PACKS.nav[PK[S.pack]] || []).map((n, i) => [i === 0 ? 'overview' : i === 1 ? 'portfolio' : i === 2 ? 'deals' : /Performance/.test(n) ? 'perf' : /Case|Compliance/.test(n) ? 'cases' : /Reports/.test(n) ? 'reports' : 'ops', n, PICO[i] || 'grid']);
-  const pageName = id => { const s = SHARED().find(x => x[0] === id); if (s) return s[1]; const p = packNav().find(x => x[0] === id); return p ? p[1] : 'Workspace'; };
-  const SHARED = () => [['demand', 'Demand', 'trend'], ['leads', 'Leads', 'kanban', leads().filter(l => l.stage === 'new').length, 1], ['calendar', 'Calendar', 'cal', events().filter(e => e.d === 1).length], ['inbox', 'Communications', 'inbox', unread()], ['finance', 'Money', 'coin'], ['settings', 'Settings', 'gear']];
-  const NAV = () => [['Shared UpNow OS', SHARED()], [PKL(S.pack) + ' pack', packNav()]];
+  const pageName = id => { if (id === 'portfolio') return 'Portfolio'; const x = (PWA.navExtra || []).find(n => n[0] === id); if (x) return x[1]; const s = SHARED().find(x => x[0] === id); if (s) return s[1]; const p = packNav().find(x => x[0] === id); return p ? p[1] : 'Workspace'; };
+  const SHARED = () => [['demand', 'Demand', 'trend'], ['leads', 'Leads', 'kanban', leads().filter(l => l.stage === 'new').length, 1], ['calendar', 'Calendar', 'cal', events().filter(e => e.d === 1).length], ['inbox', 'Communications', 'inbox', unread()], ['settings', 'Settings', 'gear']];
+  // one list: Portfolio first (every listing, every business type — pw/portfolio.js), then pages other modules add
+  // (PWA.navExtra — pw/new-provider.js adds "Application" while it's in review), then the shared tools.
+  // Money and the per-vertical pack pages (overview, transactions, operations, performance, cases, reports) are hidden.
+  const NAV = () => { const sh = SHARED(); return [['', [['portfolio', 'Portfolio', 'layers'], ...(PWA.navExtra || []), ...sh]]]; };
+  const HIDDEN = ['finance', 'overview', 'deals', 'ops', 'perf', 'cases', 'reports'];
   function go(page) { if (window.PW_MULTI && page !== window.PW_START) { S.page = page; save(); location.href = page + '.html' + location.search; return; } S.page = page; save(); closeDrawer(); closePop(); render(); }
   function setV(v) { if (!S.active.includes(v)) { PWA.acts.activatePack(v); return; } S.pack = v; if (PW.V[v]) { S.v = v; S.thread = null; } else if (!['overview', 'portfolio', 'deals', 'ops', 'perf', 'cases', 'reports'].includes(S.page)) S.page = 'overview'; save(); closePop(); render(); toast('Switched to ' + PKL(v) + ' pack'); }
 
@@ -117,21 +125,18 @@
     const item = ([id, l, i, n, red], cls) => `<a class="ni ${cls} ${S.page === id ? 'on' : ''}" data-go="${id}">${ico(i)}<span>${esc(l)}</span>${n ? `<em class="n ${red ? 'r' : ''}" style="font-style:normal">${n}</em>` : ''}</a>`;
     $('#sb').innerHTML = `<a class="logo" data-go="demand" style="cursor:pointer"><b>U</b><span>UpNow</span><small class="pro">Provider</small></a>
       <div class="biz" data-act="setTabGo" data-arg="Account &amp; KYC"><span class="av">GS</span><div><b>Greenstone</b><small>Verified provider · ${COUNTRIES[S.cc][1]}</small></div></div>
-      <div class="osbox"><div class="bxh"><b>Shared UpNow OS</b><small>Leads, schedule, messages, money & settings — used by every vertical</small></div>${sh[1].map(x => item(x, 'os')).join('')}</div>
-      <div class="pkbox"><div class="bxh"><b>${esc(PKL(S.pack))} pack</b><small>Records & operations only for ${esc(PKL(S.pack).toLowerCase())}</small></div><button class="pksw" data-act="packMenu"><span class="pl">${ico(PKI[S.pack])}<b>${esc(PKL(S.pack))}</b></span><small>${S.active.length} of 7 packs · switch</small>${ico('chev')}</button>
-      ${pk[1].map(x => item(x, 'pk')).join('')}</div>
-      <div class="sp"></div>
-      <div class="me">${av('Khalid Baalfalasi', 'sm')}<div><b style="font-size:13px">Khalid B.</b><small>Owner</small></div></div>`;
+      <nav class="osbox" aria-label="Provider dashboard">${sh[1].map(x => (x[0] === 'settings' ? '<hr class="nv-rule">' : '') + item(x, 'os')).join('')}</nav>
+      <a class="explore" href="../../index.html">${ico('compass')}<span>Customer site</span></a>
+      <div class="sp"></div>`;
   }
   function topbar() {
     const C = COUNTRIES[S.cc];
     $('#top').innerHTML = `<label class="srch">${ico('search')}<input id="gsearch" placeholder="Search leads, listings, customers…"></label><span class="sp"></span>
       <span class="live hide-s">Launch mode · 0% fees</span>
-      <button class="btn btn-g btn-sm" data-act="addListing">${ico('plus')}Add ${S.pack === 'spaces' ? 'listing' : S.pack === 'services' ? 'service' : 'offering'}</button>
+      <button class="btn btn-g btn-sm" data-act="addListing">${ico('plus')}Add listing</button>
       <label class="tsel"><select id="ccSel">${Object.entries(COUNTRIES).map(([k, x]) => `<option value="${k}" ${k === S.cc ? 'selected' : ''}>${x[0]} ${x[1]} · ${x[2]}</option>`).join('')}</select>${ico('chev')}</label>
       <label class="tsel g"><select id="lgSel"><option value="en" ${S.lang === 'en' ? 'selected' : ''}>English</option><option value="ar" ${S.lang === 'ar' ? 'selected' : ''}>العربية</option></select>${ico('chev')}</label>
-      <button class="ib" data-go="inbox" title="Notifications">${ico('bell')}<i></i></button>
-      <a class="btn btn-o btn-sm" href="../../index.html" title="Back to the customer marketplace">${ico('home')}Customer site</a>`;
+      <button class="ib" data-go="inbox" title="Notifications">${ico('bell')}<i></i></button>`;
     $('#ccSel').onchange = e => { S.cc = e.target.value; save(); render(); toast('Showing amounts in ' + COUNTRIES[S.cc][2]); };
     $('#lgSel').onchange = e => { S.lang = e.target.value; save(); applyLang(); toast(S.lang === 'ar' ? 'تم التبديل إلى العربية' : 'Switched to English'); };
     $('#gsearch').onkeydown = e => { if (e.key === 'Enter') { const q = e.target.value.toLowerCase(); const l = leads().find(x => x.n.toLowerCase().includes(q)); if (l) PWA.openLead(l.id); else { const li = listings().find(x => x.t.toLowerCase().includes(q)); if (li) PWA.openListing(li.id); else toast('No match for "' + e.target.value + '"'); } } };
@@ -139,11 +144,13 @@
 
   function applyLang() { document.documentElement.lang = S.lang; document.documentElement.dir = S.lang === 'ar' ? 'rtl' : 'ltr'; }
   function render() {
+    // a hidden page opened by its old link goes to Portfolio
+    if (HIDDEN.includes(S.page)) { S.page = 'portfolio'; if (window.PW_MULTI && window.PW_START !== 'portfolio') { save(); location.replace('portfolio.html' + location.search); return; } }
     applyLang();
     shell(); topbar();
     const view = $('#view');
     const pg = PWA.pages[S.page] || PWA.pages.demand;
-    view.className = 'view' + (S.page === 'inbox' ? ' flush' : '');
+    view.className = 'view pg-' + S.page + (S.page === 'inbox' ? ' flush' : '');
     view.innerHTML = fx(pg());
     view.scrollTop = 0;
     if (PWA.after[S.page]) PWA.after[S.page]();
@@ -159,5 +166,5 @@
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeDrawer(); closePop(); } });
 
-  window.PWA = { ACTS, COUNTRIES, PK, PKL, PKI, packNav, pageName, ico, esc, $, $$, av, aed, ago, hm, spark, st, S, save, leads, listings, listingById, events, VX, catLabel, toast, modal, closeModal, drawer, closeDrawer, pop, closePop, go, render, pages: {}, after: {}, acts: {} };
+  window.PWA = { CHAT, ACTS, COUNTRIES, PK, PKL, PKI, packNav, pageName, ico, esc, $, $$, av, aed, ago, hm, spark, st, S, save, leads, listings, listingById, events, VX, catLabel, toast, modal, closeModal, drawer, closeDrawer, pop, closePop, go, render, pages: {}, after: {}, acts: {} };
 })();

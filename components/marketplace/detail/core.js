@@ -97,12 +97,14 @@
 
   /* ---------- provider aggregates ---------- */
   const NATIVE = { English: 'English', Arabic: 'العربية', Hindi: 'हिन्दी', Urdu: 'اردو', Russian: 'Русский', French: 'Français' };
-  function prov(name) {
-    const L = LISTINGS.filter(x => x.provider.name === name);
+  // \`own\`: the listing being shown, for a provider with no catalogue listings yet (a preview of their own listing)
+  function prov(name, own) {
+    let L = LISTINGS.filter(x => x.provider.name === name);
+    if (!L.length && own) L = [own];
     const p = L[0].provider, orgs = {}; L.forEach(x => orgs[x.provider.org] = (orgs[x.provider.org] || 0) + 1);
     const org = Object.entries(orgs).sort((a, b) => b[1] - a[1])[0][0];
     const O = offerOf(L[0].v, L[0].cat), person = !!O.people || /^(Dr\.|[A-Z][a-z]+ [A-Z][a-z]+( Al)?)/.test(name) && !O.names;
-    const reviews = L.reduce((s, x) => s + x.reviews, 0), rating = +(L.reduce((s, x) => s + x.rating * x.reviews, 0) / reviews).toFixed(1);
+    const reviews = L.reduce((s, x) => s + x.reviews, 0), rating = reviews ? +(L.reduce((s, x) => s + x.rating * x.reviews, 0) / reviews).toFixed(1) : 0;
     let hue = 0; for (const c of name) hue = (hue * 31 + c.charCodeAt(0)) % 360;
     return { name, L, p, org, person, reviews, rating, hue, reply: Math.min(...L.map(x => x.provider.reply)), langs: p.langs, brn: (L.find(x => x.provider.brn) || {}).provider?.brn, since: Math.min(...L.map(x => x.provider.since)), v: L[0].v, cats: [...new Set(L.map(x => x.cat))] };
   }
@@ -113,7 +115,7 @@
   const allLabel = P => P.v === 'spaces' ? (P.cats.every(c => ['venue', 'court', 'yacht'].includes(c)) ? 'View all ' + ({ venue: 'spaces', court: 'courts', yacht: 'yachts' }[P.cats[0]]) : 'View all properties') : 'View all services';
 
   function agentCard(l, o = {}) {
-    const P = prov(l.provider.name);
+    const P = prov(l.provider.name, l);
     const reply = P.reply <= 5 ? 'within 5 minutes' : P.reply <= 15 ? 'within ' + P.reply + ' minutes' : 'within 30 minutes';
     const title = P.person ? (isAgency(P.org) ? `<a class="agency-link" href="${agencyHref(P.org)}">${esc(P.org)}</a>` : esc(P.org)) + (P.brn ? ' • BRN ' + P.brn : '') : esc(offerOf(l.v, l.cat).org[0] + (l.permit ? ' • ' + l.permit : ''));
     const langs = P.langs.map(x => NATIVE[x] || x);
@@ -150,7 +152,7 @@
         <div class="agent-more">More ways to contact</div>
         <div class="agent-alt-actions"><button class="agent-alt-action is-sms" data-sms="${l.id}">${ico('msg')}<span><b>SMS</b></span>${ico('chevR', 'chevron')}</button>
           <button class="agent-alt-action is-email" data-email="${l.id}"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span><b>Email</b></span>${ico('chevR', 'chevron')}</button>
-          <button class="agent-alt-action is-chat" data-chat="${l.id}"><svg class="icon" viewBox="0 0 24 24"><path d="M12 4c4.97 0 9 3.36 9 7.5S16.97 19 12 19c-1.1 0-2.15-.16-3.12-.46L4 20l1.4-3.6C4.5 15.1 3 13.4 3 11.5 3 7.36 7.03 4 12 4z"/></svg><span><b>Chat</b></span>${ico('chevR', 'chevron')}</button></div>
+          ${SITE.chat ? `<button class="agent-alt-action is-chat" data-chat="${l.id}"><svg class="icon" viewBox="0 0 24 24"><path d="M12 4c4.97 0 9 3.36 9 7.5S16.97 19 12 19c-1.1 0-2.15-.16-3.12-.46L4 20l1.4-3.6C4.5 15.1 3 13.4 3 11.5 3 7.36 7.03 4 12 4z"/></svg><span><b>Chat</b></span>${ico('chevR', 'chevron')}</button>` : ''}</div>
       </div>
       ${o.channels ? '' : `<div class="agent-footer"><span class="agent-logo">${ico(P.v === 'spaces' ? 'office' : 'shop')}</span><span class="agent-agency"><b>${esc(P.person ? P.org : P.name)}</b><small>${esc(orgSub(P))}</small></span><a class="agent-view-all" href="${P.person && isAgency(P.org) ? agencyHref(P.org) : provHref(P.name)}">${allLabel(P)}${ico('chevR')}</a></div>`}
     </div>`;
