@@ -1,6 +1,6 @@
-/* The listing form (js/marketplace/listing-form.js): onboarding's step 4 "Your first listing" (pages/join.html).
-   Built on the onboarding styles (join.css): this file only adds what a listing needs that onboarding doesn't have —
-   questions from the category, photos, price and availability. */
+/* The listing form (js/marketplace/listing-form.js): onboarding's step 4 "Your first listing" (pages/join.html) and the
+   Create listing page (pages/listing-new.html). Built on the onboarding styles (join.css): this file only adds what a
+   listing needs that onboarding doesn't have — questions from the category, photos, price, review and "Your listings". */
 
 /* views without a preview (submitted, your listings, sign-in): one centred column */
 .listing-page.is-done {
@@ -42,7 +42,7 @@
   color: var(--color-text-muted);
 }
 
-.listing-q .ob-seg-ctl {
+.listing-q .onboarding-segmented-control {
   margin-top: 8px;
 }
 
@@ -50,12 +50,12 @@
   margin-top: 10px;
 }
 
-.listing-q.has-error .ob-seg-ctl,
+.listing-q.has-error .onboarding-segmented-control,
 .listing-chips.has-error {
   border-color: var(--color-danger);
 }
 
-.listing-chips .ob-chip {
+.listing-chips .onboarding-chip {
   min-height: 36px;
 }
 
@@ -66,7 +66,7 @@
   margin-top: 8px;
 }
 
-.listing-grid .ob-field {
+.listing-grid .onboarding-field {
   margin: 0;
 }
 
@@ -316,7 +316,7 @@
   min-height: 150px;
 }
 
-.listing-photo-add .ob-drop-empty {
+.listing-photo-add .onboarding-dropzone-empty {
   flex-direction: column;
 }
 
@@ -544,17 +544,17 @@
   width: 60%;
 }
 
-.ob-done-ic.is-wait {
+.onboarding-done-icon.is-wait {
   background: var(--color-warning-bg);
   color: var(--color-warning-text);
 }
 
-.ob-done-ic.is-wait .icon {
+.onboarding-done-icon.is-wait .icon {
   width: 36px;
   height: 36px;
 }
 
-.listing-gate .ob-done-cta,
+.listing-gate .onboarding-done-actions,
 .listing-mine-top {
   display: flex;
   justify-content: flex-start;
@@ -571,7 +571,7 @@
 }
 
 /* ---------- your listings ---------- */
-.listing-mine .ob-hero {
+.listing-mine .onboarding-hero {
   margin-bottom: 4px;
 }
 
@@ -719,13 +719,13 @@
 }
 
 /* onboarding has four steps now that the first listing is one of them */
-.ob-seg:has(> li:nth-child(4)) {
+.onboarding-step-bar:has(> li:nth-child(4)) {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 @media (max-width: 640px) {
   /* Back · Add it later · Review and send on one row */
-  .ob-nav:has(.listing-nav-end) > .btn-ghost:first-child {
+  .onboarding-nav:has(.listing-nav-end) > .btn-ghost:first-child {
     flex: none;
     padding: 0 10px;
   }
@@ -741,7 +741,7 @@
     padding: 0 10px;
   }
 
-  .listing-nav-end .ob-next {
+  .listing-nav-end .onboarding-next {
     flex: 1;
     min-width: 0;
     padding: 0 14px;

@@ -6,9 +6,7 @@
    shape the category's title, card and detail code expect — so the real search card draws a listing as it is typed.
    Submitting never publishes: a listing waits for its category licence ("Add later" in onboarding), then for the
    provider's verification, then the team reviews it (Live · Changes requested · Not approved).
-   Every control carries a data-ln-* attribute so it never collides with the host page's own handlers.
-   Class names: written with the onboarding's names; a page whose onboarding uses the short "ob-" names calls
-   UPLF.useClasses('ob') and they are mapped on the way out. */
+   Every control carries a data-ln-* attribute so it never collides with the host page's own handlers. */
 (function () {
   const { VERTICALS, offerOf, areaName, AREAS } = UP;
   const U = UPUI, { ico, esc, toast, auth, store } = U;
@@ -153,16 +151,10 @@
     if (moved) save();
   }
 
-  /* ---------- class names: the onboarding's, or its short "ob-" names ---------- */
-  const OB = { error: 'err', field: 'field', hint: 'hint', section: 'sec', 'section-header': 'sec-h', 'segmented-control': 'seg-ctl', categories: 'cats', chip: 'chip', tick: 'tick',
-    dropzone: 'drop', 'dropzone-empty': 'drop-empty', about: 'about', 'about-footer': 'about-foot', 'magic-write': 'magic', count: 'count', 'business-only': 'only', private: 'private', hours: 'hours', date: 'date' };
-  let short = false;
-  const cx = html => short ? html.replace(/onboarding-([a-z]+(?:-[a-z]+)*)/g, (m, k) => OB[k] ? 'ob-' + OB[k] : m) : html;
-
   /* ---------- builders (onboarding's classes) ---------- */
   let E = {};
   const err = k => E[k] ? `<span class="onboarding-error">${ico('x')}${esc(E[k])}</span>` : '';
-  const tip = text => short ? '' : ` <span class="onboarding-tip" tabindex="0" role="button" aria-label="More info"><i>${ico('spark')}</i><span role="tooltip"><b>${ico('spark')}Good to know</b>${esc(text)}</span></span>`;
+  const tip = text => ` <span class="onboarding-tip" tabindex="0" role="button" aria-label="More info"><i>${ico('spark')}</i><span role="tooltip"><b>${ico('spark')}Good to know</b>${esc(text)}</span></span>`;
   const field = (k, label, input, hint = '') => `<div class="field onboarding-field ${E[k] ? 'has-error' : ''}" data-f="${k}"><label for="ln-${k}">${label}</label>${input}${hint && !E[k] ? `<small class="onboarding-hint">${esc(hint)}</small>` : ''}${err(k)}</div>`;
   // the host's section builder (it handles the reveal motion), or a plain one
   let SEC = (id, title, body, aside = '') => `<section class="onboarding-section" data-sec="${id}">${title || aside ? `<div class="onboarding-section-header"><h2>${title}</h2>${aside}</div>` : ''}${body}</section>`;
@@ -198,8 +190,7 @@
         ${lease ? field('unit', `Unit number <small>${ico('lock')}private</small>`, `<input id="ln-unit" data-ln-k="unit" value="${esc(L.unit)}" placeholder="e.g. 1204">`, 'Never shown on the listing — only shared when you choose') : ''}</div>${outside}`);
   }
   // the category's own questions, then where it is, then the optional extras
-  function details(L, ctx) { return cx(_details(L, ctx)); }
-  function _details(L, ctx) {
+  function details(L, ctx) {
     use(ctx);
     const O = offerOf(L.v, L.cat), F = detailFields(O);
     const choices = F.filter(f => f.req && (f.kind === 'one' || f.kind === 'many')), nums = F.filter(f => f.req && f.kind === 'number'), extra = F.filter(f => !f.req);
@@ -210,8 +201,7 @@
         return SEC('ln-extra', '', `<details class="listing-extras" ${picked ? 'open' : ''}><summary><b>Extras</b><small>${picked ? picked + ' added' : 'Optional — amenities and features customers filter by'}</small></summary>
           ${extra.filter(f => f.kind === 'many').map(f => control(L, f)).join('')}${extra.some(f => f.kind === 'bool') ? `<div class="listing-toggles">${extra.filter(f => f.kind === 'bool').map(f => control(L, f)).join('')}</div>` : ''}</details>`); })() : ''}`;
   }
-  function photos(L, ctx) { return cx(_photos(L, ctx)); }
-  function _photos(L, ctx) {
+  function photos(L, ctx) {
     use(ctx);
     const O = offerOf(L.v, L.cat), min = minPhotos(L.v, O), count = L.img.length, ok = count >= min;
     const tips = { spaces: 'Bright photos of every room, the view and the building', services: 'Your finished work — real jobs, not stock photos', experiences: 'People enjoying it, the place, the details', memberships: 'The space, the equipment, a class in action', programs: 'Classrooms, facilities and activities — no children’s faces', health: 'Your facility and team — never patients', insurance: '' }[L.v];
@@ -221,8 +211,7 @@
         ${count < MAX_PHOTOS ? `<label class="onboarding-dropzone listing-photo-add"><input type="file" accept="image/jpeg,image/png,image/webp" multiple data-ln-photos hidden><span class="onboarding-dropzone-empty">${ico('upload')}<span><b>${count ? 'Add more' : 'Drag photos here or <u>browse</u>'}</b><small>${esc(tips)}</small></span></span></label>` : ''}
       </div>${err('photos')}<p class="listing-photo-count ${ok ? 'is-ok' : ''}">${ok ? `${ico('check')}${count} photos${count < min + 3 ? ` · listings like yours do best with ${min + 3} or more` : ''}` : `${count} of at least ${min}`}${count > 1 ? ' · drag to reorder' : ''}</p>`, `<small>The first one is the cover</small>`);
   }
-  function words(L, ctx) { return cx(_words(L, ctx)); }
-  function _words(L, ctx) {
+  function words(L, ctx) {
     use(ctx);
     const sug = suggestedTitle(L), t = L.title, d = L.desc;
     return `${SEC('ln-title', 'Title', `${field('title', 'Title', `<input id="ln-title" data-ln-k="title" maxlength="70" value="${esc(t)}" placeholder="${esc(sug || 'A short, clear title')}">`, 'Keep it short — under 50 characters shows in full on phones')}
@@ -232,8 +221,7 @@
           <div class="onboarding-about-footer"><button type="button" class="onboarding-magic-write" data-ln-act="writedesc">${ico('spark')}${d ? 'Rewrite it for me' : 'Write it for me'}</button><span class="onboarding-count ${d.trim().length >= 80 ? 'is-ok' : ''}" data-ln-count="desc">${d.length < 80 ? `${d.length}/80 min` : `${d.length}/2000`}</span></div>${err('desc')}</div>
         <small class="onboarding-hint listing-note">${ico('lock')}Don't add phone numbers or links — customers contact you through ${esc(SITE.name)}.</small>`)}`;
   }
-  function price(L, ctx) { return cx(_price(L, ctx)); }
-  function _price(L, ctx) {
+  function price(L, ctx) {
     use(ctx);
     const O = offerOf(L.v, L.cat), pf = priceFields(O), dd = dateDef(O), pm = permitOf(O), a = app() || {}, d = a.d || {};
     const term = termOf(L), basis = (O.unit(asListing(L), viewState(L)) || '').replace(/^\//, 'per '), pd = priceDef(O);
@@ -252,8 +240,7 @@
       ${lic ? `<p class="onboarding-private">${ico('shield')}<span>Your verified licence is attached automatically: <b>${esc(lic)}</b>.</span></p>` : ''}`;
   }
   // the provider's categories to choose from (only when they offer more than one)
-  function categories(a, cur, ctx) { return cx(_categories(a, cur, ctx)); }
-  function _categories(a, cur, ctx) {
+  function categories(a, cur, ctx) {
     use(ctx);
     const cats = (a.cats || []).filter(c => VERTICALS[a.v].offers.some(o => o.id === c));
     if (cats.length < 2) return '';
@@ -344,7 +331,7 @@
       else if (num) L.a[num] = t.value === '' ? '' : +t.value;
       else return;
       const ek = num ? 'a_' + num : k, errs = host.errors();
-      if (errs[ek]) { delete errs[ek]; const f = t.closest(cx('.onboarding-field, .onboarding-about')); if (f) { f.classList.remove('has-error'); const m = f.querySelector(cx('.onboarding-error')); if (m) m.remove(); } }
+      if (errs[ek]) { delete errs[ek]; const f = t.closest('.onboarding-field, .onboarding-about'); if (f) { f.classList.remove('has-error'); const m = f.querySelector('.onboarding-error'); if (m) m.remove(); } }
       L.updated = Date.now(); save(); host.saved(k);
       const count = (n, v, min, max) => { const c = root.querySelector(`[data-ln-count="${n}"]`); if (c) { c.textContent = min && v.length < min ? `${v.length}/${min} min` : `${v.length}/${max}`; c.classList.toggle('is-ok', min ? v.trim().length >= min : !!v.length); } };
       if (k === 'desc') { count('desc', t.value, 80, 2000); fit(); }
@@ -373,7 +360,7 @@
       const fieldBy = key => fieldsOf(offerOf(L.v, L.cat)).find(y => y.key === key);
       if ((x = b('[data-ln-act]'))) {
         if (x.dataset.lnAct === 'usetitle') { L.title = suggestedTitle(L); L.titled = false; clearErr('title'); touch(L); }
-        if (x.dataset.lnAct === 'writedesc') { L.desc = descStarter(L); clearErr('desc'); touch(L, cx('.onboarding-about')); }
+        if (x.dataset.lnAct === 'writedesc') { L.desc = descStarter(L); clearErr('desc'); touch(L, '.onboarding-about'); }
         return;
       }
       if ((x = b('[data-ln-one]'))) { const f = fieldBy(x.dataset.lnOne); if (!f) return; const v = f.num ? +x.dataset.v : x.dataset.v; L.a[f.key] = f.arr ? [v] : v; clearErr('a_' + f.key); touch(L, `[data-ln-one="${f.key}"][data-v="${x.dataset.v}"]`); return; }
@@ -399,7 +386,6 @@
     noun, locKind, minPhotos, permitOf, dateDef, weekly, detailFields, priceFields, gateOf, gateName, GATE, DOC_NAME, STATUS, HOURS, DAYS,
     attrs, storedPrice, viewState, suggestedTitle, asListing, cardOf, factsOf, whereOf, titleOf, lowerFirst, optLabel, niceDate, started,
     nextStatus, setStatus, submit, settle,
-    categories, details, photos, words, price, validate, priceOdd, parts, bind, fit, tip,
-    useClasses: p => { short = p === 'ob'; }
+    categories, details, photos, words, price, validate, priceOdd, parts, bind, fit, tip
   };
 })();

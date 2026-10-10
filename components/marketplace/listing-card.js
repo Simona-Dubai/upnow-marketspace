@@ -6,7 +6,7 @@
   const { areaName, offerOf } = UP;
   const HREF = PATHS.href;
 
-  const badges = l => `<div class="badges">${l.featured ? `<span class="badge is-featured">${t('Featured')}</span>` : ''}${l.a.verified ? `<span class="badge is-verified">${ico('shield')}${t('Verified')}</span>` : ''}</div>`;
+  const badges = l => `<div class="badges">${l.featured ? `<span class="badge is-featured">${t('Featured')}</span>` : ''}${l.a.verified ? `<span class="badge is-verified" title="${t('Verified')}" aria-label="${t('Verified')}">${ico('shield')}${t('Verified')}</span>` : ''}</div>`;
   function photo(l, i = 0) {
     if (l.img && l.img.length) return `<img src="${l.img[i % l.img.length]}" alt="${esc(l.title)}" loading="lazy">`;
     return `<div class="tile" style="--h:165"><b>${esc(initials(l.provider.name))}</b><span>${esc(l.provider.name)}</span><small>${esc(offerOf(l.v, l.cat).label)} insurance</small></div>`;
@@ -17,7 +17,7 @@
   // phone extras (opts.acts, search page only): star rating beside the price + Call · WhatsApp · Viewing row; hidden above 700px by the page css
   function cardActs(l) {
     const O = offerOf(l.v, l.cat);
-    return `<div class="card-acts"><button class="btn btn-outline" type="button" data-call="${l.id}">${ico('phone')}${t('Call')}</button><button class="btn btn-whatsapp" type="button" data-wa="${l.id}">${ico('wa')}${t('WhatsApp')}</button><button class="btn btn-primary" type="button" data-req="${l.id}">${ico(O.lease ? 'cal' : 'msg')}${t(O.lease ? 'Viewing' : 'Enquire')}</button></div>`;
+    return `<div class="card-actions"><button class="btn btn-outline" type="button" data-call="${l.id}">${ico('phone')}${t('Call')}</button><button class="btn btn-whatsapp" type="button" data-wa="${l.id}">${ico('wa')}${t('WhatsApp')}</button><button class="btn btn-primary" type="button" data-req="${l.id}">${ico(O.lease ? 'cal' : 'msg')}${t(O.lease ? 'Viewing' : 'Enquire')}</button></div>`;
   }
   // a listing rendered through the generic card (components/ui.js)
   function card(l, S, opts) {
