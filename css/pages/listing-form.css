@@ -1,0 +1,750 @@
+/* The listing form (js/marketplace/listing-form.js): onboarding's step 4 "Your first listing" (pages/join.html).
+   Built on the onboarding styles (join.css): this file only adds what a listing needs that onboarding doesn't have —
+   questions from the category, photos, price and availability. */
+
+/* views without a preview (submitted, your listings, sign-in): one centred column */
+.listing-page.is-done {
+  grid-template-columns: minmax(0, 860px);
+  justify-content: center;
+}
+
+/* review: on wide screens the preview column already shows the card */
+@media (min-width: 1001px) {
+  .listing-page [data-sec="card"] {
+    display: none;
+  }
+}
+
+/* ---------- questions from the category ---------- */
+.listing-basics {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.listing-q {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 8px 0;
+}
+
+.listing-q > span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.listing-q > span small,
+.listing-page label small {
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.listing-q .ob-seg-ctl {
+  margin-top: 8px;
+}
+
+.listing-q.is-many .listing-chips {
+  margin-top: 10px;
+}
+
+.listing-q.has-error .ob-seg-ctl,
+.listing-chips.has-error {
+  border-color: var(--color-danger);
+}
+
+.listing-chips .ob-chip {
+  min-height: 36px;
+}
+
+.listing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin-top: 8px;
+}
+
+.listing-grid .ob-field {
+  margin: 0;
+}
+
+.listing-toggles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 24px;
+  margin-top: 10px;
+}
+
+.listing-toggle {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.listing-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.listing-note .icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+/* ---------- notices ---------- */
+.listing-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 14px 0 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.listing-notice .icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 1px;
+}
+
+.listing-notice.is-amber {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.listing-notice.is-red {
+  margin: 0 0 14px;
+  background: #fbeceb;
+  color: #8f2a25;
+}
+
+/* ---------- start ---------- */
+.listing-need {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listing-need li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.listing-need .icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--color-primary);
+}
+
+.listing-drafts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.listing-draft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  color: var(--color-text);
+  transition: border-color 0.15s;
+}
+
+.listing-draft:hover {
+  border-color: var(--color-primary-lighter);
+}
+
+.listing-draft img,
+.listing-draft > i {
+  width: 52px;
+  height: 40px;
+  flex: none;
+  border-radius: 8px;
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+}
+
+.listing-draft > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.listing-draft b,
+.listing-draft small {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.listing-draft small {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ---------- photos ---------- */
+.listing-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  padding: 2px;
+  border-radius: 14px;
+  transition: background 0.15s;
+}
+
+.listing-photos.is-drag {
+  background: var(--color-primary-tint-light);
+}
+
+.listing-photos.has-error .listing-photo-add {
+  border-color: var(--color-danger);
+}
+
+.listing-photo {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 4 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-bg);
+  cursor: grab;
+}
+
+.listing-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.listing-photo em {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: #fff;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.listing-photo-cover {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: rgba(20, 32, 26, 0.72);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.listing-photo-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(20, 32, 26, 0.72);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.listing-photo-remove .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.listing-photo:hover .listing-photo-cover,
+.listing-photo:hover .listing-photo-remove,
+.listing-photo:focus-within .listing-photo-cover,
+.listing-photo:focus-within .listing-photo-remove {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .listing-photo-cover,
+  .listing-photo-remove {
+    opacity: 1;
+  }
+}
+
+.listing-photo-add {
+  aspect-ratio: 4 / 3;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.listing-photos > .listing-photo-add:only-child {
+  grid-column: 1 / -1;
+  aspect-ratio: auto;
+  min-height: 150px;
+}
+
+.listing-photo-add .ob-drop-empty {
+  flex-direction: column;
+}
+
+.listing-photo-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.listing-photo-count.is-ok {
+  color: var(--color-primary-dark);
+}
+
+.listing-photo-count .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.listing-title-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+/* ---------- price ---------- */
+.listing-money {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.listing-money:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-tint);
+}
+
+.listing-money span,
+.listing-money em {
+  flex: none;
+  font-size: 13px;
+  font-style: normal;
+  color: var(--color-text-muted);
+}
+
+.listing-money input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  background: none;
+  font-weight: 700;
+}
+
+.has-error .listing-money {
+  border-color: var(--color-danger);
+}
+
+/* ---------- review ---------- */
+.listing-review-card {
+  max-width: 320px;
+}
+
+.listing-review {
+  display: flex;
+  flex-direction: column;
+}
+
+.listing-review-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.listing-review-row:last-child {
+  border-bottom: 0;
+}
+
+.listing-review-row > span {
+  min-width: 0;
+}
+
+.listing-review-row small {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.listing-review-row b {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.listing-review-row b em {
+  display: block;
+  margin-top: 3px;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.listing-review-row b em .icon {
+  width: 12px;
+  height: 12px;
+  vertical-align: -1px;
+}
+
+.listing-review-thumbs {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.listing-review-thumbs img,
+.listing-review-thumbs em {
+  width: 54px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  display: grid !important;
+  place-items: center;
+  margin: 0 !important;
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary) !important;
+  font-weight: 700 !important;
+}
+
+.listing-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.listing-who-avatar {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+}
+
+.listing-who-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.listing-who small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.listing-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listing-checks li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+}
+
+.listing-checks .icon {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  padding: 4px;
+  border-radius: 50%;
+}
+
+.listing-checks .is-ok .icon {
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+}
+
+.listing-checks .is-wait .icon {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+/* ---------- preview (right column) ---------- */
+.listing-preview-card .card {
+  box-shadow: var(--shadow);
+}
+
+.listing-preview-empty {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.listing-preview-empty svg {
+  width: 60%;
+}
+
+.ob-done-ic.is-wait {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.ob-done-ic.is-wait .icon {
+  width: 36px;
+  height: 36px;
+}
+
+.listing-gate .ob-done-cta,
+.listing-mine-top {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 8px;
+}
+
+.listing-card-fallback .photo {
+  aspect-ratio: 4 / 3;
+  background: var(--color-bg);
+}
+
+.listing-card-fallback .body {
+  padding: 12px;
+}
+
+/* ---------- your listings ---------- */
+.listing-mine .ob-hero {
+  margin-bottom: 4px;
+}
+
+.listing-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.listing-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.listing-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--color-text);
+}
+
+.listing-row-main > img,
+.listing-row-main > i {
+  width: 88px;
+  height: 66px;
+  flex: none;
+  border-radius: 10px;
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+  background: var(--color-primary-tint-light);
+  color: var(--color-primary);
+}
+
+.listing-row-main > span {
+  min-width: 0;
+}
+
+.listing-row-main b {
+  display: block;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.listing-row-main small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.listing-row-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 6px;
+}
+
+.listing-row-status em {
+  font-style: normal;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+}
+
+.listing-row-side {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-pill.is-danger {
+  background: #fbeceb;
+  color: #a1322c;
+}
+
+/* prototype only: simulates the team's review until a review tool exists */
+.listing-demo {
+  flex-basis: 100%;
+  padding-top: 10px;
+  border-top: 1px dashed var(--color-border-strong);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.listing-demo summary {
+  cursor: pointer;
+  width: max-content;
+}
+
+.listing-demo div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* ---------- phones ---------- */
+@media (max-width: 700px) {
+  .listing-grid,
+  .listing-toggles,
+  .listing-need {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .listing-photos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .listing-row-main > img,
+  .listing-row-main > i {
+    width: 64px;
+    height: 52px;
+  }
+
+  .listing-row-side {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .listing-review-card {
+    max-width: none;
+  }
+}
+
+/* onboarding step 4: "Add it later" beside the main button */
+.listing-nav-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.listing-step-intro {
+  margin-top: 6px;
+}
+
+/* onboarding has four steps now that the first listing is one of them */
+.ob-seg:has(> li:nth-child(4)) {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+  /* Back · Add it later · Review and send on one row */
+  .ob-nav:has(.listing-nav-end) > .btn-ghost:first-child {
+    flex: none;
+    padding: 0 10px;
+  }
+
+  .listing-nav-end {
+    flex: 1;
+    min-width: 0;
+    gap: 4px;
+  }
+
+  .listing-nav-end .btn-ghost {
+    flex: none;
+    padding: 0 10px;
+  }
+
+  .listing-nav-end .ob-next {
+    flex: 1;
+    min-width: 0;
+    padding: 0 14px;
+    white-space: nowrap;
+  }
+}
