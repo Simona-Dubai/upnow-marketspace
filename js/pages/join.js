@@ -594,33 +594,29 @@
      that day. Plans, prices and listing limits come from the admin portal's settings ('upnow.admin.state'), the same
      list the dashboard's Plan & billing page shows. */
   const PLANS_DEF = [{ id: 'launch', n: 'Launch', p: 0, max: 5 }, { id: 'basic', n: 'Basic', p: 299, max: 10 }, { id: 'pro', n: 'Pro', p: 799, max: 50 }, { id: 'business', n: 'Business', p: 1999, max: 500 }];
-  const PLAN_FOR = { launch: 'Getting started', basic: 'Owners and freelancers', pro: 'Agencies, clinics, operators', business: 'Large portfolios and multi-branch' };
+  const PLAN_FOR = SITE.planFor || {};
   const plansNow = () => { try { const a = JSON.parse(localStorage.getItem(SITE.storageKey + '.admin.state') || 'null'); if (a && Array.isArray(a.plans) && a.plans.length) return a.plans; } catch (e) {} return PLANS_DEF; };
-  // what each plan includes — the same list as the dashboard's Settings › Plan & billing (pw/os.js INCL)
-  const PLAN_INCL = {
-    launch: ['Leads by call, WhatsApp, SMS and email', 'Verified badge on your profile and listings', 'Leads, calendar and communications in one place'],
-    basic: ['Leads from Bayut, Property Finder and your website', 'Up to 3 team members', 'Listing performance reports'],
-    pro: ['Up to 15 team members, with roles', 'Lead routing to your team', 'Business reports and exports'],
-    business: ['Unlimited team members', 'Several branches and legal entities', 'A named UpNow account manager']
-  };
+  // what each plan includes — one list with the dashboard's Settings › Plan & billing, kept in data/site.js
+  const PLAN_INCL = SITE.planIncl || {};
   // a starting point, never forced: companies usually need more listings than one owner
   const suggestedPlan = () => isBiz(S) ? 'pro' : 'basic';
   const planOf = id => plansNow().find(p => p.id === id);
   // the plan picker in the confirmation: one row per plan; the chosen one opens to show what it includes
-  const PLAN_IC = { launch: 'leaf', basic: 'key', pro: 'brief', business: 'building' };
-  const planSum = p => `<b>${esc(p.n)} plan</b> · AED ${Number(p.p).toLocaleString('en-US')} / month, from the day you’re approved`;
+  // the same icons and metal tiers as the provider dashboard and the admin: Launch grey · Basic bronze · Pro silver · Business gold
+  const PLAN_IC = { launch: 'bolt', basic: 'star', pro: 'chart', business: 'building' };
+  // the line under the plans says when it starts, not the price again (the chosen card shows that)
+  const planSum = p => `You start on <b>${esc(p.n)}</b> the day you’re approved — and you can change it any time after.`;
   function planPick() {
     const P = plansNow(), sug = P.some(p => p.id === suggestedPlan()) ? suggestedPlan() : P[0].id;
     if (!P.some(p => p.id === S.plan)) { S.plan = sug; save(); }
     return `<section class="onboarding-cplan"><div class="onboarding-cplan-h"><h4>Choose your plan</h4><span>${ico('clock')}Change it any time</span></div>
-      <p>Pick how many listings you need. Our team confirms it when they approve you.</p>
       <div class="onboarding-cplan-list" role="radiogroup" aria-label="Your plan">${P.map((p, i) => { const on = p.id === S.plan, prev = P[i - 1];
-        return `<button type="button" role="radio" aria-checked="${on}" class="onboarding-cplan-card ${on ? 'is-on' : ''}" data-cfplan="${esc(p.id)}" data-cfsum="${esc(planSum(p))}">
+        return `<button type="button" role="radio" aria-checked="${on}" class="onboarding-cplan-card ${on ? 'is-on' : ''}" data-tier="${esc(p.id)}" data-cfplan="${esc(p.id)}" data-cfsum="${esc(planSum(p))}">
           <span class="onboarding-cplan-ic">${ico(PLAN_IC[p.id] || 'tag')}</span>
           <span class="onboarding-cplan-main"><b>${esc(p.n)}${p.id === sug ? '<em>Suggested</em>' : ''}</b><small>Up to ${p.max} listings</small></span>
-          <span class="onboarding-cplan-price"><strong>AED ${Number(p.p).toLocaleString('en-US')}</strong><small>/ month</small></span>
+          <span class="onboarding-cplan-price"><strong>AED ${Number(p.p).toLocaleString('en-US')}</strong><small>/ month</small><em class="onboarding-cplan-when">${ico('clock')}Starts once approved</em></span>
           <i class="onboarding-cplan-radio" aria-hidden="true"></i>
-          <span class="onboarding-cplan-incl"><span><ul>${PLAN_FOR[p.id] ? `<li class="is-for">Best for ${esc(PLAN_FOR[p.id].charAt(0).toLowerCase() + PLAN_FOR[p.id].slice(1))}</li>` : ''}${prev ? `<li class="is-plus">Everything in ${esc(prev.n)}, plus</li>` : ''}${(PLAN_INCL[p.id] || []).map(f => `<li>${ico('check')}${esc(f)}</li>`).join('')}</ul></span></span></button>`; }).join('')}</div></section>`;
+          <span class="onboarding-cplan-incl"><span><ul>${PLAN_FOR[p.id] ? `<li class="is-for">Best for ${esc(PLAN_FOR[p.id].charAt(0).toLowerCase() + PLAN_FOR[p.id].slice(1))}</li>` : ''}${prev ? `<li class="is-plus">Everything in ${esc(prev.n)}, plus</li>` : ''}${(PLAN_INCL[p.id] || []).map((f, k) => `<li class="${k > 1 ? 'is-extra' : ''}">${ico('check')}${esc(f)}</li>`).join('')}${(PLAN_INCL[p.id] || []).length > 2 ? `<li class="is-more"><span role="button" tabindex="0" data-cfmore>+${(PLAN_INCL[p.id] || []).length - 2} more</span></li>` : ''}</ul></span></span></button>`; }).join('')}</div></section>`;
   }
 
   /* ---------- submit: a short confirmation, not a review page ---------- */
@@ -644,7 +640,7 @@
         <p class="listing-review-label">Your application</p>`; })() : '';
     UPUI.openModal(`<div class="onboarding-confirm is-wide ${LL ? 'has-listing' : ''}"><button class="close-btn onboarding-confirm-close" data-close aria-label="Close">${ico('x')}</button>
       <div class="onboarding-confirm-head"><span class="onboarding-confirm-mark">${ico('shield')}</span><div>
-      <h3>Review and send</h3>
+      <h3>Review and send <span class="onboarding-confirm-step">Last step</span></h3>
       <p class="onboarding-confirm-subtitle">Our team checks your details against your ${biz ? 'licence' : 'ID'}${LL ? ' and your listing' : ''} — usually within 24 hours. Nothing goes live until you're approved.</p></div></div>
       <div class="onboarding-confirm-cols"><div class="onboarding-confirm-left">
       ${rows || '<p class="listing-review-label">Your application</p>'}
@@ -657,13 +653,16 @@
           `<span class="onboarding-confirm-avatar">${ready && L.img[0] ? `<img src="${L.img[0]}" alt="">` : ico(ready ? VERTICALS[S.v].icon : 'clock')}</span>`); })()}
       </div>
       ${later.length ? `<p class="onboarding-confirm-later">${ico('clock')}<span>You can add your ${esc(later.map(x => x.t).join(', '))} later — those listings wait in draft until approved.</span></p>` : ''}
+      <div class="onboarding-confirm-decision">
+      ${S.phone ? `<p class="onboarding-confirm-footer">${ico('wa')}We'll WhatsApp you on <span class="nowrap" style="white-space:nowrap">${S.dial || country().dial} ${esc(fmtPhone(S.phone))}</span> with the decision</p>`
+        : S.email ? `<p class="onboarding-confirm-footer">${ico('mail')}We'll email ${esc(S.email)} with the decision</p>` : ''}</div>
       </div><div class="onboarding-confirm-right">
       ${planPick()}
-      <p class="onboarding-cplan-sum" data-cfsumline>${(p => p ? planSum(p) : '')(planOf(S.plan))}</p>
+      <div class="onboarding-confirm-send">
       <label class="onboarding-confirm-agree"><input type="checkbox" data-cfagree ${S.agree ? 'checked' : ''}><span>These details are correct${biz ? `, I'm authorised to act for ${esc(d.legal || 'this business')}` : ''} and I agree to the <a class="text-link" href="#" onclick="return false">Provider terms</a>.</span></label>
       <button type="button" class="btn btn-primary onboarding-confirm-submit" data-cfsubmit ${S.agree ? '' : 'disabled'}>Send for approval</button>
-      ${S.phone ? `<p class="onboarding-confirm-footer">${ico('wa')}We'll WhatsApp you on <span class="nowrap" style="white-space:nowrap">${S.dial || country().dial} ${esc(fmtPhone(S.phone))}</span> with the decision</p>`
-        : S.email ? `<p class="onboarding-confirm-footer">${ico('mail')}We'll email ${esc(S.email)} with the decision</p>` : ''}</div></div></div>`, 'onboarding-confirm-modal is-wide');
+</div>
+</div></div></div>`, 'onboarding-confirm-modal is-wide');
   }
   document.addEventListener('change', e => {
     if (!e.target.matches('[data-cfagree]')) return;
@@ -674,6 +673,8 @@
     const g = e.target.closest('[data-cfgoto]');
     if (g) { UPUI.closeModal(); if (+g.dataset.cfgoto === LIST) S.lnPart = 1; go(+g.dataset.cfgoto); return; }
     const pt = e.target.closest('[data-cfpart]'); if (pt) { UPUI.closeModal(); if (S.step !== LIST) { S.step = LIST; } goPart(+pt.dataset.cfpart); return; }
+    // "+N more" opens the rest of the chosen plan's points (and keeps it chosen)
+    const mo = e.target.closest('[data-cfmore]'); if (mo) { const c = mo.closest('[data-cfplan]'); if (c && c.classList.contains('is-on')) { c.classList.add('is-all'); return; } }
     const pl = e.target.closest('[data-cfplan]');
     if (pl) { S.plan = pl.dataset.cfplan; save(); document.querySelectorAll('[data-cfplan]').forEach(b => { const on = b === pl; b.classList.toggle('is-on', on); b.setAttribute('aria-checked', on); });
       const sum = document.querySelector('[data-cfsumline]'); if (sum) sum.innerHTML = pl.dataset.cfsum; return; }

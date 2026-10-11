@@ -92,7 +92,13 @@
   const unread = () => leads().filter(l => !S.read[l.id] && ['new'].includes(l.stage)).length;
 
   /* ---------- country / currency / language ---------- */
-  const COUNTRIES = { AE: ['🇦🇪', 'UAE', 'AED', 1], OM: ['🇴🇲', 'Oman', 'OMR', .1048], SA: ['🇸🇦', 'Saudi Arabia', 'SAR', 1.021], QA: ['🇶🇦', 'Qatar', 'QAR', .991], US: ['🇺🇸', 'USD view', 'USD', .2723], GB: ['🇬🇧', 'GBP view', 'GBP', .2105] };
+  const COUNTRIES = { AE: ['🇦🇪', 'UAE', 'AED', 1], OM: ['🇴🇲', 'Oman', 'OMR', .1048], SA: ['🇸🇦', 'Saudi Arabia', 'SAR', 1.021], QA: ['🇶🇦', 'Qatar', 'QAR', .991], US: ['🇺🇸', 'USD view', 'USD', .2723], GB: ['🇬🇧', 'GBP view', 'GBP', .2105], EU: ['🇪🇺', 'EUR view', 'EUR', .2512], IN: ['🇮🇳', 'INR view', 'INR', 22.7] };
+  // the site-wide setting ('upnow.prefs': {lang, cur}, js/core/utils.js): the dashboard follows it and writes it back, so the
+  // customer site, this dashboard and the team's admin always show the same language and currency
+  const SITEPREFS = (() => { try { return JSON.parse(localStorage.getItem('upnow.prefs')) || {}; } catch (e) { return {}; } })();
+  if (SITEPREFS.lang) S.lang = SITEPREFS.lang;
+  if (SITEPREFS.cur && COUNTRIES[S.cc] && COUNTRIES[S.cc][2] !== SITEPREFS.cur) { const k = Object.keys(COUNTRIES).find(c => COUNTRIES[c][2] === SITEPREFS.cur); if (k) S.cc = k; }
+  const sharePrefs = () => { SITEPREFS.lang = S.lang; SITEPREFS.cur = (COUNTRIES[S.cc] || COUNTRIES.AE)[2]; localStorage.setItem('upnow.prefs', JSON.stringify(SITEPREFS)); };
   const fx = html => { const C = COUNTRIES[S.cc] || COUNTRIES.AE; if (C[2] === 'AED') return html; return html.replace(/AED\s?([\d][\d,]*(?:\.\d+)?)(k)?/g, (m, n, k) => { const v = parseFloat(n.replace(/,/g, '')) * C[3]; return C[2] + ' ' + (k ? (v < 10 ? v.toFixed(1) : Math.round(v)) + 'k' : (v < 100 ? v.toFixed(v < 10 ? 2 : 1) : Math.round(v).toLocaleString())); }); };
 
   /* ---------- toast / modal / drawer ---------- */
@@ -136,13 +142,17 @@
       <label class="tsel"><select id="ccSel">${Object.entries(COUNTRIES).map(([k, x]) => `<option value="${k}" ${k === S.cc ? 'selected' : ''}>${x[0]} ${x[1]} · ${x[2]}</option>`).join('')}</select>${ico('chev')}</label>
       <label class="tsel g"><select id="lgSel"><option value="en" ${S.lang === 'en' ? 'selected' : ''}>English</option><option value="ar" ${S.lang === 'ar' ? 'selected' : ''}>العربية</option></select>${ico('chev')}</label>
       <button class="ib" data-go="inbox" title="Notifications">${ico('bell')}<i></i></button>`;
-    $('#ccSel').onchange = e => { S.cc = e.target.value; save(); render(); toast('Showing amounts in ' + COUNTRIES[S.cc][2]); };
-    $('#lgSel').onchange = e => { S.lang = e.target.value; save(); applyLang(); toast(S.lang === 'ar' ? 'تم التبديل إلى العربية' : 'Switched to English'); };
+    $('#ccSel').onchange = e => { S.cc = e.target.value; save(); sharePrefs(); render(); toast('Showing amounts in ' + COUNTRIES[S.cc][2]); };
+    $('#lgSel').onchange = e => { S.lang = e.target.value; save(); sharePrefs(); applyLang(); toast(S.lang === 'ar' ? 'تم التبديل إلى العربية' : 'Switched to English'); };
     $('#gsearch').onkeydown = e => { if (e.key === 'Enter') { const q = e.target.value.toLowerCase(); const l = leads().find(x => x.n.toLowerCase().includes(q)); if (l) PWA.openLead(l.id); else { const li = listings().find(x => x.t.toLowerCase().includes(q)); if (li) PWA.openListing(li.id); else toast('No match for "' + e.target.value + '"'); } } };
   }
 
   function applyLang() { document.documentElement.lang = S.lang; document.documentElement.dir = S.lang === 'ar' ? 'rtl' : 'ltr'; }
   function render() {
+    // modules keep their own copy of this function, so a re-render they ask for would skip the add-ons that wrap
+    // PWA.render (new top bar, the provider's own name, empty states): send those through the whole chain.
+    // PWA._busy is set by the outermost wrapper (pw/topbar.js), so the chain itself still lands here.
+    if (!PWA._busy && PWA.render !== render) return PWA.render();
     // a hidden page opened by its old link goes to Portfolio
     if (HIDDEN.includes(S.page)) { S.page = 'portfolio'; if (window.PW_MULTI && window.PW_START !== 'portfolio') { save(); location.replace('portfolio.html' + location.search); return; } }
     applyLang();

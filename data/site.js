@@ -10,13 +10,22 @@
     name: 'UpNow',
     logoMark: 'U',
     storageKey: 'upnow',            // prefix for everything kept in localStorage
+    // the provider plans: who each is for and what it includes — one list for onboarding (js/pages/join.js) and the
+    // provider dashboard (Settings › Plan & billing, pages/provider-dashboard/pw/os.js); prices and limits are the admin's
+    planFor: { launch: 'Getting started', basic: 'Owners and freelancers', pro: 'Agencies, clinics, operators', business: 'Large portfolios and multi-branch' },
+    planIncl: {
+      launch: ['Leads by call, WhatsApp, SMS and email from your listings', 'Verified badge on your profile and listings', 'Leads, calendar and messages in one place', 'Views and leads for each listing'],
+      basic: ['Connect your WhatsApp Business and email inbox', 'Enquiry form for your own website', 'Up to 3 team members', 'Reply templates for WhatsApp and email', 'Weekly performance report by email'],
+      pro: ['Leads from Bayut, Property Finder, Dubizzle, Instagram and Facebook', 'A tracked phone number for each listing', 'Up to 15 team members, with roles', 'New leads shared out to your team automatically', 'Demand: what customers search for in your areas', '2 featured listings (Boost) a month'],
+      business: ['Several branches and legal entities', 'Unlimited team members', 'Upload many listings at once', '10 featured listings (Boost) a month', 'A named UpNow account manager']
+    },
     chat: false,                    // in-app chat and the account's Messages are on hold — true brings both back
     // the one mobile number for the UpNow team: signing in with it (normal sign-in, any 6-digit code in the prototype)
     // opens the admin dashboard (pages/admin/) instead of a customer account
     admin: { dial: '+971', phone: '500000001' },
 
     /* display currencies: code → [rate from base, label, flag]; prices are stored in the first one (AED) */
-    currencies: { AED: [1, 'AED', '🇦🇪'], USD: [.2723, 'USD', '🇺🇸'], EUR: [.2512, 'EUR', '🇪🇺'], GBP: [.2105, 'GBP', '🇬🇧'], SAR: [1.021, 'SAR', '🇸🇦'], INR: [22.7, 'INR', '🇮🇳'] },
+    currencies: { AED: [1, 'AED', '🇦🇪'], USD: [.2723, 'USD', '🇺🇸'], EUR: [.2512, 'EUR', '🇪🇺'], GBP: [.2105, 'GBP', '🇬🇧'], SAR: [1.021, 'SAR', '🇸🇦'], OMR: [.1048, 'OMR', '🇴🇲'], QAR: [.991, 'QAR', '🇶🇦'], INR: [22.7, 'INR', '🇮🇳'] },
     languages: [['en', 'EN'], ['ar', 'عربي']],
     rtl: ['ar'],
     i18n: {

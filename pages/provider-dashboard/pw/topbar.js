@@ -67,6 +67,11 @@
     };
   };
 
+  // the outermost wrapper (this file loads last): marks a full render, so pw/core.js's render() — which modules call
+  // directly — goes through every add-on once, and the chain itself doesn't loop back
+  const head = P.render;
+  P.render = function () { P._busy = true; try { return head.apply(this, arguments); } finally { P._busy = false; } };
+
   document.addEventListener('click', e => {
     const acc = e.target.closest('[data-tb="acc"]');
     document.querySelectorAll('.tb-acc').forEach(m => { if (!acc || m !== acc.parentNode) m.classList.remove('open'); });

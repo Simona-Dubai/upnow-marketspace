@@ -27,7 +27,7 @@
     badge: '<path d="m8.5 12 2.5 2.5 4.5-5"/><circle cx="12" cy="12" r="9"/>', grad: '<path d="m2 9 10-5 10 5-10 5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5M22 9v6"/>',
     heart: '<path d="M12 20s-7.5-4.6-7.5-10.1A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z"/>', edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
     up: '<path d="M12 19V5M6 11l6-6 6 6"/>', down: '<path d="M12 5v14M6 13l6 6 6-6"/>',
-    doc: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>', chevL: '<path d="m15 6-6 6 6 6"/>',
+    doc: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>', chevL: '<path d="m15 6-6 6 6 6"/>', send: '<path d="M4 12 20 4l-6 16-3-7z"/><path d="m11 13 9-9"/>',
     refresh: '<path d="M20 11a8 8 0 0 0-14.9-3M4 13a8 8 0 0 0 14.9 3M4 4v4h4M20 20v-4h-4"/>', tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/>'
   };
   const ico = (n, c = '') => `<svg class="ico ${c}" viewBox="0 0 24 24">${P[n] || P.grid}</svg>`;
@@ -35,7 +35,22 @@
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const initials = n => String(n).split(/\s+/).filter(x => /^[\p{L}\d]/u.test(x)).map(x => x[0]).slice(0, 2).join('').toUpperCase();
   const av = (n, cls = '') => `<span class="av ${cls}">${esc(initials(n))}</span>`;
-  const aed = n => 'AED ' + Math.round(n).toLocaleString('en-US');
+  const aed = n => 'AED ' + Math.round(n).toLocaleString('en-US'); // always AED: also used in texts sent to providers, who are billed in AED
+  /* ---------- display currency + language: the same setting as the rest of the site ('upnow.prefs', js/core/utils.js) ----------
+     Only what's on screen converts: amounts written as "AED 1,234" in the page's text become the chosen currency as they're
+     drawn (count-ups too). aed() itself stays AED, so WhatsApp texts, plan prices and reminders still quote what's billed. */
+  const PREFS = (() => { try { return JSON.parse(localStorage.getItem('upnow.prefs')) || {}; } catch (e) { return {}; } })();
+  const CURS = (window.SITE && SITE.currencies) || { AED: [1, 'AED', '🇦🇪'] }, CUR = CURS[PREFS.cur] ? PREFS.cur : 'AED', LANG = PREFS.lang || 'en';
+  const setPref = (k, v) => { PREFS[k] = v; localStorage.setItem('upnow.prefs', JSON.stringify(PREFS)); location.reload(); };
+  document.documentElement.lang = LANG; document.documentElement.dir = ((window.SITE && SITE.rtl) || []).includes(LANG) ? 'rtl' : 'ltr';
+  if (CUR !== 'AED') {
+    const [rate, code] = CURS[CUR], RX = /AED\s?(-?\d[\d,]*(?:\.\d+)?)(\s?[kKmM])?/g;
+    const conv = t => t.replace(RX, (m, n, k) => { const v = parseFloat(n.replace(/,/g, '')) * rate; return code + ' ' + (k ? (v < 10 ? v.toFixed(1) : Math.round(v)) + k.trim() : v < 100 && v % 1 ? v.toFixed(1) : Math.round(v).toLocaleString('en-US')); });
+    const fixText = n => { if (n.nodeValue.includes('AED') && !(n.parentNode && n.parentNode.closest && n.parentNode.closest('textarea,script,style,[data-aed]'))) { const v = conv(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v; } };
+    const walk = root => { if (root.nodeType === 3) return fixText(root); if (root.nodeType !== 1) return; const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) fixText(n); };
+    new MutationObserver(ms => ms.forEach(m => m.type === 'characterData' ? fixText(m.target) : m.addedNodes.forEach(walk))).observe(document.documentElement, { subtree: true, childList: true, characterData: true });
+    document.addEventListener('DOMContentLoaded', () => walk(document.body));
+  }
   const st = (t, k = '') => `<span class="st ${k}">${esc(t)}</span>`;
   const ago = t => { const m = Math.max(0, Math.round((NOW - t) / 6e4)); return m < 60 ? m + 'm' : m < 1440 ? Math.round(m / 60) + 'h' : Math.round(m / 1440) + 'd'; };
   const dur = ms => { const h = ms / 36e5; return h < 1 ? Math.round(h * 60) + 'm' : h < 48 ? Math.round(h) + 'h' : Math.round(h / 24) + 'd'; };
@@ -52,9 +67,13 @@
   /* ---------- state ---------- */
   let saved = D.read(KEY) || {};
   const S = Object.assign({ period: 'month', appTab: 'waiting', lstTab: 'review', provTab: 'all', vf: 'all', q: '', dec: {}, ldec: {}, checks: {}, lchecks: {}, plans: D.PLANS0, planOf: {}, paid: {}, log: [], sla: 24, warnDays: 60 }, saved);
+  S.planSug = S.planSug || {};
   const save = () => D.write(KEY, S);
   const session = () => D.read(PFX + '.admin');
   const PLAN = id => S.plans.find(p => p.id === id) || S.plans[0];
+  // each plan has its own metal colour everywhere (badges, donut, bars) — set here so saved plans pick it up too
+  const PLAN_C = { launch: '#b3bbc3', basic: '#a0623a', pro: '#5f7189', business: '#b8860b' }; // metal tiers: grey · bronze · silver · gold
+  S.plans.forEach(p => { if (PLAN_C[p.id]) p.c = PLAN_C[p.id]; });
 
   /* ---------- the data: sample + this browser's real provider, with the team's decisions on top ---------- */
   let APPS = [], LST = [];
@@ -93,7 +112,8 @@
     else if (!f.ok || f.state !== 'read') { tone = 'warn'; note = 'Uploaded — the provider hasn’t confirmed the details'; }
     if (f && exp && exp < NOW) { tone = 'fail'; note = 'Expired ' + dateY(exp); }
     else if (f && exp && exp < NOW + S.warnDays * DAY) { tone = tone === 'fail' ? tone : 'warn'; note = 'Runs out in ' + Math.ceil((exp - NOW) / DAY) + ' days (' + dateY(exp) + ')'; }
-    return { k, f, D: D0, exp, tone, note, unsure, missing, checked: !!(S.checks[x.id] || {})[k] };
+    const cv = (S.checks[x.id] || {})[k], ok = x.status === 'verified';
+    return { k, f, D: D0, exp, tone, note, unsure, missing, checked: !!cv || ok, checkedAt: typeof cv === 'number' ? cv : ok ? x.decided || null : null };
   }
   const docsOf = x => [...new Set([...x.need, ...Object.keys(x.docs)])].filter(k => DOCS[k]).map(k => docState(x, k));
   function appChecks(x) {
@@ -109,11 +129,11 @@
     const nm = x.role === 'company' ? x.d.sigName : x.d.fullName, short = !nm || nm.trim().split(/\s+/).length < 2 || /^[A-Z]\.\s/.test(nm.trim());
     add(short ? 'warn' : 'ok', x.role === 'company' ? (short ? 'Signatory name looks shortened' : 'Signatory named on the ID') : 'Name on the ID matches the account', x.role === 'company' ? `${nm || '—'} — check this person is on the trade licence` : nm || '');
     const uns = ds.flatMap(d => d.unsure.map(u => d.D[0] + ': ' + u));
-    add(uns.length ? 'warn' : 'ok', uns.length ? `${uns.length} detail${uns.length > 1 ? 's were' : ' was'} hard to read` : 'Every detail read clearly', uns.length ? 'The provider confirmed them — compare with the document: ' + uns.join(', ') : '');
+    add(uns.length ? 'warn' : 'ok', uns.length ? `${uns.length} detail${uns.length > 1 ? 's were' : ' was'} hard to read` : 'Every detail read clearly', uns.length ? 'We couldn’t read ' + (uns.length > 1 ? 'these' : 'this') + ' clearly, so the provider typed ' + (uns.length > 1 ? 'them' : 'it') + ' in — compare with the document: ' + uns.join(', ') : '');
     // categories that need their own licence
     x.cats.filter(c => GATE[c]).forEach(c => { const need = GATE[c](x), has = x.docs[need]; add(has ? 'ok' : 'warn', has ? `Licence for ${catLabel(x.v, c)} uploaded` : `${catLabel(x.v, c)} listings wait for a licence`, has ? DOCS[need][0] : `${DOCS[need][0]} — they can add it after approval; those listings stay off the site until then`); });
     const reg = ds.filter(d => d.f), done = reg.filter(d => d.checked).length;
-    add(done === reg.length && reg.length ? 'ok' : 'todo', `Checked with the issuing authority: ${done} of ${reg.length}`, done === reg.length ? 'Done' : 'Tick each document below once you’ve checked it');
+    add(done === reg.length && reg.length ? 'ok' : 'todo', done === reg.length ? `All ${reg.length} documents checked with the issuing authority` : `Check ${reg.length - done} more document${reg.length - done > 1 ? 's' : ''} with the issuing authority`, done === reg.length ? 'Done' : `${done} of ${reg.length} done — open each one, verify it, then mark it checked`);
     return out;
   }
   const blockers = x => appChecks(x).filter(c => c.tone === 'fail' || c.tone === 'todo');
@@ -126,7 +146,7 @@
     if (!a) return out;
     const allCats = [...a.cats, ...APPS.filter(x => x.added && x.owner === a.owner && x.status === 'verified').flatMap(x => x.cats)];
     add(a.status === 'verified' ? 'ok' : 'fail', a.status === 'verified' ? 'Provider is approved' : 'Provider isn’t approved yet', a.status === 'verified' ? `Since ${dateS(a.decided || a.t)}` : 'The listing waits for the provider’s approval');
-    add(allCats.includes(l.cat) ? 'ok' : 'fail', allCats.includes(l.cat) ? `Approved to list ${catLabel(l.v, l.cat)}` : `Not approved for ${catLabel(l.v, l.cat)}`, allCats.includes(l.cat) ? `${TYPE_L[a.type] || a.type} · ${a.cats.map(c => catLabel(a.v, c)).join(', ')}` : `They were approved for ${a.cats.map(c => catLabel(a.v, c)).join(', ')}`);
+    add(allCats.includes(l.cat) ? 'ok' : 'fail', allCats.includes(l.cat) ? `Approved to list ${catLabel(l.v, l.cat)}` : `Not approved for ${catLabel(l.v, l.cat)}`, allCats.includes(l.cat) ? `Their approval covers: ${a.cats.map(c => catLabel(a.v, c)).join(', ')}` : `They were approved for ${a.cats.map(c => catLabel(a.v, c)).join(', ')}`);
     if (GATE[l.cat]) { const need = GATE[l.cat](a), has = a.docs[need]; add(has ? 'ok' : 'fail', has ? 'Category licence on file' : 'Category licence missing', DOCS[need][0]); }
     const min = D.minPhotos(l.v, l.cat);
     add(l.photos >= min ? 'ok' : 'fail', `${l.photos} photo${l.photos === 1 ? '' : 's'}`, l.photos >= min ? (l.photos < 6 ? 'Enough to go live — 6 or more do better' : 'Good set') : `At least ${min} needed for ${catLabel(l.v, l.cat)}`);
@@ -139,10 +159,12 @@
     // the same unit from someone else: same DLD permit, or the same title in the same building
     const dup = LST.find(o => o !== l && o.app !== l.app && ((l.permit && o.permit === l.permit) || (l.building && o.building === l.building && o.title === l.title)));
     if (dup) add('warn', 'Looks like another provider’s listing', `Same title as “${dup.title}” by ${(appOf(dup) || {}).name}`);
-    const man = manualL(l), done = man.filter(k => (S.lchecks[l.id] || {})[k[0]]).length;
-    add(done === man.length ? 'ok' : 'todo', `Looked at by the team: ${done} of ${man.length}`, done === man.length ? 'Done' : 'Tick the checks below as you go');
+    const man = manualL(l), T = ticksOf(l), done = man.filter(k => T[k[0]]).length;
+    add(done === man.length ? 'ok' : 'todo', done === man.length ? 'All your checks done' : `Tick ${man.length - done} more of your checks`, done === man.length ? 'Done' : `${done} of ${man.length} done — ${man.map(([k]) => ({ photos: 'photos', match: 'details', permit: 'permit', clean: 'no contact details' })[k] || k).join(', ').replace(/, ([^,]*)$/, ' and $1')}`);
     return out;
   }
+  // the team's own checks on a listing; a live listing passed them when it went live
+  const ticksOf = l => l.status === 'live' ? Object.fromEntries(manualL(l).map(([k]) => [k, true])) : (S.lchecks[l.id] || {});
   const manualL = l => [['photos', 'Photos are real and show this ' + (l.v === 'spaces' ? 'place' : 'service')], ['match', 'Title, details and price match the photos'], ...(LEASE.includes(l.cat) ? [['permit', 'Permit matches this unit (DLD / Dubai REST)']] : []), ['clean', 'No phone numbers, links or other sites in the text or photos']];
 
   /* ---------- income: every approved provider pays their plan monthly, from the day they were approved ---------- */
@@ -217,8 +239,12 @@
     const w = mainApps().filter(isWaiting), late = [...w, ...LST.filter(isWaitingL)].filter(x => NOW - x.t > S.sla * 36e5);
     $('#top').innerHTML = `<label class="srch">${ico('search')}<input id="gsearch" placeholder="Search providers, listings, licence numbers…" autocomplete="off"></label><span class="sp"></span>
       <span class="live hide-s">Review target · ${S.sla} hours</span>
+      <label class="tsel"><select id="adCur" aria-label="Currency">${Object.keys(CURS).map(k => `<option value="${k}" ${k === CUR ? 'selected' : ''}>${CURS[k][2]} ${k}</option>`).join('')}</select>${ico('chev')}</label>
+      <label class="tsel g"><select id="adLang" aria-label="Language">${((window.SITE && SITE.languages) || [['en', 'EN']]).map(([k]) => `<option value="${k}" ${k === LANG ? 'selected' : ''}>${k === 'ar' ? 'العربية' : 'English'}</option>`).join('')}</select>${ico('chev')}</label>
       ${late.length ? `<a class="ad-late" href="${late[0].app ? 'listings' : 'applications'}.html">${ico('clock')}${late.length} past ${S.sla}h</a>` : ''}
       <a class="ib" href="applications.html" title="Waiting for review">${ico('bell')}${w.length ? '<i></i>' : ''}</a>`;
+    $('#adCur').onchange = e => setPref('cur', e.target.value);
+    $('#adLang').onchange = e => setPref('lang', e.target.value);
     $('#gsearch').onkeydown = e => {
       if (e.key !== 'Enter') return; const q = e.target.value.trim().toLowerCase(); if (!q) return;
       const a = APPS.find(x => [x.name, x.d.display, x.d.licence, x.d.eidNo, x.d.brnNo, x.d.ornNo, x.email, x.phone].filter(Boolean).join(' ').toLowerCase().includes(q));
@@ -259,9 +285,9 @@
     const reqD = perDay(APPS, x => x.t), apprD = perDay(APPS.filter(a => a.status === 'verified'), x => x.decided);
     // this week against last (the last two points of the card's 8-week line): a count as +n, money as a percentage
     const delta = (sp, money) => { const a = sp[sp.length - 2] || 0, b = sp[sp.length - 1] || 0, d = b - a; if (!a && !b) return '';
-      const txt = money ? (a ? Math.round(Math.abs(d) / a * 100) + '%' : 'new') : Math.abs(d); return `<em class="ad-delta ${d > 0 ? 'up' : d < 0 ? 'down' : ''}" title="${d ? (d > 0 ? 'Up ' : 'Down ') + txt : 'Same as'} ${d ? 'on' : ''} last week">${d ? ico(d > 0 ? 'up' : 'down') : ''}${d ? txt : '='}</em>`; };
-    const sparkEnd = sp => { const mx = Math.max(...sp, 1); return ((30 - 3 - (sp[sp.length - 1] / mx) * 24) / 30 * 100).toFixed(1); };
-    const kpi = (l, v, sub, sp, go, pre = '') => `<a class="kpi ad-kpi" href="${go}.html"><small>${l}</small><span class="ad-kpi-v"><b data-count="${v}" data-pre="${pre}">${pre}${v.toLocaleString('en-US')}</b>${delta(sp, !!pre)}</span><span class="d">${sub}</span><span class="ad-spk">${spark(sp)}<i class="ad-spk-dot" style="--y:${sparkEnd(sp)}%"></i></span></a>`;
+      const txt = money ? (a ? Math.round(Math.abs(d) / a * 100) + '%' : 'new') : Math.abs(d); return `<em class="ad-delta ${d > 0 ? 'up' : d < 0 ? 'down' : ''}" title="${d ? (d > 0 ? 'Up ' : 'Down ') + txt : 'Same as'} ${d ? 'on' : ''} last week">${d ? ico(d > 0 ? 'up' : 'down') : ''}${d ? txt : '='}<small class="ad-delta-l">vs last week</small></em>`; };
+    const sparkEnd = sp => { const mx = Math.max(...sp, 1); return (30 - 3 - (sp[sp.length - 1] / mx) * 24).toFixed(1); };
+    const kpi = (l, v, sub, sp, go, pre = '') => `<a class="kpi ad-kpi" href="${go}.html"><small>${l}</small><span class="ad-kpi-v"><b data-count="${v}" data-pre="${pre}">${pre}${v.toLocaleString('en-US')}</b>${delta(sp, !!pre)}</span><span class="d">${sub}</span><span class="ad-spk">${spark(sp)}<i class="ad-spk-dot" style="--y:${sparkEnd(sp)}px"></i></span></a>`;
     const wk = n => [...Array(8)].map((_, i) => n(NOW - (7 - i) * 7 * DAY, NOW - (6 - i) * 7 * DAY));
     const next = [...W.map(a => ({ k: 'a', x: a, t: a.t })), ...WL.map(l => ({ k: 'l', x: l, t: l.t }))].sort((a, b) => a.t - b.t).slice(0, 5);
     const log = recent().slice(0, 6);
@@ -300,20 +326,20 @@
             <g class="ok"><circle cx="190" cy="116" r="12" fill="#25946a"/><path d="m184.5 116 3.8 3.8 7.2-7.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g></g>
         </svg>
       </div>
-      <div class="ad-h-side">${ring(onTime, 'on time', 'decided in ' + S.sla + 'h', 116)}
+      <div class="ad-h-side">${ring(onTime, 'on time', 'within ' + S.sla + 'h', 116)}
         <dl><div><dt>Approval rate</dt><dd>${apRate}</dd></div><div><dt>Average decision</dt><dd>${avgDec}</dd></div></dl></div>
     </section>
     <div class="g4 ad-nowrow">
       ${card('applications.html', 'Providers waiting', W.length, W.filter(a => NOW - a.t > S.sla * 36e5).length ? `<em class="ad-red-t">${W.filter(a => NOW - a.t > S.sla * 36e5).length} past ${S.sla}h</em> · oldest ${ago(Math.min(...W.map(a => a.t)))}` : W.length ? 'All on time' : 'Nothing to review', 'users', W.length ? 'amber' : '', [[W.filter(a => NOW - a.t <= S.sla * 36e5).length, 'ok', 'on time'], [W.filter(a => NOW - a.t > S.sla * 36e5).length, 'late', 'past ' + S.sla + 'h']])}
-      ${card('listings.html', 'Listings waiting', WL.length, `${LST.filter(l => ['verify', 'licence'].includes(l.status)).length} more wait on the provider`, 'layers', WL.length ? 'amber' : '', [[WL.length, 'warn', 'waiting on the team'], [LST.filter(l => ['verify', 'licence'].includes(l.status)).length, 'mute', 'waiting on the provider']])}
+      ${card('listings.html', 'Listings waiting', WL.length, `plus ${LST.filter(l => ['verify', 'licence'].includes(l.status)).length} waiting on the provider’s approval or licence`, 'layers', WL.length ? 'amber' : '', [[WL.length, 'warn', 'waiting on the team'], [LST.filter(l => ['verify', 'licence'].includes(l.status)).length, 'mute', 'waiting on the provider']])}
       ${card('providers.html?tab=docs', 'Documents running out', expiring.length, `within 30 days · ${A.filter(a => a.status === 'verified' && docsOf(a).some(d => d.exp && d.exp < NOW)).length} expired`, 'doc', expiring.length ? 'amber' : '', [[expiring.filter(x => x.d.exp >= NOW).length, 'warn', 'running out'], [expiring.filter(x => x.d.exp < NOW).length, 'late', 'expired']])}
       ${card('income.html', 'Payments overdue', inv.filter(i => i.state === 'overdue').length, `${aed(inv.filter(i => i.state === 'overdue').reduce((s, i) => s + i.amt, 0))} to collect`, 'coin', inv.filter(i => i.state === 'overdue').length ? 'red' : '', [[inv.filter(i => i.state === 'overdue').length, 'late', 'overdue'], [inv.filter(i => i.state === 'due').length, 'mute', 'due, not late yet']])}
     </div>
     <div class="ad-bar"><h2>How UpNow is doing ${esc(pLabel())}</h2><span class="sp"></span>${periodSeg()}</div>
     <div class="g4 ad-kpis">
-      ${kpi('Provider requests', came.length, `${APPS.filter(a => inP(a.t) && a.added).length} added a new business type`, wk((a, b) => APPS.filter(x => x.t >= a && x.t < b).length), 'applications')}
-      ${kpi('Approved to go live', appr.length, `${back.length} sent back · ${came.length ? Math.round(appr.length / Math.max(1, appr.length + back.length) * 100) : 0}% approval rate`, wk((a, b) => APPS.filter(x => x.status === 'verified' && x.decided >= a && x.decided < b).length), 'providers')}
-      ${kpi('Listings gone live', live.length, `${lc.length} sent for review`, wk((a, b) => LST.filter(x => x.status === 'live' && x.decided >= a && x.decided < b).length), 'listings')}
+      ${kpi('Provider requests', came.length, (n => n ? `${n} from existing providers adding a business type` : 'All from new providers')(APPS.filter(a => inP(a.t) && a.added).length), wk((a, b) => APPS.filter(x => x.t >= a && x.t < b).length), 'applications')}
+      ${kpi('Providers approved', appr.length, `${back.length} sent back or rejected · ${came.length ? Math.round(appr.length / Math.max(1, appr.length + back.length) * 100) : 0}% approval rate`, wk((a, b) => APPS.filter(x => x.status === 'verified' && x.decided >= a && x.decided < b).length), 'providers')}
+      ${kpi('Listings gone live', live.length, `out of ${lc.length} sent for review`, wk((a, b) => LST.filter(x => x.status === 'live' && x.decided >= a && x.decided < b).length), 'listings')}
       ${kpi('Income collected', coll, `${aed(mrr())} a month from plans`, wk((a, b) => inv.filter(i => i.paid >= a && i.paid < b).reduce((s, i) => s + i.amt, 0)), 'income', 'AED ')}
     </div>
     <div class="gd mt">
@@ -351,7 +377,7 @@
     return `${head('Provider requests', `Providers asking to join UpNow. Check their documents and what they want to list, then approve or send it back — they hear from us on WhatsApp.`)}
     <div class="ad-mini-stats">
       <div><small>Waiting</small><b data-count="${W.length}">${W.length}</b><span>${W.filter(a => NOW - a.t > S.sla * 36e5).length} past ${S.sla}h</span></div>
-      <div><small>Ready to approve</small><b data-count="${W.filter(a => !appChecks(a).some(c => c.tone === 'fail')).length}">${W.filter(a => !appChecks(a).some(c => c.tone === 'fail')).length}</b><span>no failed checks</span></div>
+      <div><small>Ready to approve</small><b data-count="${W.filter(a => !appChecks(a).some(c => c.tone === 'fail')).length}">${W.filter(a => !appChecks(a).some(c => c.tone === 'fail')).length}</b><span>nothing failed · only your checks left</span></div>
       <div><small>Need a closer look</small><b data-count="${W.filter(a => appChecks(a).some(c => c.tone === 'fail')).length}">${W.filter(a => appChecks(a).some(c => c.tone === 'fail')).length}</b><span>missing or expired documents</span></div>
       <div><small>Average time to decide</small><b>${(() => { const d = APPS.filter(a => a.decided && inP(a.decided, 'month')); return d.length ? dur(d.reduce((s, a) => s + a.decided - a.t, 0) / d.length) : '—'; })()}</b><span>this month</span></div>
     </div>
@@ -369,8 +395,63 @@
       </tbody></table></div>` : `<div class="pn ad-empty big">${ico('check')}<b>${tab[0] === 'waiting' ? 'No provider is waiting' : 'Nothing here'}</b><small>${tab[0] === 'waiting' ? 'When a provider sends their application, it lands here.' : 'Try another tab or vertical.'}</small></div>`}`;
   };
 
-  const planBox = (a, note) => `<div class="sect-t">Plan${a.req ? ` <span class="ad-asked-h">· they asked for ${esc(PLAN(a.req).n)}</span>` : ''}</div><div class="ad-plans">${S.plans.map(p => `<button class="${(a.plan || 'launch') === p.id ? 'on' : ''}" data-act="setPlan" data-arg="${a.id}|${p.id}"><b>${esc(p.n)}${a.req === p.id ? '<i class="ad-asked">Asked for</i>' : ''}</b><small>${aed(p.p)} / month</small><em>Up to ${p.max} listings</em></button>`).join('')}</div>${note ? `<p class="hint" style="margin:8px 0 0">${note}</p>` : ''}`;
-  const planUse = a => { const n = listingsOf(a).filter(l => !['rejected'].includes(l.status)).length, max = PLAN(a.plan || 'launch').max; return `${n} of ${max} listings used${n > max ? ' — <b>over the limit</b>' : ''}`; };
+  const planBox = (a, note) => { const live = a.status === 'verified', cur = a.plan || 'launch', g = live ? sugOf(a) : null, open = g && g.state === 'open' ? g.to : '';
+    return `<div class="sect-t">Plan${!live && a.req ? ` <span class="ad-asked-h">· they asked for ${esc(PLAN(a.req).n)}</span>` : ''}</div><div class="ad-plans">${S.plans.map(p => `<button class="${cur === p.id ? 'on' : ''} ${open === p.id ? 'is-sug' : ''}" data-act="${live && p.id !== cur ? 'suggestPlan' : 'setPlan'}" data-arg="${a.id}|${p.id}" ${live && p.id === cur ? 'aria-current="true"' : ''}><b>${esc(p.n)}${live && p.id === cur ? '<i class="ad-cur">Current</i>' : open === p.id ? '<i class="ad-asked">Suggested</i>' : !live && a.req === p.id ? '<i class="ad-asked">Asked for</i>' : ''}</b><small>${aed(p.p)} / month</small><em>Up to ${p.max} listings</em></button>`).join('')}</div>
+      ${note ? `<p class="hint" style="margin:8px 0 0">${note}</p>` : ''}${live ? sugLine(a) || `<p class="hint" style="margin:4px 0 0">Pick another plan to suggest it — ${esc(firstName(a))} decides in their dashboard. Nothing changes unless they accept.</p>` : ''}`; };
+  /* ---------- suggesting a plan change: the provider accepts or keeps their plan (pw/os.js Plan & billing) ----------
+     Stored where the provider reads it: upnow.join.review.sug for the real provider, S.planSug for the sample ones.
+     { from, to, reason, t, state: 'open' | 'accepted' | 'declined' | 'other', at, chose } */
+  const sugOf = a => { if (a.real) { const j = D.read(PFX + '.join'); return (j && j.review && j.review.sug) || null; } return S.planSug[a.id] || null; };
+  function sugLine(a) {
+    const g = sugOf(a); if (!g) return ''; const to = PLAN(g.to), fn = esc(firstName(a));
+    if (g.state === 'open') return `<p class="ad-sug is-open">${ico('send')}<span><b>You suggested ${esc(to.n)}</b> on ${dateS(g.t)} — waiting for ${fn} to accept.${g.reason ? ` <em>“${esc(g.reason)}”</em>` : ''}</span><button type="button" class="ad-sug-x" data-act="sugWithdraw" data-arg="${a.id}">Withdraw</button></p>`;
+    if (g.state === 'accepted') return `<p class="ad-sug is-ok">${ico('check')}<span><b>${fn} accepted ${esc(to.n)}</b> on ${dateS(g.at)}.</span></p>`;
+    if (g.state === 'declined') return `<p class="ad-sug is-no">${ico('x')}<span><b>${fn} kept ${esc(PLAN(g.from).n)}</b> — said no to ${esc(to.n)} on ${dateS(g.at)}.</span></p>`;
+    if (g.state === 'other') return `<p class="ad-sug is-ok">${ico('check')}<span><b>${fn} chose ${esc(PLAN(g.chose).n)}</b> instead of ${esc(to.n)} on ${dateS(g.at)}.</span></p>`;
+    return '';
+  }
+  let SUG = null;
+  function suggestPlan(arg) {
+    const [id, pid] = arg.split('|'), a = APPS.find(x => x.id === id); if (!a) return;
+    const cur = PLAN(a.plan || 'launch'), to = PLAN(pid), up = to.p > cur.p, used = listingsOf(a).filter(l => l.status !== 'rejected').length, fn = firstName(a), diff = to.p - cur.p;
+    const R = up ? [used >= Math.ceil(cur.max * .8) ? `You have ${used} listings and ${cur.n} covers ${cur.max}. ${to.n} gives you room for ${to.max}.` : `You’re growing — ${to.n} gives you room for up to ${to.max} listings.`, `${to.n} adds more team members and reports for a business your size.`]
+      : [`You’re using ${used} of your ${cur.max} listings — ${to.n} covers that for ${aed(to.p)} a month.`, `${to.n} fits how you use UpNow today and costs less.`];
+    const rs = (v, t, i, own) => `<label class="ad-rs ${own ? 'is-own' : ''}"><input type="radio" name="rs" value="${esc(v)}" ${i ? '' : 'checked'}><i class="ad-rs-dot"></i><span class="ad-rs-t">${esc(t)}${own ? `<textarea data-own rows="3" placeholder="Write why ${esc(fn)} should switch…"></textarea>` : ''}</span></label>`;
+    const box = (k, p) => `<div class="${k === 'to' ? 'to' : ''}"><small>${k === 'to' ? 'Suggested' : 'Now'}</small><b><span class="ad-plan" data-tier="${p.id}" style="--c:${p.c}">${esc(p.n)}</span></b><span>${aed(p.p)} / month · up to ${p.max} listings</span></div>`;
+    DEC = null; SUG = { id, pid };
+    modal(`<div class="ad-dm-h"><span class="ad-dm-i is-ok">${ico('send')}</span><div><h3>Suggest ${esc(to.n)} to ${esc(fn)}?</h3><small>${esc(a.name)} · ${used} listing${used === 1 ? '' : 's'} on ${esc(cur.n)}</small></div><button class="x" data-act="closeModal" aria-label="Close">${ico('x')}</button></div>
+      <div class="ad-dm-b ad-dec">
+        <div class="ad-sug-cmp">${box('now', cur)}<span class="ad-sug-arrow">${ico('chevR')}</span>${box('to', to)}</div>
+        <p class="ad-dm-lead">${diff ? `${diff > 0 ? '+' : '−'}${aed(Math.abs(diff))} a month for them. ` : ''}${up ? 'If they accept, it starts that day.' : 'If they accept, it starts from their next billing date.'} Nothing changes unless they accept. Why should they switch?</p>
+        <div class="ad-reasons">${R.map((t, i) => rs(t, t, i)).join('')}${rs('', 'Write my own', 1, true)}</div>
+        <div class="ad-tell"><label class="ad-switch"><input type="checkbox" data-notify checked><i></i><span><b>Tell ${esc(fn)} on WhatsApp</b><small>Opens WhatsApp with this message — you press send. It also shows in their dashboard.</small></span></label>
+          <div class="ad-wa"><div class="ad-wa-b" data-aed data-sugprev></div></div></div>
+      </div>
+      <div class="ad-dm-f"><button class="btn btn-o" data-act="closeModal">Cancel</button><button class="btn btn-g" data-act="sugSend">${ico('send')}Send suggestion</button></div>`, 'ad-dm is-ok');
+    sugPreview();
+  }
+  const sugText = (a, cur, to, reason) => `Hi ${firstName(a)}, this is the UpNow team. We’d suggest moving from ${cur.n} to ${to.n} (${aed(to.p)} a month, up to ${to.max} listings). ${reason ? reason.replace(/\s*$/, '').replace(/([^.!?…])$/, '$1.') : '…'} If you’d like to switch, open your UpNow dashboard › Settings › Plan & billing. Nothing changes unless you choose to.`;
+  const sugReason = () => { const m = $('#scrim'), r = m && m.querySelector('input[name=rs]:checked'), own = m && m.querySelector('[data-own]'); return r ? (r.value || (own && own.value.trim()) || '') : ''; };
+  function sugPreview() { const b = $('#scrim [data-sugprev]'); if (!b || !SUG) return; const a = APPS.find(x => x.id === SUG.id); b.textContent = sugText(a, PLAN(a.plan || 'launch'), PLAN(SUG.pid), sugReason()); }
+  function sugSend() {
+    if (!SUG) return; const a = APPS.find(x => x.id === SUG.id); if (!a) return;
+    const reason = sugReason(), own = $('#scrim [data-own]'); if (!reason) { if (own) own.focus(); toast('Say why they should switch'); return; }
+    const cur = PLAN(a.plan || 'launch'), to = PLAN(SUG.pid), notify = $('#scrim [data-notify]').checked;
+    const rec = { from: cur.id, to: to.id, reason, t: Date.now(), state: 'open', by: 'UpNow team' };
+    if (a.real) { const j = D.read(PFX + '.join'); if (j) { j.review = j.review || {}; j.review.sug = rec; D.write(PFX + '.join', j); } } else S.planSug[a.id] = rec;
+    S.log.unshift({ t: Date.now(), id: a.id, kind: 'suggestPlan', reason: `${cur.n} → ${to.n}: ${reason}` }); save();
+    closeModal(); SUG = null;
+    if (notify) window.open(waHref(a.phone, sugText(a, cur, to, reason)), '_blank', 'noopener');
+    toast(`Suggestion sent — ${firstName(a)} decides in their dashboard`); refresh();
+  }
+  function sugWithdraw(id) {
+    const a = APPS.find(x => x.id === id); if (!a) return;
+    if (a.real) { const j = D.read(PFX + '.join'); if (j && j.review) { delete j.review.sug; D.write(PFX + '.join', j); } } else delete S.planSug[id];
+    save(); toast('Suggestion withdrawn'); refresh();
+  }
+  // before approval there's no limit in force yet — say how many they have and what the plan allows
+  const planUse = a => a.status === 'verified' ? planUse0(a) : (n => `${n} listing${n === 1 ? '' : 's'} so far — ${PLAN(a.plan || 'launch').n} allows up to ${PLAN(a.plan || 'launch').max}`)(listingsOf(a).filter(l => l.status !== 'rejected').length);
+  const planUse0 = a => { const n = listingsOf(a).filter(l => !['rejected'].includes(l.status)).length, max = PLAN(a.plan || 'launch').max; return `${n} of ${max} listings used${n > max ? ' — <b>over the limit</b>' : ''}`; };
   /* ---------- the review panel: progress on top, problems first, why a decision is blocked, the next request ---------- */
   const TONE_I = { ok: 'check', warn: 'alert', fail: 'x', todo: 'clock' };
   // the checks that need you, then one folded line for the ones that passed
@@ -398,7 +479,7 @@
   function whyBlock(cs, verb) {
     const f = cs.find(c => c.tone === 'fail'), t = cs.find(c => c.tone === 'todo');
     if (f) return `<button type="button" class="ad-why risk" data-act="jumpTo" data-arg="fail">${ico('alert')}<span><b>Can’t ${verb} yet:</b> ${esc(f.t)}</span><u>Show me</u></button>`;
-    if (t) return `<button type="button" class="ad-why todo" data-act="jumpTo" data-arg="todo">${ico('clock')}<span>${esc(t.t)}</span><u>Show me</u></button>`;
+    if (t) return `<button type="button" class="ad-why todo" data-act="jumpTo" data-arg="todo">${ico('clock')}<span><b>Can’t ${verb} yet:</b> ${esc(t.t)}</span><u>Show me</u></button>`;
     return '';
   }
   const KEYS = verb => `<p class="ad-keys"><kbd>A</kbd>${verb}<kbd>C</kbd>ask for changes<kbd>R</kbd>${verb === 'approve' ? 'reject' : 'not approve'}<kbd>→</kbd>next request</p>`;
@@ -421,10 +502,10 @@
             ${x.f && isWaiting(a) ? `<label class="ad-mark ${x.checked ? 'on' : ''}"><input type="checkbox" data-doccheck="${a.id}|${x.k}" ${x.checked ? 'checked' : ''}>${ico('check')}<span>${x.checked ? 'Checked' : 'Mark checked'}</span></label>` : x.checked ? `<span class="ad-mark on static">${ico('check')}<span>Checked</span></span>` : ''}</div>
           ${x.f ? `<div class="ad-doc-b"><button type="button" class="ad-thumb" data-act="viewDoc" data-arg="${a.id}|${x.k}" data-thumb="${a.id}|${x.k}" aria-label="Open ${esc(x.D[0])}"><span class="ad-thumb-load"></span></button><dl class="ad-rows">${x.D[2].map(([k, l, ty]) => { const v = d[k], un = a.src[k] === 'check', ex = ty === 'date' && expOf(v), flag = ex && ex < NOW ? ['bad', 'Expired'] : ex && ex < NOW + S.warnDays * DAY ? ['soon', 'Runs out soon'] : un ? ['un', 'Hard to read — compare'] : null;
               return `<div class="${flag ? flag[0] : ''}"><dt>${esc(l)}</dt><dd>${esc(ty === 'date' && ex ? dateY(ex) : v || '—')}${flag ? `<em>${flag[1]}</em>` : ''}</dd></div>`; }).join('')}</dl></div>
-          <p class="ad-where">${ico('search')}Check on <b>${esc(x.D[1])}</b></p>` : ''}</div>`).join('')}
+          <p class="ad-where">${ico('search')}How to check: <b>${esc(x.D[1])}</b></p>` : ''}</div>`).join('')}
         <div class="sect-t">What they want to list</div>
         <div class="ad-can">${a.cats.map(c => { const g = GATE[c], need = g && g(a), has = !need || a.docs[need]; return `<div class="${has ? 'ok' : 'warn'}"><i>${ico(has ? 'check' : 'clock')}</i><span><b>${esc(catLabel(a.v, c))}</b><small>${has ? 'Covered by their ' + (a.role === 'company' ? 'licence' : 'documents') : 'Waits for ' + DOCS[need][0]}</small></span></div>`; }).join('')}</div>
-        <p class="hint" style="margin:8px 0 0">${esc(TYPE_L[a.type] || a.type)}${a.size ? ' · size ' + esc(a.size) : ''}${d.activity ? ' · licence activity: “' + esc(d.activity) + '”' : ''}</p>
+        <p class="hint" style="margin:8px 0 0">${esc(TYPE_L[a.type] || a.type)}${a.size ? ' · business size: ' + esc(a.size) : ''}${d.activity ? ' · licence activity: “' + esc(d.activity) + '”' : ''}</p>
         <div class="sect-t">${Ls.length > 1 ? 'Their listings' : 'First listing'}</div>
         ${Ls.length ? Ls.map(l => `<div class="ad-lrow" data-act="openListing" data-arg="${l.id}"><img src="${esc(l.img[0])}" alt=""><div><b>${esc(l.title)}</b><small>${esc(catLabel(l.v, l.cat))} · ${l.price ? aed(l.price) : 'No price'} · ${l.photos} photos</small></div>${st(...L_ST[l.status])}${ico('chevR')}</div>`).join('') : '<p class="hint">They chose to add their first listing later.</p>'}
         <div class="sect-t">What customers will see</div>
@@ -433,7 +514,7 @@
         <dl class="ad-rows"><div><dt>Mobile</dt><dd>${esc(a.phone)}</dd></div><div><dt>Email</dt><dd>${esc(a.email || '—')}</dd></div></dl>
         ${planBox(a, a.status === 'verified' ? planUse(a) : a.status === 'rejected' ? 'Not used — the application was rejected.' : 'Starts when they’re approved. You can pick it now or later. ' + planUse(a))}
       </div>
-      <div class="dr-f ad-df">${isWaiting(a) ? whyBlock(cs, 'approve') : ''}${isWaiting(a) ? `<button class="btn btn-g" data-act="approveApp" data-arg="${a.id}" ${cs.some(c => c.tone === 'fail') ? 'disabled title="Fix the failed checks first"' : ''}>${ico('check')}Approve</button>
+      <div class="dr-f ad-df">${isWaiting(a) ? whyBlock(cs, 'approve') : ''}${isWaiting(a) ? `<button class="btn btn-g" data-act="approveApp" data-arg="${a.id}" ${cs.some(c => c.tone === 'fail' || c.tone === 'todo') ? 'disabled title="Finish the checks first"' : ''}>${ico('check')}Approve</button>
         <button class="btn btn-o" data-act="changesApp" data-arg="${a.id}">${ico('edit')}Ask for changes</button><button class="btn btn-o ad-danger" data-act="rejectApp" data-arg="${a.id}">${ico('x')}Reject</button>` : `<span class="hint">${a.status === 'verified' ? 'Approved' : a.status === 'rejected' ? 'Rejected' : 'Changes asked'} ${a.decided ? dateS(a.decided) : ''}</span>`}
         <span class="sp" style="flex:1"></span><a class="btn btn-wa btn-sm" target="_blank" rel="noopener" href="${waHref(a.phone, `Hi ${firstName(a)}, this is the UpNow team about your application.`)}">${ico('wa')}WhatsApp</a>${isWaiting(a) ? KEYS('approve') : ''}</div>`, 'a:' + id);
   }
@@ -465,7 +546,7 @@
         <div class="ad-reasons">${REASONS[key].map((t, i) => reason(t, t, i)).join('')}${reason('', 'Write my own', 1, true)}</div>`}
       ${approve && warns.length ? `<p class="ad-note warn">${ico('alert')}<span>${warns.length} check${warns.length > 1 ? 's' : ''} still open: ${esc(warns.map(w => w.t).join(' · '))}</span></p>` : ''}
       <div class="ad-tell"><label class="ad-switch"><input type="checkbox" data-notify checked><i></i><span><b>Tell ${esc(name)} on WhatsApp</b><small>Opens WhatsApp with this message — you press send</small></span></label>
-        <div class="ad-wa"><div class="ad-wa-b" data-decprev></div></div></div>
+        <div class="ad-wa"><div class="ad-wa-b" data-aed data-decprev></div></div></div>
       </div>
       <div class="ad-dm-f"><button class="btn btn-o" data-act="closeModal">Cancel</button><button class="btn ${reject ? 'btn-g ad-red' : 'btn-g'}" data-act="confirmDec" data-arg="${kind}|${id}">${approve ? ico('check') + (isL ? 'Put it live' : 'Approve') : reject ? ico('x') + 'Reject' : 'Send to provider'}</button></div>`, 'ad-dm is-' + tone);
     DEC = { kind, id }; decPreview();
@@ -581,7 +662,7 @@
       return `<div class="adv-h"><b>What we read from it</b><small><span class="ad-doc-st ${y.tone}">${esc(y.note)}</span></small></div>
         <dl class="ad-rows">${y.D[2].map(([k, l, ty]) => { const v = a.d[k], un = a.src[k] === 'check', ex = ty === 'date' && expOf(v), flag = ex && ex < NOW ? ['bad', 'Expired'] : ex && ex < NOW + S.warnDays * DAY ? ['soon', 'Runs out soon'] : un ? ['un', 'Hard to read'] : null;
           return `<div class="${flag ? flag[0] : ''}"><dt>${esc(l)}</dt><dd>${esc(ty === 'date' && ex ? dateY(ex) : v || '—')}${flag ? `<em>${flag[1]}</em>` : ''}</dd></div>`; }).join('')}</dl>
-        <p class="ad-where">${ico('search')}Check on <b>${esc(y.D[1])}</b></p>
+        <p class="ad-where">${ico('search')}How to check: <b>${esc(y.D[1])}</b></p>
         ${isWaiting(a) ? `<button type="button" class="ad-mark big ${y.checked ? 'on' : ''}" data-vw="check" data-arg="${a.id}|${x.k}">${ico('check')}<span>${y.checked ? 'Checked' : 'Mark checked'}</span></button>` : y.checked ? `<span class="ad-mark on static">${ico('check')}<span>Checked</span></span>` : ''}
         ${isWaiting(a) && y.checked ? nextStep(a, x.k) : ''}
         <p class="adv-keys">Use ← → to move between documents</p>`; } }));
@@ -594,7 +675,7 @@
     return `<div class="adv-next done"><small>${ico('check')}All ${list.length} documents checked</small><button type="button" class="btn btn-g" data-vw="done">Back to the application${ico('chevR')}</button><span>Approve, ask for changes or reject from there</span></div>`;
   }
   function photoItems(l) {
-    return l.img.map((u, i) => ({ title: l.title, sub: (appOf(l) || {}).name || '', get: () => Promise.resolve({ url: u, type: 'image' }), side: () => { const tick = S.lchecks[l.id] || {};
+    return l.img.map((u, i) => ({ title: l.title, sub: (appOf(l) || {}).name || '', get: () => Promise.resolve({ url: u, type: 'image' }), side: () => { const tick = ticksOf(l);
       return `<div class="adv-h"><b>Is this photo right?</b><small>${esc(catLabel(l.v, l.cat))} · ${esc((appOf(l) || {}).name || '')}</small></div>
         <ul class="adv-q"><li>A real photo of this ${l.v === 'spaces' ? 'place' : 'service'} — not a stock or website image</li><li>No phone numbers, logos of other sites or watermarks</li><li>Matches the title, details and price</li></ul>
         ${isWaitingL(l) || l.status === 'live' ? `<button type="button" class="ad-mark big ${tick.photos ? 'on' : ''}" data-vw="lcheck" data-arg="${l.id}|photos">${ico('check')}<span>${tick.photos ? 'Photos checked' : 'All photos look right'}</span></button>` : ''}
@@ -612,7 +693,7 @@
     return `${head('Listing requests', 'Listings providers sent to go live. Check the provider may list it and that it’s done right — photos, price, permit — then put it live.')}
     <div class="ad-mini-stats">
       <div><small>In review</small><b data-count="${R.length}">${R.length}</b><span>${R.filter(l => NOW - l.t > S.sla * 36e5).length} past ${S.sla}h</span></div>
-      <div><small>Ready to go live</small><b data-count="${R.filter(l => !listingChecks(l).some(c => c.tone === 'fail')).length}">${R.filter(l => !listingChecks(l).some(c => c.tone === 'fail')).length}</b><span>no failed checks</span></div>
+      <div><small>Ready to go live</small><b data-count="${R.filter(l => !listingChecks(l).some(c => c.tone === 'fail')).length}">${R.filter(l => !listingChecks(l).some(c => c.tone === 'fail')).length}</b><span>nothing failed · only your checks left</span></div>
       <div><small>Live on UpNow</small><b data-count="${LST.filter(l => l.status === 'live').length}">${LST.filter(l => l.status === 'live').length}</b><span>${LST.filter(l => l.status === 'live' && inP(l.decided)).length} ${esc(pLabel())}</span></div>
       <div><small>Sent back</small><b>${LST.filter(l => ['changes', 'rejected'].includes(l.status) && inP(l.decided, 'month')).length}</b><span>this month</span></div>
     </div>
@@ -627,7 +708,7 @@
   };
   function openListing(id) {
     const l = LST.find(x => x.id === id); if (!l) return;
-    const a = appOf(l) || {}, cs = listingChecks(l), sc = scoreOf(cs), man = manualL(l), tick = S.lchecks[l.id] || {};
+    const a = appOf(l) || {}, cs = listingChecks(l), sc = scoreOf(cs), man = manualL(l), tick = ticksOf(l);
     const tone = t => ({ ok: 'check', warn: 'alert', fail: 'x', todo: 'clock' })[t];
     const can = isWaitingL(l) || l.status === 'live';
     drawer(`<div class="ad-gal">${[0, 1, 2].map(k => l.img[k % l.img.length]).map((s, i) => `<img src="${esc(s)}" alt="" class="${i ? '' : 'big'}" data-act="viewPhotos" data-arg="${l.id}|${i % l.img.length}">`).join('')}<button type="button" class="ad-gal-n" data-act="viewPhotos" data-arg="${l.id}|0">${ico('image')}See the photos</button><button class="x" data-act="close">${ico('x')}</button></div>
@@ -646,7 +727,7 @@
         <div class="ad-lrow" data-act="openApp" data-arg="${a.id}">${av(a.name || '?')}<div><b>${esc(a.name || '')}</b><small>${esc(TYPE_L[a.type] || a.type || '')} · ${a.status === 'verified' ? 'Approved ' + dateS(a.decided || a.t) : 'Not approved yet'}</small></div>${st(...APP_ST[a.status || 'submitted'])}${ico('chevR')}</div>
         ${a.id ? planBox(a, (a.status === 'verified' ? '' : 'Starts when they’re approved. ') + planUse(a)) : ''}
       </div>
-      <div class="dr-f ad-df">${isWaitingL(l) ? whyBlock(cs, 'put it live') : ''}${isWaitingL(l) ? `<button class="btn btn-g" data-act="liveL" data-arg="${l.id}" ${cs.some(c => c.tone === 'fail') ? 'disabled title="Fix the failed checks first"' : ''}>${ico('check')}Put it live</button><button class="btn btn-o" data-act="changesL" data-arg="${l.id}">${ico('edit')}Ask for changes</button><button class="btn btn-o ad-danger" data-act="rejectL" data-arg="${l.id}">${ico('x')}Not approve</button>`
+      <div class="dr-f ad-df">${isWaitingL(l) ? whyBlock(cs, 'put it live') : ''}${isWaitingL(l) ? `<button class="btn btn-g" data-act="liveL" data-arg="${l.id}" ${cs.some(c => c.tone === 'fail' || c.tone === 'todo') ? 'disabled title="Finish the checks first"' : ''}>${ico('check')}Put it live</button><button class="btn btn-o" data-act="changesL" data-arg="${l.id}">${ico('edit')}Ask for changes</button><button class="btn btn-o ad-danger" data-act="rejectL" data-arg="${l.id}">${ico('x')}Not approve</button>`
         : l.status === 'live' ? `<button class="btn btn-o" data-act="changesL" data-arg="${l.id}">${ico('edit')}Take down and ask for changes</button>` : `<span class="hint">${esc(L_ST[l.status][0])}${l.decided ? ' · ' + dateS(l.decided) : ''}</span>`}
         <span class="sp" style="flex:1"></span>${a.phone ? `<a class="btn btn-wa btn-sm" target="_blank" rel="noopener" href="${waHref(a.phone, `Hi ${firstName(a)}, this is the UpNow team about your listing “${l.title}”.`)}">${ico('wa')}WhatsApp</a>` : ''}${isWaitingL(l) ? KEYS('put it live') : ''}</div>`, 'l:' + id);
   }
@@ -680,7 +761,7 @@
   // how they're doing in one word: Doing well · Needs help · No leads yet · Not live
   const health = (p, B) => !p.live ? ['Not live', 'mute'] : !p.leads ? ['No leads yet', 'warn'] : (p.rate < B.rate * .6 || p.reply > 60) ? ['Needs help', 'risk'] : (p.rate >= B.rate * 1.25 && p.reply <= B.reply) ? ['Doing well', ''] : ['On track', 'info'];
   const fmtRate = x => x ? x.toFixed(1) + '%' : '—', fmtReply = m => m == null ? '—' : m < 60 ? m + ' min' : (m / 60).toFixed(1) + ' h';
-  const vs = (x, b, low) => { if (!x || !b) return ''; const d = (x - b) / b; if (Math.abs(d) < .1) return '<em class="pf-vs">about average</em>'; const good = low ? d < 0 : d > 0; return `<em class="pf-vs ${good ? 'up' : 'down'}">${Math.round(Math.abs(d) * 100)}% ${low ? (d < 0 ? 'faster than' : 'slower than') : (d > 0 ? 'above' : 'below')} average</em>`; };
+  const vs = (x, b, low) => { if (!x || !b) return ''; const d = (x - b) / b; if (Math.abs(d) < .1) return '<em class="pf-vs">about average</em>'; const good = low ? d < 0 : d > 0; return `<em class="pf-vs ${good ? 'up' : 'down'}">${d >= 1 ? `${(1 + d).toFixed(1)}× ${low ? 'as long as' : 'the'} average` : `${Math.round(Math.abs(d) * 100)}% ${low ? (d < 0 ? 'faster than' : 'slower than') : (d > 0 ? 'above' : 'below')} average`}</em>`; };
   // last 4 weeks against the 4 before, as a signed percentage (null when there's nothing to compare)
   const change = wk => { const a = wk.slice(4).reduce((x, y) => x + y, 0), b = wk.slice(0, 4).reduce((x, y) => x + y, 0); return b ? Math.round((a - b) / b * 100) : null; };
   const chg = d => d == null ? '<span class="pf-tr">—</span>' : Math.abs(d) < 5 ? '<span class="pf-tr">Steady</span>' : `<span class="pf-tr ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'} ${Math.abs(d)}%</span>`;
@@ -744,7 +825,7 @@
       const liveR = rows.filter(r => r.live), tot = liveR.reduce((s, r) => s + r.pf.leads, 0), views = liveR.reduce((s, r) => s + r.pf.views, 0), help = rows.filter(r => r.h[0] === 'Needs help' || r.h[0] === 'No leads yet').length;
       const weeks = Array.from({ length: 8 }, (_, i) => liveR.reduce((s, r) => s + r.pf.weeks[i], 0));
       const k = (l, v, sub, extra = '', cls = '') => `<div class="kpi ad-kpi static ${cls}"><small>${l}</small><b>${v}</b><span class="d">${sub}</span>${extra}</div>`;
-      top = `<div class="g4 ad-kpis">${k('Leads · last 30 days', tot.toLocaleString(), `from ${liveR.length} providers with live listings`, `<span class="pf-kchg">${chg(change(weeks))} <small>vs the 4 weeks before</small></span>`)}${k('View → lead', fmtRate(views ? tot / views * 100 : 0), `${views.toLocaleString()} listing views`)}${k('Typical first reply', fmtReply(B.reply), 'Half of providers reply faster')}${k('Need help', help, help ? 'Slow replies, few or no leads' : 'Everyone is on track', '', help ? 'pf-kwarn' : '')}</div>`;
+      top = `<div class="g4 ad-kpis">${k('Leads · last 30 days', tot.toLocaleString(), `from ${liveR.length} providers with live listings`, `<span class="pf-kchg">${chg(change(weeks))} <small>vs the 4 weeks before</small></span>`)}${k('View → lead', fmtRate(views ? tot / views * 100 : 0), `${views.toLocaleString()} listing views`)}${k('Typical first reply', fmtReply(B.reply), 'Half of providers reply within this time')}${k('Need help', help, help ? 'Slow replies, few or no leads' : 'Everyone is on track', '', help ? 'pf-kwarn' : '')}</div>`;
       const max = Math.max(1, ...list.map(r => r.live ? r.pf.leads : 0));
       body = list.length ? `<div class="pn pf-board"><div class="pf-row pf-rh"><span>Provider</span><span>Leads · 30 days</span><span>View → lead</span><span>First reply</span><span>Trend</span><span></span></div>
         ${list.map((r, i) => `<div class="pf-row ck" style="--i:${i}" data-act="openProv" data-arg="${r.a.id}">${who(r)}
@@ -755,12 +836,12 @@
           <span class="pf-end"><span class="pf-h ${r.h[1]}">${r.h[0]}</span>${ico('chevR')}</span></div>`).join('')}</div>` : empty;
     } else {
       const byPlan = S.plans.map(p => ({ p, n: act.filter(a => (a.plan || 'launch') === p.id).length }));
-      top = `<div class="g4 ad-kpis">${byPlan.map(({ p, n }) => `<div class="kpi ad-kpi static"><small>${esc(p.n)} plan</small><b data-count="${n}">${n}</b><span class="d">${aed(p.p)} / month · ${n ? aed(n * p.p) + ' a month' : 'nobody yet'}</span><div class="ad-pbar"><i style="--w:${Math.round(n / Math.max(1, act.length) * 100)}%;--c:${p.c}"></i></div></div>`).join('')}</div>`;
+      top = `<div class="g4 ad-kpis">${byPlan.map(({ p, n }) => `<div class="kpi ad-kpi static"><small>${esc(p.n)} plan</small><b data-count="${n}">${n}</b><span class="d">${p.p ? `${aed(p.p)} / month each · ${n ? aed(n * p.p) + ' a month in total' : 'nobody on it yet'}` : `${aed(0)} / month · ${n ? 'not billed' : 'nobody on it yet'}`}</span><div class="ad-pbar"><i style="--w:${Math.round(n / Math.max(1, act.length) * 100)}%;--c:${p.c}"></i></div></div>`).join('')}</div>`;
       body = list.length ? `<div class="pn ad-tw"><table class="tbl ad-tbl"><thead><tr><th>Provider</th><th>Plan</th><th>Listings</th><th>Next document to renew</th><th>Payments</th><th>Since</th><th></th></tr></thead><tbody>
       ${list.map((r, i) => `<tr class="ck" style="--i:${i}" data-act="openProv" data-arg="${r.a.id}"><td>${who(r)}</td>
-        <td><span class="ad-plan" style="--c:${PLAN(r.a.plan || 'launch').c}">${esc(PLAN(r.a.plan || 'launch').n)}</span></td>
+        <td><span class="ad-plan" data-tier="${r.a.plan || 'launch'}" style="--c:${PLAN(r.a.plan || 'launch').c}">${esc(PLAN(r.a.plan || 'launch').n)}</span></td>
         <td><b>${r.live}</b> <span class="hint">live of ${r.Ls.length}</span></td>
-        <td>${r.nx ? `<span class="ad-exp ${r.nx.exp < NOW ? 'risk' : r.soon ? 'warn' : ''}">${esc(r.nx.D[0])}<small>${r.nx.exp < NOW ? 'Expired ' : ''}${dateY(r.nx.exp)}${r.nx.exp >= NOW ? ' · ' + Math.ceil((r.nx.exp - NOW) / DAY) + ' days' : ''}</small></span>` : '—'}</td>
+        <td>${r.nx ? `<span class="ad-exp ${r.nx.exp < NOW ? 'risk' : r.soon ? 'warn' : ''}">${esc(r.nx.D[0])}<small>${r.nx.exp < NOW ? 'Expired ' : ''}${dateY(r.nx.exp)}${r.nx.exp >= NOW ? ' · ' + Math.ceil((r.nx.exp - NOW) / DAY) + ' days left' : ''}</small></span>` : '—'}</td>
         <td>${PLAN(r.a.plan || 'launch').p ? (r.od.length ? st(r.od.length + ' overdue', 'risk') : st('Paid up')) : st('AED 0 plan', 'mute')}</td><td>${dateS(r.a.decided || r.a.t)}</td><td>${ico('chevR')}</td></tr>`).join('')}</tbody></table></div>` : empty;
     }
     return `${head('Providers', view === 'perf' ? 'Who’s getting leads, who replies fast, and who needs a hand.' : 'Their plan, live listings, documents and payments.', seg)}
@@ -773,7 +854,7 @@
     const a = APPS.find(x => x.id === id); if (!a) return;
     const ds = docsOf(a), Ls = listingsOf(a), inv = invoices().filter(i => i.a === a), soon = ds.filter(d => d.exp && d.exp < NOW + S.warnDays * DAY);
     drawer(`<div class="dr-h ad-dh">${av(a.name, 'ad-avl')}<div style="flex:1;min-width:0"><h3>${esc(a.name)}</h3><small>${esc(TYPE_L[a.type] || a.type)} · ${esc(VL[a.v])} · approved ${dateS(a.decided || a.t)}</small>
-      <div class="ad-dh-meta"><span class="ad-plan" style="--c:${PLAN(a.plan || 'launch').c}">${esc(PLAN(a.plan || 'launch').n)} plan</span><span class="hint">${Ls.filter(l => l.status === 'live').length} live listings · ${Ls.reduce((s, l) => s + (l.leads || 0), 0)} leads</span></div></div><button class="x" data-act="close">${ico('x')}</button></div>
+      <div class="ad-dh-meta"><span class="ad-plan" data-tier="${a.plan || 'launch'}" style="--c:${PLAN(a.plan || 'launch').c}">${esc(PLAN(a.plan || 'launch').n)} plan</span><span class="hint">${Ls.filter(l => l.status === 'live').length} live listings · ${Ls.reduce((s, l) => s + (l.leads || 0), 0)} leads</span></div></div><button class="x" data-act="close">${ico('x')}</button></div>
       <div class="dr-b ad-db">
         ${soon.length ? `<p class="ad-note warn">${ico('alert')}<span><b>${soon.length} document${soon.length > 1 ? 's' : ''} to renew:</b> ${esc(soon.map(d => d.D[0] + ' (' + d.note.toLowerCase() + ')').join(', '))}</span></p>` : ''}
         ${perfBlockA(a)}
@@ -783,7 +864,7 @@
         <div class="sect-t">All listings</div>
         ${Ls.map(l => `<div class="ad-lrow" data-act="openListing" data-arg="${l.id}"><img src="${esc(l.img[0])}" alt=""><div><b>${esc(l.title)}</b><small>${esc(catLabel(l.v, l.cat))} · ${l.status === 'live' ? perfL(l).leads + ' leads · ' + fmtRate(perfL(l).rate) + ' view → lead' : esc(L_ST[l.status][0])}</small></div>${st(...L_ST[l.status])}${ico('chevR')}</div>`).join('') || '<p class="hint">No listings yet.</p>'}
         <div class="sect-t">Payments</div>
-        ${inv.length ? `<table class="tbl"><tbody>${inv.slice(0, 6).map(i => `<tr><td>${dateS(i.t)}</td><td>${esc(i.plan.n)}</td><td><b>${aed(i.amt)}</b></td><td>${st(...INV_ST[i.state])}</td></tr>`).join('')}</tbody></table>` : '<p class="hint">On the free plan — nothing to pay.</p>'}
+        ${inv.length ? `<table class="tbl"><tbody>${inv.slice(0, 6).map(i => `<tr><td>${dateS(i.t)}</td><td>${esc(i.plan.n)}</td><td><b>${aed(i.amt)}</b></td><td>${st(...INV_ST[i.state])}</td></tr>`).join('')}</tbody></table>` : `<p class="hint">On ${esc(PLAN(a.plan || 'launch').n)} (${aed(0)} a month) — nothing is billed.</p>`}
       </div>
       <div class="dr-f ad-df"><a class="btn btn-g btn-sm ad-fullbtn" href="provider.html?id=${encodeURIComponent(a.id)}">View full details${ico('chevR')}</a>${soon.length ? `<a class="btn btn-o btn-sm" target="_blank" rel="noopener" href="${waHref(a.phone, `Hi ${firstName(a)}, your ${soon[0].D[0]} on UpNow ${soon[0].exp < NOW ? 'has expired' : 'runs out on ' + dateY(soon[0].exp)}. Please upload the renewed one so your listings stay live.`)}">${ico('doc')}Remind to renew</a>` : ''}
         <span class="sp" style="flex:1"></span><a class="btn btn-o btn-sm" href="mailto:${esc(a.email)}">${ico('mail')}Email</a><a class="btn btn-wa btn-sm" target="_blank" rel="noopener" href="${waHref(a.phone, `Hi ${firstName(a)}, this is the UpNow team.`)}">${ico('wa')}WhatsApp</a></div>`, 'p:' + id);
@@ -806,9 +887,32 @@
   const tone4 = t => ({ ok: 'check', warn: 'alert', fail: 'x', todo: 'clock' })[t];
   const checksUl = cs => `<ul class="ad-checks">${cs.map((c, i) => `<li class="${c.tone}" style="--i:${i}"><i>${ico(tone4(c.tone))}</i><span><b>${esc(c.t)}</b>${c.sub ? `<small>${esc(c.sub)}</small>` : ''}</span></li>`).join('')}</ul>`;
   // why a decision can't be made yet — on the page it scrolls to the open points at the top
-  const whyLine = (cs, verb) => { const f = cs.find(c => c.tone === 'fail'), t = cs.find(c => c.tone === 'todo'); return f ? `<a class="ad-why risk" href="#top-iss">${ico('alert')}<span><b>Can’t ${verb} yet:</b> ${esc(f.t)}</span><u>Show me</u></a>` : t ? `<a class="ad-why todo" href="#top-iss">${ico('clock')}<span>${esc(t.t)}</span><u>Show me</u></a>` : ''; };
+  const whyLine = (cs, verb) => { const f = cs.find(c => c.tone === 'fail'), t = cs.find(c => c.tone === 'todo'); return f ? `<a class="ad-why risk" href="#top-iss">${ico('alert')}<span><b>Can’t ${verb} yet:</b> ${esc(f.t)}</span><u>Show me</u></a>` : t ? `<a class="ad-why todo" href="#top-iss">${ico('clock')}<span><b>Can’t ${verb} yet:</b> ${esc(t.t)}</span><u>Show me</u></a>` : ''; };
   const afterPaint = () => setTimeout(() => { const v = $('#view'); if (v) thumbs(v); }, 0);
 
+  /* ---------- documents on a full page (provider.html): wide cards, two per row, a big preview ---------- */
+  function docsWide(a, ds) {
+    const up = ds.filter(x => x.f), chk = up.filter(x => x.checked).length, exp = up.filter(x => x.exp).sort((x, y) => x.exp - y.exp);
+    const bad = up.filter(x => x.exp && x.exp < NOW), soon = up.filter(x => x.exp && x.exp >= NOW && x.exp < NOW + S.warnDays * DAY), miss = ds.filter(x => !x.f);
+    const next = exp.find(x => x.exp >= NOW);
+    const chip = (tone, icon, t) => `<span class="dc-chip ${tone}">${ico(icon)}${t}</span>`;
+    const head = `<div class="dc-sum">${chip('', 'doc', `${up.length} document${up.length === 1 ? '' : 's'}`)}
+      ${miss.length ? chip('risk', 'x', `${miss.length} missing`) : bad.length ? chip('risk', 'alert', `${bad.length} expired`) : soon.length ? chip('warn', 'clock', `${soon.length} running out`) : chip('ok', 'check', 'All in date')}
+      ${next ? chip('', 'clock', `Next renewal: ${esc(next.D[0])} · ${dateY(next.exp)}`) : ''}
+      ${chip(chk === up.length && up.length ? 'ok' : '', 'shield', `${chk} of ${up.length} checked by the team`)}</div>`;
+    const status = x => !x.f ? ['risk', 'Not uploaded'] : x.exp && x.exp < NOW ? ['risk', 'Expired ' + dateY(x.exp)] : x.exp && x.exp < NOW + S.warnDays * DAY ? ['warn', `Runs out in ${Math.ceil((x.exp - NOW) / DAY)} days`] : x.tone === 'warn' ? ['warn', 'Not confirmed by the provider'] : x.exp ? ['ok', 'Valid to ' + dateY(x.exp)] : ['ok', 'On file'];
+    const card = x => { const [tone, say] = status(x), d = a.d;
+      return `<article class="dc ${x.tone} ${x.f && !x.checked ? 'ad-unck' : ''}" data-k="${x.k}">
+        ${x.f ? `<button type="button" class="dc-prev ad-thumb" data-act="viewDoc" data-arg="${a.id}|${x.k}" data-thumb="${a.id}|${x.k}" aria-label="Open ${esc(x.D[0])}"><span class="ad-thumb-load"></span></button>` : `<div class="dc-prev is-none">${ico('upload')}<span>Not uploaded yet</span></div>`}
+        <div class="dc-b"><div class="dc-h"><span class="dc-ic">${ico(WHO.includes(x.k) ? 'user' : 'doc')}</span><div><b>${esc(x.D[0])}</b><small>${x.f ? esc(x.f.name || 'Uploaded') : 'Waiting for the provider'}</small></div>
+            <span class="dc-st ${tone}">${esc(say)}</span></div>
+          ${x.f ? `<dl class="dc-kv">${x.D[2].map(([k, l, ty]) => { const v = d[k], un = a.src[k] === 'check', ex = ty === 'date' && expOf(v), fl = ex && ex < NOW ? ['bad', 'Expired'] : ex && ex < NOW + S.warnDays * DAY ? ['soon', 'Runs out soon'] : un ? ['un', 'Hard to read'] : null;
+              return `<div class="${fl ? fl[0] : ''}"><dt>${esc(l)}</dt><dd>${esc(ty === 'date' && ex ? dateY(ex) : v || '—')}${fl ? `<em>${fl[1]}</em>` : ''}</dd></div>`; }).join('')}</dl>` : ''}
+          <div class="dc-f"><span class="dc-where">${ico('search')}How to check: <b>${esc(x.D[1])}</b></span>
+            ${x.f && isWaiting(a) ? `<label class="ad-mark ${x.checked ? 'on' : ''}"><input type="checkbox" data-doccheck="${a.id}|${x.k}" ${x.checked ? 'checked' : ''}>${ico('check')}<span>${x.checked ? 'Checked' : 'Mark checked'}</span></label>`
+              : x.f ? `<span class="dc-chk ${x.checked ? 'on' : ''}">${ico(x.checked ? 'check' : 'clock')}${x.checked ? 'Checked by the team' + (x.checkedAt ? ' · ' + dateS(x.checkedAt) : '') : 'Not checked yet'}</span>` : ''}</div></div></article>`; };
+    return `${head}${isWaiting(a) ? `<p class="ad-hint">${ico('search')}Open each document, check it with the issuing authority, then mark it checked.</p>` : ''}<div class="dc-grid">${ds.map(card).join('')}</div>`;
+  }
   pages.provider = () => {
     const a = APPS.find(x => x.id === qid()); if (!a) return notFound('Provider', 'providers', 'Providers');
     const p = perfA(a), B = bench(), h = health(p, B), ds = docsOf(a), d = a.d, inv = invoices().filter(i => i.a === a), plan = PLAN(a.plan || 'launch');
@@ -832,42 +936,36 @@
     const od = inv.filter(i => i.state === 'overdue'); if (od.length) I.push(['risk', `${od.length} payment${od.length > 1 ? 's' : ''} overdue`, `${aed(od.reduce((s, i) => s + i.amt, 0))} on the ${esc(plan.n)} plan.`, `<a class="btn btn-o btn-sm" href="income.html">Open income</a>`]);
     if (used > plan.max) I.push(['warn', 'Over their plan limit', `${used} listings on ${esc(plan.n)} (up to ${plan.max}).`, '']);
     const lst = p.Ls.slice().sort((x, y) => perfL(y).leads - perfL(x).leads || (x.status === 'live' ? -1 : 1));
-    const docsFull = `<section class="pn dt-card" id="dt-docs"><div class="dt-h"><h2>Documents</h2><small>${ds.filter(x => x.checked).length} of ${ds.filter(x => x.f).length} checked by the team</small></div>
-        ${waiting ? `<p class="ad-hint">${ico('search')}Open each document, check it with the issuing authority, then mark it checked.</p>` : ''}
-        <div class="dt-docs">${ds.map(x => `<div class="ad-doc ${x.tone} ${x.f && !x.checked ? 'ad-unck' : ''}" data-k="${x.k}"><div class="ad-doc-h"><i>${ico(WHO.includes(x.k) ? 'user' : 'doc')}</i><div><b>${esc(x.D[0])}</b><small><span class="ad-doc-st ${x.tone}">${esc(x.note)}</span>${x.f ? ' · ' + esc(x.f.name || 'Uploaded') : ''}</small></div>
-            ${x.f && isWaiting(a) ? `<label class="ad-mark ${x.checked ? 'on' : ''}"><input type="checkbox" data-doccheck="${a.id}|${x.k}" ${x.checked ? 'checked' : ''}>${ico('check')}<span>${x.checked ? 'Checked' : 'Mark checked'}</span></label>` : x.checked ? `<span class="ad-mark on static">${ico('check')}<span>Checked</span></span>` : ''}</div>
-          ${x.f ? `<div class="ad-doc-b"><button type="button" class="ad-thumb" data-act="viewDoc" data-arg="${a.id}|${x.k}" data-thumb="${a.id}|${x.k}" aria-label="Open ${esc(x.D[0])}"><span class="ad-thumb-load"></span></button><dl class="ad-rows">${x.D[2].map(([k, l, ty]) => { const v = d[k], un = a.src[k] === 'check', ex = ty === 'date' && expOf(v), flag = ex && ex < NOW ? ['bad', 'Expired'] : ex && ex < NOW + S.warnDays * DAY ? ['soon', 'Runs out soon'] : un ? ['un', 'Hard to read — compare'] : null;
-              return `<div class="${flag ? flag[0] : ''}"><dt>${esc(l)}</dt><dd>${esc(ty === 'date' && ex ? dateY(ex) : v || '—')}${flag ? `<em>${flag[1]}</em>` : ''}</dd></div>`; }).join('')}</dl></div>
-          <p class="ad-where">${ico('search')}Check on <b>${esc(x.D[1])}</b></p>` : ''}</div>`).join('')}</div></section>`;
+    const docsFull = `<section class="pn dt-card" id="dt-docs"><div class="dt-h"><h2>Documents</h2></div>${docsWide(a, ds)}</section>`;
     return `${crumbs(waiting ? 'applications.html' : 'providers.html', waiting ? 'Provider requests' : 'Providers', a.name)}
     <section class="pn dt-hero">${av(a.name, 'ad-avl dt-av')}<div class="dt-hero-t"><h1>${esc(a.name)}</h1>
         <p>${esc(TYPE_L[a.type] || a.type)} · ${a.role === 'company' ? 'Company' : 'Individual'} · <span class="ad-v" style="--c:${VC[a.v]}">${ico(VI[a.v])}${esc(VL[a.v])}</span> · ${a.status === 'verified' ? 'approved ' + dateS(a.decided || a.t) : 'sent ' + dateS(a.t)}</p>
-        <div class="dt-tags">${a.status === 'verified' ? `<span class="pf-h ${h[1]}">${h[0]}</span><span class="ad-plan" style="--c:${plan.c}">${esc(plan.n)} plan</span><span class="hint">${p.live} live of ${p.Ls.length} listings</span>` : `${st(...APP_ST[a.status])}${waiting ? `<span class="ad-sla ${NOW - a.t > S.sla * 36e5 ? 'late' : ''}">${ico('clock')}Waiting ${ago(a.t)}</span>` : ''}`}</div></div>
+        <div class="dt-tags">${a.status === 'verified' ? `<span class="pf-h ${h[1]}">${h[0]}</span><span class="ad-plan" data-tier="${plan.id}" style="--c:${plan.c}">${esc(plan.n)} plan</span><span class="hint">${p.live} live of ${p.Ls.length} listings</span>` : `${st(...APP_ST[a.status])}${waiting ? `<span class="ad-sla ${NOW - a.t > S.sla * 36e5 ? 'late' : ''}">${ico('clock')}Waiting ${ago(a.t)}</span>` : ''}`}</div></div>
       <div class="dt-acts"><a class="btn btn-o btn-sm" href="mailto:${esc(a.email)}">${ico('mail')}Email</a><a class="btn btn-wa btn-sm" target="_blank" rel="noopener" href="${waHref(a.phone, `Hi ${fn}, this is the UpNow team.`)}">${ico('wa')}WhatsApp</a></div></section>
     ${issuesBox(I, waiting ? 'Every check passed and every document is checked — ready to approve.' : 'Listings are live, leads are coming in and documents are in date.')}
     ${waiting ? `${docsFull}
     <section class="pn dt-card"><div class="dt-h"><h2>All checks</h2><small>${cs.filter(c => c.tone === 'ok').length} of ${cs.length} fine</small></div>${checksUl(cs)}</section>
     <div class="dt-cols">
       <section class="pn dt-card"><div class="dt-h"><h2>What they want to list</h2></div><div class="ad-can">${a.cats.map(c => { const g = GATE[c], need = g && g(a), has = !need || a.docs[need]; return `<div class="${has ? 'ok' : 'warn'}"><i>${ico(has ? 'check' : 'clock')}</i><span><b>${esc(catLabel(a.v, c))}</b><small>${has ? 'Covered by their ' + (a.role === 'company' ? 'licence' : 'documents') : 'Waits for ' + DOCS[need][0]}</small></span></div>`; }).join('')}</div>
-        <p class="hint" style="margin:10px 0 0">${esc(TYPE_L[a.type] || a.type)}${a.size ? ' · size ' + esc(a.size) : ''}${d.activity ? ' · licence activity: “' + esc(d.activity) + '”' : ''}</p></section>
+        <p class="hint" style="margin:10px 0 0">${esc(TYPE_L[a.type] || a.type)}${a.size ? ' · business size: ' + esc(a.size) : ''}${d.activity ? ' · licence activity: “' + esc(d.activity) + '”' : ''}</p></section>
       <section class="pn dt-card"><div class="dt-h"><h2>What customers will see</h2></div><div class="ad-prof">${av(d.display || a.name, 'ad-avl')}<div><b>${esc(d.display || a.name)}</b><small>${esc((d.langs || []).join(', ') || 'English')}</small>${d.bio ? `<p>${esc(d.bio)}</p>` : ''}</div></div>
         <dl class="ad-rows" style="margin-top:12px"><div><dt>Mobile</dt><dd>${esc(a.phone)}</dd></div><div><dt>Email</dt><dd>${esc(a.email || '—')}</dd></div></dl></section>
     </div>` : ''}
     ${a.status === 'verified' ? `<section class="pn dt-card"><div class="dt-h"><h2>How they’re doing</h2><small>Last 30 days · compared with the typical provider</small></div>
       ${p.live ? `${kpis(p, B)}<div class="pf-two dt-two">${weekBars(p.weeks)}${chList(p.ch) || '<div class="pf-chs"><b>Where leads come from</b><p class="hint">No leads yet.</p></div>'}</div>` : '<p class="hint">Numbers start once a listing is live.</p>'}</section>` : ''}
-    <section class="pn dt-card"><div class="dt-h"><h2>Listings</h2><small>${p.live} live · ${p.Ls.length - p.live} other</small></div>
+    <section class="pn dt-card"><div class="dt-h"><h2>Listings</h2><small>${p.Ls.length - p.live ? `${p.live} live · ${p.Ls.length - p.live} not live yet` : `all ${p.live} live`}</small></div>
       ${lst.length ? `<table class="tbl pf-tbl dt-tbl"><thead><tr><th>Listing</th><th>Status</th><th>Views</th><th>Leads</th><th>View → lead</th><th>Reply</th><th>Trend</th><th></th></tr></thead><tbody>
         ${lst.map(l => { const q = perfL(l), live = l.status === 'live'; return `<tr class="ck" onclick="location.href='listing.html?id=${encodeURIComponent(l.id)}'"><td><span class="pf-l"><img src="${esc(l.img[0])}" alt=""><span><b>${esc(l.title)}</b><small>${esc(catLabel(l.v, l.cat))}${l.loc ? ' · ' + esc(areaN(l.loc)) : ''}</small></span></span></td><td>${st(...L_ST[l.status])}</td><td>${live ? q.views.toLocaleString() : '—'}</td><td><b>${live ? q.leads : '—'}</b></td><td>${live ? fmtRate(q.rate) : '—'}</td><td>${live ? fmtReply(q.reply) : '—'}</td><td>${live && q.leads ? chg(change(q.weeks)) : '—'}</td><td>${ico('chevR')}</td></tr>`; }).join('')}</tbody></table>` : `<p class="hint">${waiting ? 'They chose to add their first listing later.' : 'No listings yet.'}</p>`}</section>
     ${waiting ? '' : `${docsFull}
     <section class="pn dt-card"><div class="dt-h"><h2>Contact</h2></div><dl class="ad-rows"><div><dt>Mobile</dt><dd>${esc(a.phone)}</dd></div><div><dt>Email</dt><dd>${esc(a.email || '—')}</dd></div><div><dt>Shown to customers as</dt><dd>${esc(d.display || a.name)}</dd></div><div><dt>Languages</dt><dd>${esc((d.langs || []).join(', ') || 'English')}</dd></div></dl></section>`}
     <section class="pn dt-card">${planBox(a, a.status === 'verified' ? planUse(a) : 'Starts when they’re approved. You can pick it now or later. ' + planUse(a))}</section>
-    ${a.status === 'verified' ? `<section class="pn dt-card"><div class="dt-h"><h2>Payments</h2></div>${inv.length ? `<table class="tbl"><tbody>${inv.slice(0, 12).map(i => `<tr><td>${dateS(i.t)}</td><td>${esc(i.plan.n)}</td><td><b>${aed(i.amt)}</b></td><td>${st(...INV_ST[i.state])}</td></tr>`).join('')}</tbody></table>` : '<p class="hint">On the free plan — nothing to pay.</p>'}</section>` : ''}
-    ${waiting ? decBar(whyLine(cs, 'approve'), `<button class="btn btn-g" data-act="approveApp" data-arg="${a.id}" ${cs.some(c => c.tone === 'fail') ? 'disabled title="Fix the failed checks first"' : ''}>${ico('check')}Approve</button><button class="btn btn-o" data-act="changesApp" data-arg="${a.id}">${ico('edit')}Ask for changes</button><button class="btn btn-o ad-danger" data-act="rejectApp" data-arg="${a.id}">${ico('x')}Reject</button>`) : ''}`;
+    ${a.status === 'verified' ? `<section class="pn dt-card" id="dt-pay"><div class="dt-h"><h2>Payments</h2></div>${inv.length ? `<table class="tbl"><tbody>${inv.slice(0, 12).map(i => `<tr><td>${dateS(i.t)}</td><td>${esc(i.plan.n)}</td><td><b>${aed(i.amt)}</b></td><td>${st(...INV_ST[i.state])}</td></tr>`).join('')}</tbody></table>` : `<p class="hint">On ${esc(PLAN(a.plan || 'launch').n)} (${aed(0)} a month) — nothing is billed.</p>`}</section>` : ''}
+    ${waiting ? decBar(whyLine(cs, 'approve'), `<button class="btn btn-g" data-act="approveApp" data-arg="${a.id}" ${cs.some(c => c.tone === 'fail' || c.tone === 'todo') ? 'disabled title="Finish the checks first"' : ''}>${ico('check')}Approve</button><button class="btn btn-o" data-act="changesApp" data-arg="${a.id}">${ico('edit')}Ask for changes</button><button class="btn btn-o ad-danger" data-act="rejectApp" data-arg="${a.id}">${ico('x')}Reject</button>`) : ''}`;
   };
 
   pages.listing = () => {
     const l = LST.find(x => x.id === qid()); if (!l) return notFound('Listing', 'listings', 'Listing requests');
-    const a = appOf(l) || {}, q = perfL(l), live = l.status === 'live', waiting = isWaitingL(l), cs = listingChecks(l), man = manualL(l), tick = S.lchecks[l.id] || {};
+    const a = appOf(l) || {}, q = perfL(l), live = l.status === 'live', waiting = isWaitingL(l), cs = listingChecks(l), man = manualL(l), tick = ticksOf(l);
     afterPaint();
     const peers = LST.filter(x => x.status === 'live' && x.cat === l.cat), P = peers.map(perfL);
     const B = { rate: median(P.map(x => x.rate)), reply: median(P.filter(x => x.reply != null).map(x => x.reply)), leads: median(P.map(x => x.leads)), views: median(P.map(x => x.views)) };
@@ -903,7 +1001,7 @@
       ${kpis(q, B)}<div class="pf-two dt-two">${weekBars(q.weeks)}${chList(q.ch) || '<div class="pf-chs"><b>Where leads come from</b><p class="hint">No leads yet.</p></div>'}</div>
       <table class="tbl dt-cmp"><thead><tr><th></th><th>This listing</th><th>Typical ${esc(cat)} listing</th></tr></thead><tbody>${cmp.map(([k, x, y]) => `<tr><td>${k}</td><td><b>${x}</b></td><td>${y}</td></tr>`).join('')}</tbody></table></section>` : ''}
     ${a.id ? `<section class="pn dt-card"><div class="dt-h"><h2>Provider</h2></div><a class="ad-lrow" href="provider.html?id=${encodeURIComponent(a.id)}">${av(a.name)}<div><b>${esc(a.name)}</b><small>${esc(TYPE_L[a.type] || a.type || '')} · ${esc(PLAN(a.plan || 'launch').n)} plan · ${planUse(a)}</small></div>${st(...APP_ST[a.status || 'submitted'])}${ico('chevR')}</a></section>` : ''}
-    ${waiting ? decBar(whyLine(cs, 'put it live'), `<button class="btn btn-g" data-act="liveL" data-arg="${l.id}" ${cs.some(c => c.tone === 'fail') ? 'disabled title="Fix the failed checks first"' : ''}>${ico('check')}Put it live</button><button class="btn btn-o" data-act="changesL" data-arg="${l.id}">${ico('edit')}Ask for changes</button><button class="btn btn-o ad-danger" data-act="rejectL" data-arg="${l.id}">${ico('x')}Not approve</button>`)
+    ${waiting ? decBar(whyLine(cs, 'put it live'), `<button class="btn btn-g" data-act="liveL" data-arg="${l.id}" ${cs.some(c => c.tone === 'fail' || c.tone === 'todo') ? 'disabled title="Finish the checks first"' : ''}>${ico('check')}Put it live</button><button class="btn btn-o" data-act="changesL" data-arg="${l.id}">${ico('edit')}Ask for changes</button><button class="btn btn-o ad-danger" data-act="rejectL" data-arg="${l.id}">${ico('x')}Not approve</button>`)
       : live ? decBar('', `<button class="btn btn-o" data-act="changesL" data-arg="${l.id}">${ico('edit')}Take down and ask for changes</button>`) : ''}`;
   };
 
@@ -919,10 +1017,10 @@
     const byV = Object.keys(VL).map(v => ({ l: VL[v], ico: VI[v], c: VC[v], v: act.filter(a => a.v === v).reduce((s, a) => s + PLAN(a.plan || 'launch').p, 0), sub: act.filter(a => a.v === v).length + ' providers' })).filter(r => r.sub !== '0 providers').sort((a, b) => b.v - a.v);
     return `${head('Income', 'UpNow charges providers a monthly plan to list. Customers never pay — they contact providers directly.', periodSeg())}
     <div class="g4 ad-kpis">
-      <div class="kpi ad-kpi static"><small>Monthly plans (MRR)</small><b data-count="${mrr()}" data-pre="AED ">${aed(mrr())}</b><span class="d">${paying.length} paying · ${act.length - paying.length} on AED 0 plans</span>${spark(weeks.map(w => w.v))}</div>
+      <div class="kpi ad-kpi static"><small>Monthly plans (MRR)</small><b data-count="${mrr()}" data-pre="AED ">${aed(mrr())}</b><span class="d">${paying.length} paying · ${act.length - paying.length} on Launch (${aed(0)}, not billed)</span>${spark(weeks.map(w => w.v))}</div>
       <div class="kpi ad-kpi static"><small>Collected ${esc(pLabel())}</small><b data-count="${coll.reduce((s, i) => s + i.amt, 0)}" data-pre="AED ">${aed(coll.reduce((s, i) => s + i.amt, 0))}</b><span class="d">${coll.length} payments</span>${spark(weeks.map(w => w.v))}</div>
       <div class="kpi ad-kpi static"><small>Due, not late yet</small><b data-count="${out.filter(i => i.state === 'due').reduce((s, i) => s + i.amt, 0)}" data-pre="AED ">${aed(out.filter(i => i.state === 'due').reduce((s, i) => s + i.amt, 0))}</b><span class="d" style="color:var(--amber)">${out.length - od.length} payment${out.length - od.length === 1 ? '' : 's'} due within 7 days</span></div>
-      <div class="kpi ad-kpi static"><small>Overdue</small><b data-count="${od.reduce((s, i) => s + i.amt, 0)}" data-pre="AED ">${aed(od.reduce((s, i) => s + i.amt, 0))}</b><span class="d" style="color:var(--red)">${od.length} provider${od.length === 1 ? '' : 's'} past 7 days</span></div>
+      <div class="kpi ad-kpi static"><small>Overdue</small><b data-count="${od.reduce((s, i) => s + i.amt, 0)}" data-pre="AED ">${aed(od.reduce((s, i) => s + i.amt, 0))}</b><span class="d" style="color:var(--red)">${od.length} provider${od.length === 1 ? '' : 's'} more than 7 days late</span></div>
     </div>
     <div class="gd mt">
       <section class="pn"><div class="pn-h"><h2>Collected per week</h2><span class="sub">Last 12 weeks</span></div>
@@ -931,12 +1029,31 @@
         <div class="ad-mix">${donut(planMix, (mrr() >= 1000 ? (mrr() / 1000).toFixed(1) + 'k' : mrr()), 'AED a month')}<div class="ad-mix-l">${planMix.map(p => `<div><i style="background:${p.c}"></i><span><b>${esc(p.n)}</b><small>${p.k} providers</small></span><b>${aed(p.v)}</b></div>`).join('')}</div></div>
         <div class="sect-t">By vertical</div>${hbars(byV.map(r => Object.assign(r, { f: aed })))}</section>
     </div>
-    <section class="pn mt"><div class="pn-h"><h2>Payments</h2><span class="sub">Monthly, from the day a provider is approved · due within 7 days</span></div>
-      <div class="ad-tw"><table class="tbl ad-tbl"><thead><tr><th>Provider</th><th>Plan</th><th>Billed</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>
-      ${[...od, ...out.filter(i => i.state === 'due'), ...inv.filter(i => i.paid)].slice(0, 30).map((i, k) => `<tr style="--i:${k}"><td><div class="li">${av(i.a.name, 'sm')}<div><b>${esc(i.a.name)}</b><small>${esc(VL[i.a.v])}</small></div></div></td><td><span class="ad-plan" style="--c:${i.plan.c}">${esc(i.plan.n)}</span></td><td>${dateS(i.t)}</td><td><b>${aed(i.amt)}</b></td>
-        <td>${st(...INV_ST[i.state])}${i.paid ? `<small class="ad-sm">${dateS(i.paid)}</small>` : ''}</td><td class="ad-acts">${i.paid ? '' : `<a class="btn btn-o btn-sm" target="_blank" rel="noopener" href="${waHref(i.a.phone, `Hi ${firstName(i.a)}, a reminder that your UpNow ${i.plan.n} plan (${aed(i.amt)}) for ${dateS(i.t)} is ${i.state === 'overdue' ? 'overdue' : 'due'}. Thank you!`)}">${ico('wa')}Remind</a><button class="btn btn-g btn-sm" data-act="markPaid" data-arg="${i.id}">${ico('check')}Mark paid</button>`}</td></tr>`).join('')}
-      </tbody></table></div></section>`;
+    ${payments(inv)}`;
   };
+  // Payments: one row per monthly bill. Tabs by state, verticals and search like the other pages;
+  // a row opens the provider's page at their payments; Remind and Mark paid say what the provider is told.
+  const PAY_M = { bank: 'Bank transfer', card: 'Card', cash: 'Cash', cheque: 'Cheque' };
+  const daysTxt = ms => { const n = Math.max(1, Math.round(ms / DAY)); return n + ' day' + (n === 1 ? '' : 's'); };
+  const payNote = i => i.paid ? `Paid ${dateS(i.paid)}${((S.payMeta || {})[i.id] || {}).method ? ' · ' + PAY_M[S.payMeta[i.id].method] : ''}` : i.state === 'overdue' ? `${daysTxt(NOW - i.due)} late` : `Due in ${daysTxt(i.due - NOW)}`;
+  const remindTxt = i => `Hi ${firstName(i.a)}, a friendly reminder from UpNow: your ${i.plan.n} plan (${aed(i.amt)}) billed on ${dateS(i.t)} ${i.state === 'overdue' ? 'is now ' + daysTxt(NOW - i.due) + ' overdue' : 'is due by ' + dateS(i.due)}. Reply here if you have any questions. Thank you!`;
+  const receiptTxt = (i, m) => `Hi ${firstName(i.a)}, thank you — we’ve received your payment of ${aed(i.amt)} for your UpNow ${i.plan.n} plan (billed ${dateS(i.t)}), paid by ${PAY_M[m].toLowerCase()}. Your listings stay live.`;
+  function payments(inv) {
+    const T = [['overdue', 'Overdue', i => i.state === 'overdue'], ['due', 'Due soon', i => i.state === 'due'], ['paid', 'Paid', i => i.paid], ['all', 'All', () => true]];
+    const tab = T.find(t => t[0] === S.payTab) || (inv.some(i => i.state === 'overdue') ? T[0] : T[3]);
+    const vf = i => S.vf === 'all' || i.a.v === S.vf, qf = i => !S.q || [i.a.name, i.a.email, i.plan.n].join(' ').toLowerCase().includes(S.q);
+    const list = inv.filter(tab[2]).filter(vf).filter(qf).sort((x, y) => tab[0] === 'overdue' ? x.due - y.due : tab[0] === 'due' ? x.due - y.due : (y.paid || y.t) - (x.paid || x.t)).slice(0, 60);
+    const rem = S.reminded || {};
+    return `<section class="pn mt" id="payments"><div class="pn-h"><h2>Payments</h2><span class="sub">Billed monthly from the day a provider is approved · due within 7 days</span></div>
+      <div class="tabs">${T.map(([k, l, f]) => `<button class="${tab[0] === k ? 'on' : ''}" data-act="payTab" data-arg="${k}">${l}<span class="c">${inv.filter(f).filter(vf).length}</span></button>`).join('')}</div>
+      <div class="fbar">${vChips(inv.filter(tab[2]).map(i => i.a))}<span class="sp"></span><label class="ad-find">${ico('search')}<input data-q placeholder="Find a provider" value="${esc(S.q)}"></label></div>
+      ${list.length ? `<div class="ad-tw"><table class="tbl ad-tbl pay-tbl"><thead><tr><th>Provider</th><th>Plan</th><th>Billed</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>
+      ${list.map((i, k) => `<tr class="ck" style="--i:${k}" onclick="if(!event.target.closest('a,button'))location.href='provider.html?id=${encodeURIComponent(i.a.id)}#dt-pay'"><td><div class="li">${av(i.a.name, 'sm')}<div><b>${esc(i.a.name)}</b><small>${esc(VL[i.a.v])}</small></div></div></td>
+        <td><span class="ad-plan" data-tier="${i.plan.id}" style="--c:${i.plan.c}">${esc(i.plan.n)}</span></td><td>${dateS(i.t)}</td><td><b>${aed(i.amt)}</b></td>
+        <td>${st(...INV_ST[i.state])}<small class="ad-sm ${i.state === 'overdue' ? 'pay-late' : ''}">${esc(payNote(i))}</small>${!i.paid && rem[i.id] ? `<small class="ad-sm">Reminded ${NOW - rem[i.id] < 6e4 || Date.now() - rem[i.id] < 6e4 ? 'just now' : ago(rem[i.id]) + ' ago'}</small>` : ''}</td>
+        <td><div class="pay-acts">${i.paid ? `<a class="btn btn-o btn-sm" href="provider.html?id=${encodeURIComponent(i.a.id)}#dt-pay">View provider${ico('chevR')}</a>` : `<button class="btn btn-o btn-sm" data-act="remindPay" data-arg="${i.id}">${ico('wa')}${rem[i.id] ? 'Remind again' : 'Remind'}</button><button class="btn btn-g btn-sm" data-act="markPaid" data-arg="${i.id}">${ico('check')}Mark paid</button>`}</div></td></tr>`).join('')}
+      </tbody></table></div>` : `<div class="ad-empty">${ico('check')}<b>${tab[0] === 'overdue' ? 'Nobody is late' : 'Nothing here'}</b><small>${tab[0] === 'overdue' ? 'Every bill is paid or still within its 7 days.' : 'Try another tab or vertical.'}</small></div>`}</section>`;
+  }
 
   /* ================= SETTINGS ================= */
   pages.settings = () => {
@@ -953,7 +1070,7 @@
     </div>
     <section class="pn mt"><div class="pn-h"><h2>Plans and prices</h2><span class="sub">What providers pay UpNow each month · AED</span><span class="sp"></span><a data-act="resetPlans">Reset</a></div>
       <div class="ad-tw"><table class="tbl ad-tbl"><thead><tr><th>Plan</th><th>Price / month</th><th>Listings</th><th>For</th><th>Providers</th></tr></thead><tbody>
-      ${S.plans.map((p, i) => `<tr><td><span class="ad-plan" style="--c:${p.c}">${esc(p.n)}</span></td><td><input class="ad-in" type="number" min="0" value="${p.p}" data-plan-p="${i}"></td><td><input class="ad-in" type="number" min="1" value="${p.max}" data-plan-m="${i}"></td><td class="hint">${esc(p.note)}</td><td>${mainApps().filter(a => a.status === 'verified' && (a.plan || 'launch') === p.id).length}</td></tr>`).join('')}
+      ${S.plans.map((p, i) => `<tr><td><span class="ad-plan" data-tier="${p.id}" style="--c:${p.c}">${esc(p.n)}</span></td><td><input class="ad-in" type="number" min="0" value="${p.p}" data-plan-p="${i}"></td><td><input class="ad-in" type="number" min="1" value="${p.max}" data-plan-m="${i}"></td><td class="hint">${esc(p.note)}</td><td>${mainApps().filter(a => a.status === 'verified' && (a.plan || 'launch') === p.id).length}</td></tr>`).join('')}
       </tbody></table></div><p class="hint" style="margin:10px 0 0">These prices are placeholders — set the real ones before you start charging. Changing a price changes what the Income page expects from now on.</p></section>`;
   };
 
@@ -1002,6 +1119,7 @@
     openApp: id => { const a = APPS.find(x => x.id === id); if (a && a.status === 'verified' && PAGE === 'providers') openProv(id); else openApp(id); }, openListing, openProv,
     approveApp: id => decide('approveApp', id), changesApp: id => decide('changesApp', id), rejectApp: id => decide('rejectApp', id),
     liveL: id => decide('liveL', id), changesL: id => decide('changesL', id), rejectL: id => decide('rejectL', id), confirmDec,
+    suggestPlan, sugSend, sugWithdraw,
     setPlan: arg => { const [id, p] = arg.split('|'), a = APPS.find(x => x.id === id); S.planOf[id] = p; save(); if (a && a.real) { const j = D.read(PFX + '.join'); if (j && j.review) { j.review.plan = p; D.write(PFX + '.join', j); } } toast(`${a ? a.name : 'Provider'} is on ${PLAN(p).n}`); refresh(); },
     viewDoc: arg => { const [id, k] = arg.split('|'), a = APPS.find(x => x.id === id); if (!a) return; const items = docItems(a), i = Math.max(0, docsOf(a).filter(x => x.f).findIndex(x => x.k === k)); viewer(items, i); },
     viewPhotos: arg => { const [id, i] = arg.split('|'), l = LST.find(x => x.id === id); if (l) viewer(photoItems(l), +i || 0); },
@@ -1009,7 +1127,21 @@
     jumpTo: what => { const box = $('#drawer .dr-b'); if (!box) return;
       const el = what === 'fail' ? $('#drawer .ad-doc.fail') || $('#drawer .ad-checks li.fail') : $('#drawer .ad-doc.ad-unck') || $('#drawer .ad-man .ad-tick:not(:has(input:checked))') || $('#drawer .ad-checks li.todo');
       if (!el) return; box.scrollTo({ top: el.offsetTop - 12, behavior: calm ? 'auto' : 'smooth' }); el.classList.remove('ad-flash'); void el.offsetWidth; el.classList.add('ad-flash'); },
-    markPaid: id => { S.paid[id] = Date.now(); save(); toast('Marked as paid'); refresh(); },
+    payTab: k => { S.payTab = k; save(); render(); },
+    // a reminder goes out on WhatsApp (they press send) and is remembered, so nobody chases twice
+    remindPay: id => { const i = invoices().find(x => x.id === id); if (!i) return; (S.reminded = S.reminded || {})[id] = Date.now(); save(); window.open(waHref(i.a.phone, remindTxt(i)), '_blank', 'noopener'); toast('Reminder opened in WhatsApp — press send'); refresh(); },
+    // mark paid: how they paid, and a receipt on WhatsApp if wanted
+    markPaid: id => { const i = invoices().find(x => x.id === id); if (!i) return;
+      modal(`<div class="ad-dm-h"><span class="ad-dm-i is-ok">${ico('check')}</span><div><h3>Mark as paid?</h3><small>${esc(i.a.name)} · ${esc(i.plan.n)} plan · ${aed(i.amt)} billed ${dateS(i.t)}</small></div><button class="x" data-act="closeModal" aria-label="Close">${ico('x')}</button></div>
+        <div class="ad-dm-b"><p class="ad-dm-lead">How did they pay?</p><div class="pay-m">${Object.entries(PAY_M).map(([k, l], n) => `<label><input type="radio" name="paym" value="${k}" ${n ? '' : 'checked'}><span>${esc(l)}</span></label>`).join('')}</div>
+          <div class="ad-tell"><label class="ad-switch"><input type="checkbox" data-payrc checked><i></i><span><b>Send ${esc(firstName(i.a))} a receipt on WhatsApp</b><small>Opens WhatsApp with this message — you press send</small></span></label>
+          <div class="ad-wa"><div class="ad-wa-b" data-payprev data-aed>${esc(receiptTxt(i, 'bank'))}</div></div></div></div>
+        <div class="ad-dm-f"><button class="btn btn-o" data-act="closeModal">Cancel</button><button class="btn btn-g" data-act="confirmPaid" data-arg="${i.id}">${ico('check')}Mark paid</button></div>`, 'ad-dm');
+      $$('#scrim [name=paym]').forEach(r => r.onchange = () => { $('#scrim [data-payprev]').textContent = receiptTxt(i, r.value); }); },
+    confirmPaid: id => { const i = invoices().find(x => x.id === id); if (!i) return; const m = ($('#scrim [name=paym]:checked') || {}).value || 'bank', send = ($('#scrim [data-payrc]') || {}).checked;
+      S.paid[id] = Date.now(); (S.payMeta = S.payMeta || {})[id] = { method: m, t: Date.now(), receipt: !!send }; save(); closeModal();
+      if (send) window.open(waHref(i.a.phone, receiptTxt(i, m)), '_blank', 'noopener');
+      toast(`${i.a.name} marked as paid${send ? ' · receipt opened in WhatsApp' : ''}`); refresh(); },
     resetPlans: () => { S.plans = JSON.parse(JSON.stringify(D.PLANS0)); save(); render(); toast('Plans reset'); },
     signout: () => { localStorage.removeItem(PFX + '.admin'); location.href = '../../index.html'; },
     gateGo
@@ -1021,14 +1153,14 @@
   });
   document.addEventListener('change', e => {
     const t = e.target;
-    if (t.name === 'rs') { const own = $('[data-own]'); if (own && !t.value) setTimeout(() => own.focus(), 0); decPreview(); return; }
-    if (t.dataset.doccheck) { const [id, k] = t.dataset.doccheck.split('|'); (S.checks[id] = S.checks[id] || {})[k] = t.checked; save(); refresh(); return; }
+    if (t.name === 'rs') { const own = $('[data-own]'); if (own && !t.value) setTimeout(() => own.focus(), 0); decPreview(); sugPreview(); return; }
+    if (t.dataset.doccheck) { const [id, k] = t.dataset.doccheck.split('|'); (S.checks[id] = S.checks[id] || {})[k] = t.checked ? Date.now() : false; save(); refresh(); return; }
     if (t.dataset.lcheck) { const [id, k] = t.dataset.lcheck.split('|'); (S.lchecks[id] = S.lchecks[id] || {})[k] = t.checked; save(); refresh(); return; }
     if (t.dataset.set) { const v = Math.max(+t.min, Math.min(+t.max, +t.value || 0)); S[t.dataset.set] = v; save(); render(); toast('Saved'); return; }
     if (t.dataset.planP != null) { S.plans[+t.dataset.planP].p = Math.max(0, +t.value || 0); save(); render(); toast('Price saved'); return; }
     if (t.dataset.planM != null) { S.plans[+t.dataset.planM].max = Math.max(1, +t.value || 1); save(); render(); toast('Saved'); }
   });
-  document.addEventListener('input', e => { if (e.target.matches('[data-own]')) decPreview(); });
+  document.addEventListener('input', e => { if (e.target.matches('[data-own]')) { decPreview(); sugPreview(); } });
   document.addEventListener('keydown', e => {
     if (VW) { if (e.key === 'Escape') closeViewer(); else if (e.key === 'ArrowRight' && VW.items.length > 1) { VW.i = (VW.i + 1) % VW.items.length; VW.zoom = 1; VW.rot = 0; paintViewer(); } else if (e.key === 'ArrowLeft' && VW.items.length > 1) { VW.i = (VW.i - 1 + VW.items.length) % VW.items.length; VW.zoom = 1; VW.rot = 0; paintViewer(); } return; }
     if (e.key === 'Escape') { closeModal(); closeDrawer(); return; }
@@ -1036,7 +1168,7 @@
     if (!drawerFor || $('#scrim').classList.contains('on') || e.metaKey || e.ctrlKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test((e.target || {}).tagName || '')) return;
     const [t, id] = [drawerFor.slice(0, 1), drawerFor.slice(2)]; if (t !== 'a' && t !== 'l') return;
     const key = e.key.toLowerCase(), btn = sel => $('#drawer ' + sel);
-    if (key === 'a') { const b = btn('[data-act=approveApp], [data-act=liveL]'); if (b && !b.disabled) { e.preventDefault(); b.click(); } else if (b) { e.preventDefault(); acts.jumpTo('fail'); toast('Can’t ' + (t === 'a' ? 'approve' : 'put it live') + ' yet — see the highlighted item'); } }
+    if (key === 'a') { const b = btn('[data-act=approveApp], [data-act=liveL]'); if (b && !b.disabled) { e.preventDefault(); b.click(); } else if (b) { e.preventDefault(); acts.jumpTo($('#drawer .ad-checks li.fail') ? 'fail' : 'todo'); toast('Can’t ' + (t === 'a' ? 'approve' : 'put it live') + ' yet — see the highlighted item'); } }
     else if (key === 'c') { const b = btn('[data-act=changesApp], [data-act=changesL]'); if (b) { e.preventDefault(); b.click(); } }
     else if (key === 'r') { const b = btn('[data-act=rejectApp], [data-act=rejectL]'); if (b) { e.preventDefault(); b.click(); } }
     else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); acts.nextReq(t + '|' + id, null, null, e.key === 'ArrowLeft'); } });
@@ -1050,7 +1182,7 @@
     else if (k === 'goto') { VW.i = +b.dataset.arg; VW.zoom = 1; VW.rot = 0; paintViewer(); }
     else if (k === 'done') { closeViewer(); const btn = $('#drawer [data-act=approveApp], #drawer [data-act=liveL]'); if (btn && !btn.disabled) { btn.classList.remove('ad-nudge'); void btn.offsetWidth; btn.classList.add('ad-nudge'); btn.focus({ preventScroll: true }); } }
     else if (k === 'next' || k === 'prev') { VW.i = (VW.i + (k === 'next' ? 1 : -1) + VW.items.length) % VW.items.length; VW.zoom = 1; VW.rot = 0; paintViewer(); }
-    else if (k === 'check' || k === 'lcheck') { const [id, key] = b.dataset.arg.split('|'), M = k === 'check' ? S.checks : S.lchecks; (M[id] = M[id] || {})[key] = !(M[id] || {})[key]; save(); refresh();
+    else if (k === 'check' || k === 'lcheck') { const [id, key] = b.dataset.arg.split('|'), M = k === 'check' ? S.checks : S.lchecks; (M[id] = M[id] || {})[key] = (M[id] || {})[key] ? false : Date.now(); save(); refresh();
       // the items close over the old data: rebuild them for the same position
       const keep = VW.i; if (k === 'check') VW.items = docItems(APPS.find(x => x.id === id)); else VW.items = photoItems(LST.find(x => x.id === id)); VW.i = keep;
       $('#adv .adv-side').innerHTML = VW.items[VW.i].side(); toast(M[id][key] ? 'Marked as checked' : 'Unmarked'); }

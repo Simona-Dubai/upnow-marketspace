@@ -109,13 +109,10 @@
   const PLANS = [{ id: 'launch', n: 'Launch', p: 0, max: 5 }, { id: 'basic', n: 'Basic', p: 299, max: 10 }, { id: 'pro', n: 'Pro', p: 799, max: 50 }, { id: 'business', n: 'Business', p: 1999, max: 500 }];
   // what each plan adds on top of the one before; built on what the dashboard has (Channels, Team & Permissions,
   // Demand, Boost on a listing, Entities & Branches)
-  const INCL = {
-    launch: ['Leads by call, WhatsApp, SMS and email from your listings', 'Verified badge on your profile and listings', 'Leads, calendar and messages in one place', 'Views and leads for each listing'],
-    basic: ['Connect your WhatsApp Business and email inbox', 'Enquiry form for your own website', 'Up to 3 team members', 'Reply templates for WhatsApp and email', 'Weekly performance report by email'],
-    pro: ['Leads from Bayut, Property Finder, Dubizzle, Instagram and Facebook', 'A tracked phone number for each listing', 'Up to 15 team members, with roles', 'New leads shared out to your team automatically', 'Demand: what customers search for in your areas', '2 featured listings (Boost) a month'],
-    business: ['Several branches and legal entities', 'Unlimited team members', 'Upload many listings at once', '10 featured listings (Boost) a month', 'A named UpNow account manager']
-  };
-  const FOR = { launch: 'Getting started', basic: 'Owners and freelancers', pro: 'Agencies, clinics, operators', business: 'Large portfolios and multi-branch' };
+  // what each plan includes and who it's for — one list with onboarding (js/pages/join.js), kept in data/site.js
+  const SITEP = window.SITE || {};
+  const INCL = SITEP.planIncl || {};
+  const FOR = SITEP.planFor || {};
   const DAY = 864e5;
   const readLS = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
   const writeLS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
@@ -151,7 +148,7 @@
   const nextBill = m => { let t = m.since; while (t <= Date.now()) t += 30 * DAY; return t; };
   const incl = x => x.f || INCL[x.id] || [];
   const PL_ICO = { launch: 'bolt', basic: 'star', pro: 'chart', business: 'building' };
-  const PL_C = { launch: '#6f8f7f', basic: '#25946a', pro: '#047246', business: '#0b3d2a' };
+  const PL_C = { launch: '#8a96a3', basic: '#a0623a', pro: '#5f7189', business: '#b8860b' }; // metal tiers, the same as the admin: grey · bronze · silver · gold
   const plC = x => PL_C[x.id] || x.c || '#047246';
   const PL_CSS = `
     .pl-root{container-type:inline-size;display:grid;grid-template-columns:minmax(0,1fr);gap:18px}.pl-root>*{min-width:0}
@@ -211,22 +208,42 @@
     .pl-empty{display:flex;align-items:center;gap:12px;padding:16px 0;color:var(--ink3);font-size:13px}.pl-empty .pl-ai{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--g1);color:var(--g7)}
     .pl-note{font-size:13px;line-height:1.5;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--g1)}
     .pl-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:6px}
-    .pl-sum div{background:var(--g1);border-radius:12px;padding:12px 14px}.pl-sum small{display:block;color:var(--ink3);font-size:12px}.pl-sum b{font-size:15px}`;
+    .pl-sum div{background:var(--g1);border-radius:12px;padding:12px 14px}.pl-sum small{display:block;color:var(--ink3);font-size:12px}.pl-sum b{font-size:15px}
+    /* metal tiers — Launch grey · Basic bronze · Pro silver · Business gold (the same as the admin) */
+    .pl-card[data-tier="launch"]{--m1:#f3f5f7;--m2:#dfe4e9;--m3:#c3cad1;--mi:#5f6b77}
+    .pl-card[data-tier="basic"],.pl-hero[data-tier="basic"]{--m1:#fbefe6;--m2:#e7c3a6;--m3:#c98d63;--mi:#6b3a17}
+    .pl-card[data-tier="pro"],.pl-hero[data-tier="pro"]{--m1:#ffffff;--m2:#dfe5ec;--m3:#a9b6c5;--mi:#34445a}
+    .pl-card[data-tier="business"],.pl-hero[data-tier="business"]{--m1:#fff6d9;--m2:#f1d27a;--m3:#d4a332;--mi:#6b4a00}
+    .pl-hero[data-tier="launch"]{--m1:#f3f5f7;--m2:#dfe4e9;--m3:#c3cad1;--mi:#5f6b77}
+    .pl-card::before{display:none}
+    .pl-ic{background:linear-gradient(135deg,var(--m1),var(--m2) 55%,var(--m1) 70%,var(--m3));color:var(--mi);box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 0 0 1px color-mix(in srgb,var(--m3) 60%,transparent)}
+    .pl-card[data-tier="launch"] .pl-ic{background:var(--m1);box-shadow:0 0 0 1px var(--m2)}
+    .pl-limit{color:var(--mi);background:color-mix(in srgb,var(--m2) 45%,#fff);box-shadow:0 0 0 1px color-mix(in srgb,var(--m3) 45%,transparent)}
+    .pl-card.is-cur{border-color:var(--m3)}
+    /* the "Your plan" / "Starts when approved" tag wears its plan's metal, not brand green or blue */
+    .pl-card[data-tier] .pl-tag,.pl-card[data-tier] .pl-tag.pend{background:linear-gradient(135deg,var(--m1),var(--m2) 50%,var(--m3));color:var(--mi);box-shadow:0 0 0 1px color-mix(in srgb,var(--m3) 70%,#000 10%) inset,0 4px 10px -6px rgba(0,0,0,.35)}
+    .pl-card[data-tier="launch"] .pl-tag{background:var(--m2)}
+    .pl-cur-note{height:auto;min-height:40px;padding:8px 12px;text-align:center;line-height:1.3}
+    .pl-tag{left:50%;transform:translateX(-50%);white-space:nowrap}
+    .pl-medal{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;flex:none;color:var(--mi);background:radial-gradient(circle at 32% 28%,var(--m1) 0 20%,var(--m2) 55%,var(--m3) 100%);box-shadow:0 0 0 3px rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.12)}.pl-medal .ico{width:22px;height:22px}`;
   const plCss = () => { const s = document.getElementById('pl-css') || document.head.appendChild(Object.assign(document.createElement('style'), { id: 'pl-css' })); if (s.textContent !== PL_CSS) s.textContent = PL_CSS; };
   // cur: the plan they're on (with change buttons); pend: the plan that starts when they're approved (no buttons)
   const planCards = (cur, pend) => { const P = plans();
     return `<div class="pl-grid">${P.map((x, i) => { const on = cur && x.id === cur.id, pd = pend && x.id === pend.id, prev = P[i - 1];
-      return `<div class="pl-card ${on || pd ? 'is-cur' : ''}" style="--c:${plC(x)}">
+      return `<div class="pl-card ${on || pd ? 'is-cur' : ''}" data-tier="${x.id}" style="--c:${plC(x)}">
         ${on ? `<span class="pl-tag">${ico('check')}Your plan</span>` : pd ? `<span class="pl-tag pend">${ico('clock')}Starts when approved</span>` : ''}
         <div class="pl-card-h"><span class="pl-ic">${ico(PL_ICO[x.id] || 'star')}</span><div><h3>${esc(x.n)}</h3><small>${esc(FOR[x.id] || x.note || '')}</small></div></div>
         <div class="pl-price"><b>${aedP(x.p)}</b><span>/ month</span></div>
         <span class="pl-limit">${ico('layers')}Up to ${x.max} listings</span>
         <div class="pl-feats"><span class="pl-plus">${prev ? 'Everything in ' + esc(prev.n) + ', plus' : 'Includes'}</span><ul>${incl(x).map(f => `<li><i>${ico('check')}</i><span>${esc(f)}</span></li>`).join('')}</ul></div>
-        ${cur ? `<div class="pl-cta">${on ? `<div class="pl-cur-note">${ico('check')}Your current plan</div>` : `<button class="btn ${x.p > cur.p ? 'btn-g' : 'btn-o'}" data-act="planAsk" data-arg="${x.id}">${x.p > cur.p ? 'Upgrade to ' : 'Switch to '}${esc(x.n)}</button>`}</div>` : ''}</div>`; }).join('')}</div>`; };
+        ${cur ? `<div class="pl-cta">${on ? `<div class="pl-cur-note">${ico('check')}Your current plan</div>` : `<button class="btn ${x.p > cur.p ? 'btn-g' : 'btn-o'}" data-act="planAsk" data-arg="${x.id}">${x.p > cur.p ? 'Upgrade to ' : 'Switch to '}${esc(x.n)}</button>`}</div>`
+          : pend ? `<div class="pl-cta">${pd ? `<div class="pl-cur-note">${ico('clock')}Starts once approved</div>` : `<button class="btn btn-o" data-act="planChoose" data-arg="${x.id}">Choose ${esc(x.n)} instead</button>`}</div>` : ''}</div>`; }).join('')}</div>`; };
+  const PL_SUG_CSS = '.pl-alert.info{background:#eef5fb;border-color:#cfe0f0}.pl-alert.info .pl-ai{background:#dcebf7;color:#1f5a8c}.pl-sug-acts{display:flex;gap:8px;flex-wrap:wrap;flex:none}';
+  if (!document.getElementById('pl-sug-css')) { const st2 = document.createElement('style'); st2.id = 'pl-sug-css'; st2.textContent = PL_SUG_CSS; document.head.appendChild(st2); }
   const plAlert = (tone, icon, title, text, act = '') => `<div class="pl-alert ${tone}"><span class="pl-ai">${ico(icon)}</span><div><b>${title}</b><small>${text}</small></div>${act}</div>`;
-  const plHero = (x, o) => `<section class="pl-hero"><div>
+  const plHero = (x, o) => `<section class="pl-hero" data-tier="${x.id}" style="--c:${plC(x)}"><div>
       <span class="pl-eyebrow">${ico(PL_ICO[x.id] || 'star')}Your UpNow plan</span>
-      <div class="pl-hero-name"><h2>${esc(x.n)}</h2><span class="pl-chip ${o.review ? 'rv' : ''}">${o.review ? 'In review' : 'Active'}</span></div>
+      <div class="pl-hero-name"><span class="pl-medal">${ico(PL_ICO[x.id] || 'star')}</span><h2>${esc(x.n)}</h2><span class="pl-chip ${o.review ? 'rv' : ''}">${o.review ? 'In review' : 'Active'}</span></div>
       <p class="pl-hero-sub">${aedP(x.p)} a month · up to ${x.max} listings</p>
       <p class="pl-hero-note">${o.note}</p>
       <div class="pl-hero-acts"><button class="btn pl-btn-light" data-act="planCompare">${ico('layers')}Compare plans</button>${o.up ? `<button class="btn pl-btn-ghost" data-act="planAsk" data-arg="${o.up.id}">${ico('arrow')}Upgrade to ${esc(o.up.n)}</button>` : ''}</div></div>
@@ -236,14 +253,19 @@
   const plSec = (id, title, sub, body) => `<section ${id ? `id="${id}"` : ''}><div class="pl-sec-h"><div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div></div>${body}</section>`;
   const COMPARE_SUB = 'Every plan includes leads by call, WhatsApp, SMS and email, and the verified badge.';
   PWA.acts.planCompare = () => { const s = document.getElementById('pl-compare'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  // the UpNow team can suggest another plan (pages/admin → upnow.join.review.sug); nothing changes until the provider accepts
+  const sugOf = () => { const app = readLS('upnow.join'), r = app && app.review, g = r && r.sug; return g && g.state === 'open' ? g : null; };
+  const setSug = (state, extra) => { const app = readLS('upnow.join'); if (!app || !app.review || !app.review.sug) return; Object.assign(app.review.sug, { state, at: Date.now() }, extra || {}); writeLS('upnow.join', app); };
   SB['Plan & billing'] = () => { plCss(); const m = MY(), p = m.plan, P = plans();
     if (!p) { const q = m.pending;
       return `<div class="pl-root">${plHero(q, { review: true, used: m.used, k: 'Starts', v: 'When approved', vs: 'Billing begins the day UpNow approves you',
-          note: (m.chosen ? `Picked by the UpNow team for your application. It starts the day you're approved.` : m.asked ? `You chose ${esc(q.n)} when you applied. Our team confirms it when they approve you, and it starts that day.` : `You start on ${esc(q.n)}. The UpNow team may suggest another plan when they approve you.`) + ' After that you can change it here.' })}
+          note: (m.chosen ? `Picked by the UpNow team for your application. It starts the day you're approved.` : m.asked ? `You chose ${esc(q.n)}. Our team confirms it when they approve you, and it starts that day — until then you can pick another plan below, nothing is billed.` : `You start on ${esc(q.n)}. The UpNow team may suggest another plan when they approve you.`) + ' After that you can change it here.' })}
         ${plSec('pl-compare', 'Compare plans', COMPARE_SUB, planCards(null, q))}</div>`; }
     const over = m.used > p.max, B = bills(m), open = B.filter(b => b.state !== 'paid'), nO = open.filter(b => b.state === 'overdue').length, nD = open.length - nO;
     const up = P.find(x => x.p > p.p);
+    const g = !m.demo && sugOf(), gp = g && P.find(x => x.id === g.to);
     const alerts = [
+      gp && gp.id !== p.id ? plAlert('info', 'star', `The UpNow team suggests ${esc(gp.n)} · ${aedP(gp.p)} / month`, `${g.reason ? esc(g.reason.trim().replace(/[.!?]?$/, '.')) + ' ' : ''}${esc(gp.n)} includes up to ${gp.max} listings. Nothing changes unless you switch.`, `<span class="pl-sug-acts"><button class="btn btn-g btn-sm" data-act="planAsk" data-arg="${gp.id}">Switch to ${esc(gp.n)}</button><button class="btn btn-o btn-sm" data-act="planSugNo">Keep ${esc(p.n)}</button></span>`) : '',
       over ? plAlert('warn', 'alert', 'Over your listing limit', `You have ${m.used} listings and ${esc(p.n)} includes ${p.max}. Pick a bigger plan to keep adding.`, up ? `<button class="btn btn-g btn-sm" data-act="planAsk" data-arg="${up.id}">Upgrade</button>` : '') : '',
       m.next ? plAlert('', 'clock', `Changing to ${esc(m.next.plan.n)} on ${dt(m.next.from)}`, `You keep ${esc(p.n)} and its ${p.max} listings until then.`, `<button class="btn btn-o btn-sm" data-act="planKeep">Keep ${esc(p.n)}</button>`) : '',
       open.length ? plAlert(nO ? 'risk' : 'warn', 'coin', [nO ? nO + (nO > 1 ? ' payments' : ' payment') + ' overdue' : '', nD ? nD + (nD > 1 ? ' payments' : ' payment') + ' due' : ''].filter(Boolean).join(' · '), `${aedP(open.reduce((s, b) => s + b.amt, 0))} in total. Questions about a payment? Contact the UpNow team.`, st(nO ? 'Overdue' : 'Due', nO ? 'risk' : 'warn')) : ''
@@ -253,6 +275,11 @@
       ${alerts.length ? `<div class="pl-alerts">${alerts.join('')}</div>` : ''}
       ${plSec('pl-compare', 'Compare plans', COMPARE_SUB, planCards(p))}
       ${plSec('', 'Billing history', B.length ? 'Monthly, from the day you were approved' : '', `<div class="pl-bill">${B.length ? tbl(['Date', 'Plan', 'Amount', 'Status'], B.map(b => [dt(b.t), esc(b.p.n), aedP(b.amt), b.state === 'paid' ? '§Paid' : b.state === 'due' ? '§Due ' + dt(b.due) + '|warn' : '§Overdue|risk'])) : `<div class="pl-empty"><span class="pl-ai">${ico('coin')}</span>No payments yet.</div>`}</div>`)}</div>`; };
+  // before approval: change the plan they're asking for — nothing is billed until approval, and the team sees the new choice
+  PWA.acts.planChoose = id => { const app = readLS('upnow.join'), to = plans().find(x => x.id === id); if (!app || !to) return;
+    app.plan = id; writeLS('upnow.join', app);
+    const adm = readLS('upnow.admin.state'); if (adm && adm.planOf && adm.planOf.REAL) { delete adm.planOf.REAL; writeLS('upnow.admin.state', adm); }
+    render(); toast(`${to.n} it is — it starts when you’re approved`); };
   PWA.acts.planAsk = id => { const m = MY(), cur = m.plan, to = plans().find(x => x.id === id); if (!cur || !to) return;
     const up = to.p > cur.p, diff = to.p - cur.p, nb = nextBill(m);
     const block = to.max < m.used;
@@ -272,10 +299,13 @@
       else app.review.next = { id, from };
       writeLS('upnow.join', app);
     }
+    if (!m.demo) { const g = sugOf(); if (g) setSug(g.to === id ? 'accepted' : 'other', { chose: id }); }
     save(); closeModal(); render(); toast(up ? `You're on ${to.n} now` : `${to.n} starts on ${dt(from)}`); };
+  PWA.acts.planSugNo = () => { const m = MY(); setSug('declined'); render(); toast(`You're staying on ${m.plan.n} — we've let the UpNow team know`); };
   PWA.acts.planKeep = () => { const m = MY(); if (m.demo) { if (S.demoPlan) delete S.demoPlan.next; } else { const app = readLS('upnow.join'); if (app.review) delete app.review.next; writeLS('upnow.join', app); } save(); render(); toast(`You're staying on ${m.plan.n}`); };
 
   const ATTN = () => [
+    ...((g => { const gp = g && plans().find(x => x.id === g.to); return gp ? [['Plan & billing', 'info', `The UpNow team suggests the ${gp.n} plan`, 'Review']] : []; })(sugOf())),
     ['Account & KYC', 'warn', PKL(S.pack) + ' regulatory licence renews 14 Oct', 'Renew'],
     ...((m => m.plan && m.used > m.plan.max ? [['Plan & billing', 'warn', `${m.used} listings — your ${m.plan.n} plan includes ${m.plan.max}`, 'Upgrade']] : [])(MY())),
     ...((m => bills(m).some(b => b.state === 'overdue') ? [['Plan & billing', 'risk', 'A payment to UpNow is overdue', 'Review']] : [])(MY())),
@@ -300,6 +330,11 @@
     .pg-settings .st-id small.rv{color:#8a5a14}
     .pg-settings .st-plan{white-space:nowrap;flex:none;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;margin-left:6px;border-radius:10px;background:var(--g1);color:var(--g8);font-weight:800;font-size:12.5px;cursor:pointer}
     .pg-settings .st-plan:hover{background:#d9efe3}.pg-settings .st-plan .ico{width:14px;height:14px}
+    .pg-settings .st-plan[data-tier]{color:#33404c;background:linear-gradient(135deg,#f3f5f7,#dfe4e9);box-shadow:0 0 0 1px #c3cad1 inset}
+    .pg-settings .st-plan[data-tier="basic"]{color:#6b3a17;background:linear-gradient(135deg,#fbefe6 0%,#e7c3a6 45%,#f8e8dc 60%,#d6a47f 100%);box-shadow:0 0 0 1px #c08a62 inset}
+    .pg-settings .st-plan[data-tier="pro"]{color:#34445a;background:linear-gradient(135deg,#fff 0%,#dfe5ec 45%,#f7f9fb 60%,#c8d2dd 100%);box-shadow:0 0 0 1px #9fadbd inset}
+    .pg-settings .st-plan[data-tier="business"]{color:#6b4a00;background:linear-gradient(135deg,#fff6d9 0%,#f1d27a 45%,#fff3c4 60%,#e2b444 100%);box-shadow:0 0 0 1px #c99a2e inset}
+    .pg-settings .st-plan[data-tier]:hover{filter:brightness(1.04)}
     .pg-settings .setg{grid-template-columns:264px minmax(0,1fr);gap:28px}
     .pg-settings .snav{top:8px;border-radius:18px;padding:12px;box-shadow:0 12px 32px -28px rgba(11,61,42,.55)}
     .pg-settings .ssrch{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:11px;background:var(--bg);border:1px solid transparent;margin-bottom:8px}
@@ -372,8 +407,8 @@
     const app = readLS('upnow.join'), d = (app && app.d) || {}, biz = d.display || d.trade || d.legal || (app && app.name) || 'Greenstone', m = MY();
     const ok = !app || app.status === 'verified' || app.status === 'approved', pl = m.plan || m.pending;
     const top = `<header class="st-top"><div><h1>Settings</h1><p>Your business, plan, team and the ways customers reach you.</p></div>
-      <div class="st-id"><span class="st-av">${esc(((document.querySelector('.sb .biz .av') || {}).textContent || biz.split(/\s+/).map(w => w[0]).slice(0, 2).join('')).trim().toUpperCase())}</span><div><b>${esc(biz)}</b><small class="${ok ? '' : 'rv'}">${ico(ok ? 'shield' : 'clock')}${ok ? 'Verified provider' : 'Application in review'}</small></div>
-        ${pl ? `<button class="st-plan" data-act="setTab" data-arg="Plan &amp; billing">${ico('star')}${esc(pl.n)} plan</button>` : ''}</div></header>`;
+      <div class="st-id"><span class="st-av">${esc(biz.split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase())}</span><div><b>${esc(biz)}</b><small class="${ok ? '' : 'rv'}">${ico(ok ? 'shield' : 'clock')}${ok ? 'Verified provider' : 'Application in review'}</small></div>
+        ${pl ? `<button class="st-plan" data-tier="${pl.id}" data-act="setTab" data-arg="Plan &amp; billing">${ico(PL_ICO[pl.id] || 'star')}${esc(pl.n)} plan</button>` : ''}</div></header>`;
     return top + `<div class="setg">${nav}<div class="smain">${body}</div></div>`; };
   PWA.after.settings = () => { const Q = s => [...document.querySelectorAll(s)]; const i = document.getElementById('sSearch'); if (!i) return; i.oninput = () => { const q = i.value.trim().toLowerCase(); let n = 0; Q('.snav .si').forEach(a => { const m = !q || a.dataset.k.includes(q); a.style.display = m ? '' : 'none'; if (m) n++; }); Q('.snav .sg').forEach(g => g.style.display = [...g.querySelectorAll('.si')].some(a => a.style.display !== 'none') ? '' : 'none'); document.querySelector('.snone').style.display = n ? 'none' : ''; }; };
   PWA.acts.setTab = t => { S.setTab = t; save(); render(); };
