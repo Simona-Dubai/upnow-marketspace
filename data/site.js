@@ -30,7 +30,7 @@
     rtl: ['ar'],
     i18n: {
       ar: {
-        'Rent': 'إيجار', 'Residential': 'سكني', 'Commercial': 'تجاري', 'Industrial': 'صناعي', 'Land': 'أراضٍ', 'Mixed-use': 'متعدد الاستخدامات', 'Holiday homes': 'بيوت العطلات', 'Venues': 'قاعات', 'Sports courts': 'ملاعب', 'Yachts': 'يخوت',
+        'Rent': 'إيجار', 'Residential': 'سكني', 'Commercial': 'تجاري', 'Industrial': 'صناعي', 'Land': 'أراضٍ', 'Holiday homes': 'بيوت العطلات', 'Venues': 'قاعات', 'Sports courts': 'ملاعب', 'Yachts': 'يخوت',
         'Saved': 'المحفوظات', 'Enquiries': 'استفساراتي', 'Sign in': 'تسجيل الدخول', 'Become a provider': 'انضم كمزوّد', 'Search': 'بحث', 'Location': 'الموقع', 'More filters': 'فلاتر إضافية', 'All filters': 'كل الفلاتر',
         'Call': 'اتصال', 'WhatsApp': 'واتساب', 'Save search': 'حفظ البحث', 'See all': 'عرض الكل', 'Popular areas': 'مناطق شائعة', 'How UpNow works': 'كيف يعمل أب ناو', 'Verified': 'موثّق', 'Featured': 'مميّز',
         'Explore spaces': 'استكشف المساحات', 'Recently viewed': 'شوهدت مؤخرًا', 'results': 'نتيجة', 'Grid': 'شبكة', 'Map': 'خريطة'

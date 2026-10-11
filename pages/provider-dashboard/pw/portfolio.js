@@ -31,7 +31,7 @@
     const main = { v: app.v, cats: (app.cats || []).filter(c => offer(app.v, c)), status: approved() ? 'approved' : 'review', main: true };
     const out = [main];
     (app.more || []).filter(t => SV[t.v]).forEach(t => {
-      const status = t.status === 'approved' ? 'approved' : 'review', same = out.find(x => x.v === t.v && (x.status === status || (status === 'approved' && x.main)));
+      const status = t.status === 'approved' ? 'approved' : t.review && ['changes', 'rejected'].includes(t.review.st) ? t.review.st : 'review', same = out.find(x => x.v === t.v && (x.status === status || (status === 'approved' && x.main)));
       if (same && (status === 'approved' || !same.main)) same.cats = [...new Set([...same.cats, ...(t.cats || [])])];
       else out.push({ v: t.v, cats: (t.cats || []).filter(c => offer(t.v, c)), status });
     });
@@ -43,8 +43,17 @@
   // the marketplace's status pills (css/components.css .status-pill)
   const STATUS = { draft: ['Draft', 'is-muted'], licence: ['Waiting for licence', 'is-warning'], verify: ['Waiting for approval', 'is-warning'], review: ['In review', 'is-info'], live: ['Live', 'is-success'], changes: ['Changes requested', 'is-danger'], rejected: ['Not approved', 'is-danger'] };
   const pill = (t, k) => `<span class="pf-pill ${k}">${esc(t)}</span>`;
-  const NEXT = { draft: ['edit', 'Continue'], changes: ['edit', 'Fix and resubmit'], licence: ['edit', 'Add licence'], verify: ['done', 'View'], review: ['done', 'View'], live: ['edit', 'Edit'], rejected: ['edit', 'Read why'] };
-  const GROUPS = [['all', 'All'], ['live', 'Live', ['live']], ['waiting', 'In review', ['verify', 'review', 'licence']], ['todo', 'To finish', ['draft', 'changes', 'rejected']]];
+  const NEXT = { draft: ['edit', 'Continue'], changes: ['edit', 'Fix and resubmit'], licence: ['edit', 'Add licence'], verify: ['done', 'View'], review: ['done', 'View'], live: ['edit', 'Edit'], rejected: ['edit', 'Fix and resubmit'] };
+  const GROUPS = [['all', 'All'], ['live', 'Live', ['live']], ['waiting', 'In review', ['verify', 'review', 'licence']], ['back', 'Sent back', ['changes', 'rejected']], ['todo', 'To finish', ['draft']]];
+  // applications the team sent back: the main one (app.review) and business types added later (app.more[i].review)
+  const sentApps = () => { const out = [], back = r => r && ['changes', 'rejected'].includes(r.st);
+    if (back(app.review) && app.status !== 'verified' && app.status !== 'approved') out.push({ v: app.v, main: true, r: app.review, href: ROOT + 'pages/join.html?fix=1' });
+    (app.more || []).forEach(t => { if (SV[t.v] && t.status !== 'approved' && back(t.review)) out.push({ v: t.v, cats: t.cats || [], r: t.review, href: addType(t.v) }); });
+    return out; };
+  const appRow = x => { const V = SV[x.v], no = x.r.st === 'rejected', cats = (x.cats || []).map(c => (offer(x.v, c) || {}).label).filter(Boolean).join(', ');
+    return `<a class="pf-row is-app" href="${x.href}"><span class="pf-ph">${ico(V.icon)}</span>
+      <span class="m"><b>${x.main ? 'Your provider application' : esc(V.label) + ' — business type'}</b><span class="s">${esc(x.main ? V.label : cats || V.label)}${x.r.t ? ' · ' + new Date(x.r.t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}</span>${pill(no ? 'Not approved' : 'Changes requested', 'is-danger')}${x.r.reason ? `<span class="s pf-why">${esc(x.r.reason)}</span>` : ''}</span>
+      <span class="btn btn-g btn-sm">Fix and resend</span></a>`; };
   const area = id => String(id || '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\bJ(br|lt|vc)\b/gi, m => m.toUpperCase());
   const money = L => +L.price ? 'AED ' + Number(L.price).toLocaleString() + ({ yearly: ' / year', monthly: ' / month' }[[].concat((L.a || {}).term || [])[0]] || '') : '';
   const NO_PHOTO = v => `<span class="pf-ph">${ico(SV[v].icon)}</span>`;
@@ -79,6 +88,8 @@
     .pf-cat>span{flex:1;min-width:0}.pf-cat b{display:block;font-size:14px}.pf-cat small{display:block;margin-top:2px;font-size:12.5px;color:var(--ink3)}
     .pf-cat.todo{border:1.5px dashed #bfe3cf;background:#fbfdfb}.pf-cat.todo>i{background:#fbf1e2;color:#a8701a}
     .pf-cat .go{flex:none;font-size:12.5px;font-weight:800;color:var(--g7);white-space:nowrap}
+    .pf-addcat{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}.pf-addcat small{display:block;margin-bottom:8px;font-size:12.5px;color:var(--ink3);line-height:1.45}
+    .pf-chip.is-add{border-style:dashed;color:var(--g7);background:#fbfdfb}.pf-chip.is-add .ico{width:14px;height:14px}
     .pf-chip-new{margin-left:4px;padding:2px 7px;border-radius:99px;background:#fbf1e2;color:#a8701a;font-style:normal;font-size:10.5px;font-weight:800;white-space:nowrap}
     .pf-list{display:flex;flex-direction:column;gap:10px}
     .pf-row{display:flex;align-items:center;gap:14px;padding:12px;border:1px solid var(--line);border-radius:16px;background:#fff;transition:.15s}
@@ -89,6 +100,9 @@
     .pf-row b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .pf-row .s{display:block;font-size:12.5px;color:var(--ink3);margin-top:2px}
     .pf-row .st{margin-top:8px}
+    .pf-row .pf-why{color:#8a2a25;background:#fbeceb;border-radius:8px;padding:5px 9px;margin-top:6px;white-space:normal;line-height:1.4}
+    .pf-row.is-app{border-color:#efc4c0}.pf-row.is-app .pf-ph{background:#fbeceb;color:#c2413b}
+    .pf-backnote{display:flex;gap:8px;align-items:flex-start;margin:-4px 0 14px;font-size:13px;color:var(--ink2)}.pf-backnote .ico{width:15px;height:15px;flex:none;margin-top:2px;color:#c2413b}
     .pf-row .pr{font-weight:800;font-size:13.5px;color:var(--ink);white-space:nowrap}
     .pf-empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:40px 20px;border:1px dashed var(--line2);border-radius:18px;background:#fff}
     .pf-empty .ico{width:34px;height:34px;color:var(--g7);padding:8px;border-radius:50%;background:var(--g1);box-sizing:content-box}
@@ -149,7 +163,7 @@
   /* ---------- the page ---------- */
   const F = { v: 'all', g: 'all' };
   // the categories they chose when joining (and when adding a business type), each with its listings so far
-  const catList = () => { const all = items(), out = []; types().forEach(t => t.cats.forEach(c => { if (!out.some(x => x.v === t.v && x.c === c)) out.push({ v: t.v, c, t, L: all.filter(L => L.v === t.v && L.cat === c) }); })); return out; };
+  const catList = () => { const all = items(), out = []; types().filter(t => !['rejected', 'changes'].includes(t.status)).forEach(t => t.cats.forEach(c => { if (!out.some(x => x.v === t.v && x.c === c)) out.push({ v: t.v, c, t, L: all.filter(L => L.v === t.v && L.cat === c) }); })); return out; };
   P.pfCatsTodo = () => catList().filter(x => !x.L.length);
   const catsCard = () => {
     const C = catList(); if (C.length < 2) return '';
@@ -171,20 +185,23 @@
     const byV = all.filter(L => F.v === 'all' || L.v === F.v);
     const g = GROUPS.find(x => x[0] === F.g) || GROUPS[0];
     const list = g[2] ? byV.filter(L => g[2].includes(L.status)) : byV;
-    const count = k => { const x = GROUPS.find(y => y[0] === k); return x[2] ? byV.filter(L => x[2].includes(L.status)).length : byV.length; };
+    const SA = sentApps().filter(x => F.v === 'all' || x.v === F.v);
+    const count = k => { const x = GROUPS.find(y => y[0] === k); return (x[2] ? byV.filter(L => x[2].includes(L.status)).length : byV.length) + (k === 'back' || k === 'all' ? SA.length : 0); };
     const live = all.filter(L => L.status === 'live').length;
-    const typeChips = `<div class="pf-types">${ts.length > 1 ? `<button class="pf-type ${F.v === 'all' ? 'on' : ''}" data-act="pfV" data-arg="all">All types</button>` : ''}${ts.map(t => `<button class="pf-type ${F.v === t.v || ts.length === 1 ? 'on' : ''}" data-act="pfV" data-arg="${t.v}">${ico(SV[t.v].icon)}${esc(SV[t.v].label)}${t.status === 'approved' ? '' : pill('In review', 'is-warning')}</button>`).join('')}</div>`;
+    const typeChips = `<div class="pf-types">${ts.length > 1 ? `<button class="pf-type ${F.v === 'all' ? 'on' : ''}" data-act="pfV" data-arg="all">All types</button>` : ''}${ts.map(t => `<button class="pf-type ${F.v === t.v || ts.length === 1 ? 'on' : ''}" data-act="pfV" data-arg="${t.v}">${ico(SV[t.v].icon)}${esc(SV[t.v].label)}${t.status === 'approved' ? '' : t.status === 'rejected' ? pill('Not approved', 'is-danger') : t.status === 'changes' ? pill('Changes requested', 'is-danger') : pill('In review', 'is-warning')}</button>`).join('')}</div>`;
     const rows = list.map(L => {
       const s = STATUS[L.status] || STATUS.draft, [view, label] = NEXT[L.status] || NEXT.draft, O = offer(L.v, L.cat);
       const where = [O ? O.label : SV[L.v].label, area(L.loc || (L.areas || [])[0])].filter(Boolean).join(' · ');
       return `<a class="pf-row" href="${editor(view + '=' + L.id)}">${(L.img || [])[0] ? `<img src="${L.img[0]}" alt="">` : NO_PHOTO(L.v)}
-        <span class="m"><b>${esc(L.title || 'Untitled listing')}</b><span class="s">${esc(where)}</span>${pill(s[0], s[1])}${L.status === 'changes' && L.reason ? `<span class="s">${esc(L.reason)}</span>` : ''}</span>
-        ${money(L) ? `<span class="pr">${esc(money(L))}</span>` : ''}<span class="btn ${['draft', 'changes', 'licence'].includes(L.status) ? 'btn-g' : 'btn-o'} btn-sm">${label}</span></a>`;
+        <span class="m"><b>${esc(L.title || 'Untitled listing')}</b><span class="s">${esc(where)}</span>${pill(s[0], s[1])}${['changes', 'rejected'].includes(L.status) && L.reason ? `<span class="s pf-why">${esc(L.reason)}</span>` : ''}</span>
+        ${money(L) ? `<span class="pr">${esc(money(L))}</span>` : ''}<span class="btn ${['draft', 'changes', 'rejected', 'licence'].includes(L.status) ? 'btn-g' : 'btn-o'} btn-sm">${label}</span></a>`;
     }).join('');
-    const body = !all.length
+    const appRows = F.g === 'back' || F.g === 'all' ? SA.map(appRow).join('') : '';
+    const backNote = F.g === 'back' && (SA.length || list.length) ? `<p class="pf-backnote">${ico('edit')}<span>Our team sent these back with a reason. Fix what they asked and send it again — we review it within 24 hours.</span></p>` : '';
+    const body = !all.length && !SA.length
       ? `<div class="pf-empty">${ico('plus')}<b>No listings yet</b><span>Add your first listing — it goes live after we check it, usually within 24 hours.</span><button class="btn btn-g btn-sm" data-act="addListing">${P.ico('plus')}Add listing</button></div>`
       : `<div class="pf-tabs">${GROUPS.map(([k, l]) => `<button class="${F.g === k ? 'on' : ''}" data-act="pfG" data-arg="${k}">${l}<em>${count(k)}</em></button>`).join('')}</div>
-        ${list.length ? `<div class="pf-list">${rows}</div>` : `<div class="pf-empty"><b>Nothing here</b><span>No listings match this filter.</span></div>`}`;
+        ${backNote}${list.length || appRows ? `<div class="pf-list">${appRows}${rows}</div>` : `<div class="pf-empty"><b>${F.g === 'back' ? 'Nothing sent back' : 'Nothing here'}</b><span>${F.g === 'back' ? 'When our team asks for a change or can’t approve something, it shows here with the reason.' : 'No listings match this filter.'}</span></div>`}`;
     return `<div class="ph"><div><h1>Portfolio</h1><p>${all.length ? `${live} live · ${all.length - live} more` : 'Everything you list on UpNow, in one place.'}</p></div><span class="sp"></span>
       <div class="acts"><button class="btn btn-o btn-sm" data-act="pfAddType">${P.ico('brief')}Add a business type</button><button class="btn btn-g btn-sm" data-act="addListing">${P.ico('plus')}Add listing</button></div></div>${catsCard()}${typeChips}${body}`;
   };
@@ -199,7 +216,8 @@
       const V = SV[t.v], mine = V.offers.filter(o => t.cats.includes(o.id)), rest = V.offers.filter(o => !t.cats.includes(o.id));
       return `<div class="pf-block"><div class="pf-block-h"><span>${ico(V.icon)}</span><div><b>${esc(V.label)}</b><small>${t.status === 'approved' ? 'Approved' : t.main ? 'Your application is in review — listings wait for it' : 'In review — start listings now, they go live once it\'s approved'}</small></div></div>
         <div class="pf-chips">${mine.map(o => `<a class="pf-chip" href="${editor('new=' + t.v + ':' + o.id)}">${ico(o.icon || V.icon)}${esc(o.label)}${items().some(L => L.v === t.v && L.cat === o.id) ? '' : '<em class="pf-chip-new">Not listed yet</em>'}</a>`).join('')}</div>
-        ${rest.length ? `<p class="pf-more">${P.ico('plus')}<span>Also offer ${esc(rest.slice(0, 3).map(o => o.label.toLowerCase()).join(', '))}${rest.length > 3 ? '…' : ''}?</span><a href="${addType(t.v)}">Add a category</a></p>` : ''}</div>`;
+        ${(more => more.length ? `<div class="pf-addcat"><small>${t.status === 'approved' ? 'Also offer something else? Add a category — we check any licence it needs, usually within 24 hours.' : `${esc(V.label)} is in review — you can still add another category now. It’s sent for approval with any licence it needs.`}</small>
+          <div class="pf-chips">${more.map(o => `<a class="pf-chip is-add" href="${addType(t.v)}&cat=${encodeURIComponent(o.id)}">${P.ico('plus')}${esc(o.label)}</a>`).join('')}</div></div>` : '')(t === ts.filter(x => x.v === t.v).slice(-1)[0] ? V.offers.filter(o => !ts.some(x => x.v === t.v && x.cats.includes(o.id))) : [])}</div>`;
     };
     P.modal(`<div class="mh"><h3 style="flex:1">Add listing</h3><button class="x" data-act="closeModal">${P.ico('x')}</button></div>
       <div class="mb pf-sheet"><p>Pick what you're listing — it opens the listing editor and saves as you go.</p>${ts.map(block).join('')}

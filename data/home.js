@@ -56,7 +56,6 @@ CONTENT.home = {
     commercial: PATHS.img("office1.jpg"),
     industrial: PATHS.img("wh3.jpg"),
     land: PATHS.img("aerial1.jpg"),
-    mixed: PATHS.img("aerial2.jpg"),
     holiday: PATHS.img("villa1.jpg"),
     venue: PATHS.img("venue2.jpg"),
     court: PATHS.img("padel1.jpg"),

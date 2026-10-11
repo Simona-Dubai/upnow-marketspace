@@ -68,7 +68,7 @@
   // photos needed to submit (listing-form.js minPhotos) and the description we expect
   const MIN_PHOTOS = { land: 3, court: 3, photography: 6, design: 6, makeup: 6, nursery: 5, school: 5, camp: 5 };
   const minPhotos = (v, c) => MIN_PHOTOS[c] != null ? MIN_PHOTOS[c] : ({ spaces: 5, experiences: 5 })[v] || 3;
-  const LEASE = ['residential', 'commercial', 'industrial', 'land', 'mixed'];
+  const LEASE = ['residential', 'commercial', 'industrial', 'land'];
 
   /* ---------- sample providers (deterministic) ---------- */
   let seed = 4242; const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };

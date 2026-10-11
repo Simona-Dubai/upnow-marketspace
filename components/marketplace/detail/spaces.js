@@ -96,24 +96,6 @@
     };
   });
 
-  /* ---------- MIXED-USE — unit mix + rent roll ---------- */
-  reg('mixed', c => {
-    const A = c.A, st = c.st;
-    const ret = A.retailUnits ? Math.max(2, Math.round(A.units * .12)) : 0, res = A.units - ret;
-    const mix = [['Studio', Math.round(res * .3), 420, 38000], ['1 bedroom', Math.round(res * .45), 720, 58000], ['2 bedroom', res - Math.round(res * .3) - Math.round(res * .45), 1050, 82000], ret && ['Retail unit', ret, 900, 120000]].filter(Boolean);
-    const occ = { vacant: 0, partial: .55, full: .96 }[A.occupancy];
-    const gross = mix.reduce((s, m) => s + m[1] * m[3], 0);
-    return {
-      secs: [
-        ['Unit mix & rent roll', H.table(['Unit type', 'Units', 'Avg size', 'Market rent', 'Annual'], [...mix.map(m => [`<b>${m[0]}</b>`, m[1], m[2] + ' sqft', M(m[3]), M(m[1] * m[3])]), { cls: 'total-row', c: ['Gross potential income', A.units, '', '', M(gross)] }], 1) +
-          H.note(`Currently <b>${Math.round(occ * 100)}% occupied</b>. Master-lease at ${M(c.l.price)} vs. gross potential ${M(gross)} → indicative margin <b>${Math.round((gross * .92 / c.l.price - 1) * 100)}%</b> after 8% vacancy & costs.`, 'trend')],
-        ['Building', H.spec([['building', 'Floors', 'G+' + A.floors], ['area', 'BUA', A.sqft.toLocaleString() + ' sqft'], ['car', 'Parking', A.parking ? Math.round(A.units * 1.1) + ' bays (basement)' : 'Surface'], ['users', 'Occupancy', Math.round(occ * 100) + '%']])]
-      ],
-      bk: () => H.price(c.l, money(c.l.price), '/year') + `<p class="detail-subtitle" style="margin:4px 0 0">${M(c.l.price / A.units)} per unit · ${A.units} units</p>` + viewingBk(c),
-      go: () => viewingGo(c)
-    };
-  });
-
   /* ---------- HOLIDAY HOME — booking.com style: rooms & beds, calendar, guests, price breakdown ---------- */
   reg('holiday', c => {
     const A = c.A, st = c.st, br = +A.beds, nightly = c.l.price;

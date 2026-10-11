@@ -94,8 +94,6 @@ const ABOUT = {
     `${lab("itype", A.itype)} of ${A.sqft.toLocaleString()} sqft BUA in ${where}. ${A.powerKw} kW power, ${A.heightM} m clear height and ${A.docks} loading dock${A.docks === 1 ? "" : "s"}${A.office ? ", with office space" : ""}. ${A.civil ? "Civil Defence approved. " : ""}${A.zone === "freezone" ? "Free-zone" : "Mainland"} licence required.`,
   land: () =>
     `${lab("landuse", A.landuse)} plot of ${A.sqft.toLocaleString()} sqft in ${where}, zoned ${A.height} with an estimated GFA of ${A.gfa.toLocaleString()} sqft. Offered on a ${A.termYrs}-year ${lab("tenure", A.tenure).toLowerCase()} lease${A.utilities ? ", utilities connected at plot boundary" : ""}${A.road ? ", direct main-road access" : ""}.`,
-  mixed: () =>
-    `${lab("mtype", A.mtype)} building in ${where} — ${A.units} units over G+${A.floors}, ${A.sqft.toLocaleString()} sqft BUA. Currently ${lab("occupancy", A.occupancy).toLowerCase()}${A.retailUnits ? ", with ground-floor retail" : ""}${A.parking ? " and basement parking" : ""}. Offered for master lease / bulk rent.`,
   holiday: () =>
     `${l.title} — sleeps up to ${A.maxGuests}, ${A.minNights}-night minimum. ${A.amenities.length ? "Includes " + A.amenities.join(", ").toLowerCase() + ". " : ""}DTCM-licensed holiday home. Tourism Dirham fee is paid to the host at check-in.`,
   venue: () =>
@@ -134,12 +132,6 @@ const TERMS = {
     ["Per sqft / yr", money(+(l.price / A.sqft).toFixed(1))],
     ["Zoning", A.height],
     ["Tenure", lab("tenure", A.tenure)],
-  ],
-  mixed: () => [
-    ["Per unit / yr", money(Math.round(l.price / A.units))],
-    ["Units", A.units],
-    ["Occupancy", lab("occupancy", A.occupancy)],
-    ["Deposit", "5%"],
   ],
   holiday: () => [
     ["Min. stay", A.minNights + " nights"],
@@ -209,12 +201,6 @@ const NEAR = {
     ["train", "Metro (planned)", "1.8 km"],
     ["building", "Community centre", "2 km"],
     ["bolt", "DEWA substation", "900 m"],
-  ],
-  mixed: [
-    ["train", "Metro station", "7 min walk"],
-    ["cart", "Mall", "1.5 km"],
-    ["grad", "Schools", "3 within 2 km"],
-    ["car", "Highway", "3 min drive"],
   ],
   holiday: [
     ["sun", "Beach", "5 min walk"],
