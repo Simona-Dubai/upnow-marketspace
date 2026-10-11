@@ -208,7 +208,7 @@
 
 .onboarding-section-header small {
   font-size: 12.5px;
-  font-weight: 600;
+  /* font-weight: 600; */
   color: var(--color-text-muted);
 }
 
@@ -2874,7 +2874,7 @@
 /* ---------- desktop: only the step card scrolls; it stops short of the screen bottom ---------- */
 @media (min-width: 1001px) {
   .onboarding-body {
-    --onboarding-free: 96px; /* room under the card: gap + footer line */
+    --onboarding-free: 56px; /* room under the card: gap + footer line */
   }
 
   .onboarding-grid:not(.is-done) {
@@ -2934,7 +2934,9 @@
 
   .onboarding-grid:not(.is-done) + * ,
   .onboarding-footer {
-    padding-top: 24px;
+    margin: 4px 0 0;
+    padding-top: 10px;
+    padding-bottom: 6px;
   }
 
   .onboarding-grid:not(.is-done) .onboarding-aside {
@@ -3427,3 +3429,122 @@
   height: 13px;
   stroke-width: 2.4;
 }
+
+
+/* ---------- Review and send: wide, two columns — what you're sending · your plan and send ---------- */
+.modal.onboarding-confirm-modal.is-wide { width: min(1000px, calc(100% - 40px)); max-height: 95vh; }
+.onboarding-confirm.is-wide, .onboarding-confirm.is-wide.has-listing { width: auto; max-width: none; padding: 26px 28px 24px; text-align: left; }
+.onboarding-confirm-head { display: flex; gap: 14px; align-items: center; padding-right: 44px; margin-bottom: 18px; }
+.onboarding-confirm-head .onboarding-confirm-mark { flex: none; }
+.onboarding-confirm.is-wide h3 { margin: 0; text-align: left; }
+.onboarding-confirm.is-wide .onboarding-confirm-subtitle { max-width: none; margin: 4px 0 0; text-align: left; }
+.onboarding-confirm-cols { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.onboarding-confirm-left > :first-child { margin-top: 0; }
+.onboarding-confirm-left .listing-review-label { margin-top: 16px; }
+.onboarding-confirm-left > .listing-review-label:first-child { margin-top: 0; }
+.onboarding-confirm-right { position: sticky; top: 0; padding: 18px; border-radius: 18px; background: var(--color-primary-tint-light); border: 1px solid var(--color-primary-tint); }
+.onboarding-confirm-send .onboarding-confirm-agree { margin: 16px 0 0; }
+.onboarding-confirm-send .onboarding-confirm-footer { text-align: center; }
+/* the plan: one row per plan; the chosen one opens to show what it includes */
+.onboarding-cplan-h { display: flex; align-items: center; gap: 10px; }
+.onboarding-cplan-h h4 { margin: 0; flex: 1; font-size: 17px; font-weight: 800; color: var(--color-text); }
+.onboarding-cplan-h span { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: var(--color-primary); background: var(--color-surface); border: 1px solid var(--color-primary-tint); padding: 4px 9px; border-radius: 99px; white-space: nowrap; }
+.onboarding-cplan-h span .icon { width: 13px; height: 13px; }
+.onboarding-cplan > p { margin: 4px 0 14px; font-size: 13px; line-height: 1.45; color: var(--color-text-secondary); }
+.onboarding-cplan-list { display: grid; gap: 8px; }
+.onboarding-cplan-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-rows: auto auto; align-items: center; column-gap: 12px; width: 100%; padding: 12px 14px; border: 1.5px solid var(--color-border); border-radius: 14px; background: var(--color-surface); text-align: left; cursor: pointer; transition: border-color .2s, box-shadow .2s, background-color .2s; }
+.onboarding-cplan-card:hover { border-color: var(--color-primary-lighter); box-shadow: 0 2px 10px rgba(15, 40, 28, .06); }
+.onboarding-cplan-card.is-on { border-color: var(--color-primary); background: linear-gradient(180deg, #f7fcf9, var(--color-surface)); box-shadow: 0 0 0 3px var(--color-primary-tint), 0 6px 18px rgba(4, 114, 70, .08); }
+.onboarding-cplan-card:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.onboarding-cplan-ic { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: var(--color-primary-tint-light); color: var(--color-primary); transition: background-color .2s, color .2s; }
+.onboarding-cplan-ic .icon { width: 19px; height: 19px; }
+.onboarding-cplan-card.is-on .onboarding-cplan-ic { background: var(--color-primary); color: #fff; }
+.onboarding-cplan-main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.onboarding-cplan-main b { display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 800; color: var(--color-text); }
+.onboarding-cplan-main em { font-style: normal; font-size: 10.5px; font-weight: 800; letter-spacing: .02em; padding: 2px 8px; border-radius: 99px; background: var(--color-primary-tint); color: var(--color-primary-dark); }
+.onboarding-cplan-main small { font-size: 12px; color: var(--color-text-muted); line-height: 1.35; }
+.onboarding-cplan-price { display: flex; align-items: baseline; gap: 3px; white-space: nowrap; }
+.onboarding-cplan-price strong { font-size: 16px; font-weight: 800; color: var(--color-text); font-variant-numeric: tabular-nums; }
+.onboarding-cplan-price small { font-size: 11.5px; font-weight: 600; color: var(--color-text-muted); }
+.onboarding-cplan-radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--color-border-strong); background: var(--color-surface); transition: border-width .2s, border-color .2s; }
+.onboarding-cplan-card.is-on .onboarding-cplan-radio { border: 6px solid var(--color-primary); }
+/* what the chosen plan includes: opens smoothly under its row */
+.onboarding-cplan-incl { grid-column: 2 / -1; display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s cubic-bezier(.3, .8, .2, 1); }
+.onboarding-cplan-incl > span { overflow: hidden; }
+.onboarding-cplan-card.is-on .onboarding-cplan-incl { grid-template-rows: 1fr; }
+.onboarding-cplan-incl ul { list-style: none; margin: 10px 0 2px; padding: 10px 0 0; border-top: 1px dashed var(--color-primary-tint); display: grid; gap: 6px; }
+.onboarding-cplan-incl li { display: flex; align-items: flex-start; gap: 7px; font-size: 12.5px; line-height: 1.4; color: var(--color-text-secondary); }
+.onboarding-cplan-incl li .icon { width: 14px; height: 14px; flex: none; margin-top: 2px; color: var(--color-primary); }
+.onboarding-cplan-incl li.is-plus { font-size: 11.5px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .04em; }
+/* the choice, said once more right above the button */
+.onboarding-cplan-sum { margin: 14px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--color-surface); border: 1px solid var(--color-primary-tint); font-size: 12.5px; line-height: 1.45; color: var(--color-text-secondary); }
+.onboarding-cplan-sum b { color: var(--color-text); }
+/* the agreement: a soft, rounded checkbox in the brand green */
+.onboarding-confirm-send .onboarding-confirm-agree { margin: 12px 2px 0; color: var(--color-text-secondary); }
+.onboarding-confirm-send .onboarding-confirm-agree input { appearance: none; -webkit-appearance: none; width: 20px; height: 20px; margin: 0; border: 1.5px solid var(--color-border-strong); border-radius: 6px; background: var(--color-surface) center / 13px no-repeat; cursor: pointer; transition: background-color .15s, border-color .15s; }
+.onboarding-confirm-send .onboarding-confirm-agree input:hover { border-color: var(--color-primary-lighter); }
+.onboarding-confirm-send .onboarding-confirm-agree input:checked { border-color: var(--color-primary); background-color: var(--color-primary); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E"); }
+.onboarding-confirm-send .onboarding-confirm-agree input:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.onboarding-confirm-send .onboarding-confirm-submit { margin-top: 14px; height: 50px; font-size: 15px; box-shadow: 0 8px 20px -8px rgba(4, 114, 70, .55); }
+@media (prefers-reduced-motion: reduce) { .onboarding-cplan-incl, .onboarding-cplan-card { transition: none; } }
+/* plan tiers in metal, the same as the provider dashboard and the admin: Launch grey · Basic bronze · Pro silver · Business gold */
+.onboarding-cplan-card[data-tier="launch"] { --m1: #f3f5f7; --m2: #dfe4e9; --m3: #c3cad1; --mi: #5f6b77; }
+.onboarding-cplan-card[data-tier="basic"] { --m1: #fbefe6; --m2: #e7c3a6; --m3: #c98d63; --mi: #6b3a17; }
+.onboarding-cplan-card[data-tier="pro"] { --m1: #ffffff; --m2: #dfe5ec; --m3: #a9b6c5; --mi: #34445a; }
+.onboarding-cplan-card[data-tier="business"] { --m1: #fff6d9; --m2: #f1d27a; --m3: #d4a332; --mi: #6b4a00; }
+.onboarding-cplan-card[data-tier] .onboarding-cplan-ic,
+.onboarding-cplan-card[data-tier].is-on .onboarding-cplan-ic { background: linear-gradient(135deg, var(--m1), var(--m2) 55%, var(--m1) 70%, var(--m3)); color: var(--mi); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), 0 0 0 1px color-mix(in srgb, var(--m3) 60%, transparent); }
+.onboarding-cplan-card[data-tier="launch"] .onboarding-cplan-ic,
+.onboarding-cplan-card[data-tier="launch"].is-on .onboarding-cplan-ic { background: var(--m1); box-shadow: 0 0 0 1px var(--m2); }
+.onboarding-cplan-card[data-tier].is-on .onboarding-cplan-ic { transform: scale(1.06); }
+/* the chosen plan: one clean border in its metal (the green dot says it's chosen); no extra ring */
+.onboarding-cplan-card[data-tier].is-on { border-color: var(--m3); background: linear-gradient(180deg, color-mix(in srgb, var(--m1) 70%, #fff), var(--color-surface) 70%); box-shadow: 0 8px 22px -12px color-mix(in srgb, var(--m3) 70%, transparent); }
+.onboarding-cplan-card[data-tier="launch"].is-on, .onboarding-cplan-card[data-tier="pro"].is-on { border-color: #8f9cab; }
+/* "Suggested" is a quiet hint, not a second green highlight */
+/* the chosen plan says when it starts — only on the highlighted card, so no extra box below */
+.onboarding-cplan-start { display: none; align-items: center; gap: 5px; margin-top: 5px; font-size: 11.5px; font-weight: 700; color: var(--color-primary-dark); }
+.onboarding-cplan-start .icon { width: 13px; height: 13px; }
+.onboarding-cplan-card.is-on .onboarding-cplan-start { display: flex; }
+.onboarding-cplan-main em { background: transparent; color: var(--color-text-secondary); box-shadow: 0 0 0 1px var(--color-border-strong) inset; }
+
+@media (max-width: 420px) { .onboarding-cplan-card { grid-template-columns: auto minmax(0, 1fr) auto; } .onboarding-cplan-radio { display: none; } .onboarding-cplan-ic { width: 34px; height: 34px; } }
+@media (max-width: 860px) {
+  .onboarding-confirm-cols { grid-template-columns: 1fr; }
+  .onboarding-confirm-right { position: static; }
+}
+@media (max-width: 700px) {
+  .modal.onboarding-confirm-modal.is-wide { width: 100%; max-height: 94vh; }
+  .onboarding-confirm.is-wide, .onboarding-confirm.is-wide.has-listing { padding: 22px 16px 18px; }
+}
+.onboarding-confirm-right .onboarding-cplan-card { padding-top: 10px; padding-bottom: 10px; }
+.onboarding-confirm-right .onboarding-cplan-list { gap: 7px; }
+/* the chosen plan says when it starts, under its price */
+.onboarding-cplan-when { display: none; position: absolute; right: 0; top: calc(100% + 3px); align-items: center; gap: 4px; font-style: normal; font-size: 11px; font-weight: 700; color: var(--color-primary-dark); white-space: nowrap; }
+.onboarding-cplan-when .icon { width: 12px; height: 12px; }
+.onboarding-cplan-card.is-on .onboarding-cplan-when { display: flex; }
+.onboarding-cplan-card.is-on .onboarding-cplan-price { position: relative; align-self: start; margin-top: 3px; }
+.onboarding-confirm-right .onboarding-cplan-incl ul { gap: 4px; }
+/* agree and send sit under the details they confirm; the plans have the right column to themselves */
+.onboarding-confirm-send { margin-top: 16px; padding: 16px 18px 14px; border-radius: 18px; background: var(--color-primary-tint-light); border: 1px solid var(--color-primary-tint); }
+.onboarding-confirm-send .onboarding-confirm-agree { margin: 0 2px; }
+.onboarding-confirm-right .onboarding-confirm-send { margin-top: 12px; padding: 14px 0 0; border: 0; border-top: 1px dashed var(--color-primary-tint); border-radius: 0; background: none; }
+.onboarding-confirm-send .onboarding-confirm-footer { margin-bottom: 0; }
+.onboarding-cplan-incl li.is-for { font-size: 12.5px; font-weight: 700; color: var(--color-primary-dark); }
+
+/* the chosen plan: 3 points, the rest behind "+N more" */
+.onboarding-cplan-incl li.is-extra { display: none; }
+.onboarding-cplan-card.is-all .onboarding-cplan-incl li.is-extra { display: flex; }
+.onboarding-cplan-card.is-all .onboarding-cplan-incl li.is-more { display: none; }
+.onboarding-cplan-incl li.is-more span { margin-left: 21px; font-size: 12px; font-weight: 700; color: var(--color-primary); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+/* a compact header: smaller title with the step beside it, the promise on one line */
+.onboarding-confirm.is-wide { padding-top: 20px; }
+.onboarding-confirm-head { margin-bottom: 14px; }
+.onboarding-confirm.is-wide h3 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 24px; }
+.onboarding-confirm-step { font-family: inherit; font-size: 11.5px; font-weight: 800; letter-spacing: .02em; padding: 3px 10px; border-radius: 99px; background: var(--color-primary-tint); color: var(--color-primary-dark); }
+.onboarding-confirm.is-wide .onboarding-confirm-subtitle { font-size: 13px; margin-top: 2px; }
+.onboarding-confirm-head .onboarding-confirm-mark { width: 42px; height: 42px; }
+
+/* the decision note sits under the details on the left; the right column ends with the send button */
+.onboarding-confirm-decision .onboarding-confirm-footer { margin: 12px 0 0; text-align: left; justify-content: flex-start; }
+.onboarding-confirm-right .onboarding-cplan-card { padding-top: 8px; padding-bottom: 8px; }
+.onboarding-confirm-right .onboarding-cplan-h { margin-bottom: 12px; }

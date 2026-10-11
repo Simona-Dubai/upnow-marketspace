@@ -300,7 +300,9 @@ body{background:var(--bg);overflow:hidden}
 .opt img{width:100%;height:78px;object-fit:cover}
 .opt b{padding:9px 11px 2px;font-size:13px}.opt small{padding:0 11px 10px;color:var(--ink3);font-size:11.5px}
 .opt.txt{padding:12px}.opt.txt b,.opt.txt small{padding:0}
-.frm{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.frm{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:0 14px} /* two columns, one in a narrow card */
+/* fields fill their column and may shrink with it — a grid column never squeezes below an input's own width otherwise */
+.frm>*,.g2>*,.fld{min-width:0}.fld input,.fld select,.fld textarea{width:100%;min-width:0}
 .frm .full{grid-column:1/-1}
 .chipset{display:flex;flex-wrap:wrap;gap:6px}
 .upl{border:1.5px dashed var(--line2);border-radius:14px;padding:26px;text-align:center;color:var(--ink2)}
@@ -545,7 +547,7 @@ body{font-size:15px}
 
 .app{grid-template-columns:248px 1fr}
 .sb a.ni{font-size:14px}
-@media (max-width:1100px){.app{grid-template-columns:72px 1fr}}
+@media (max-width:1100px){.app{grid-template-columns:72px 1fr}.sb .logo small,.sb .logo .pro{display:none}.sb .logo{justify-content:center;padding-left:0;padding-right:0}} /* icon-only sidebar: just the U mark */
 
 /* money */
 .msel{height:36px;border:1px solid var(--line2);border-radius:10px;padding:0 10px;font:inherit;font-size:13.5px;font-weight:600;background:#fff}
@@ -569,3 +571,11 @@ body{font-size:15px}
 
 .sb a.ni{height:34px}.bxh small{display:none}.bxh{padding:6px 10px 4px}.sb .biz{margin-bottom:6px}.sb .logo{padding:2px 8px 8px}.pkbox .pksw small{display:none}
 @media (min-height:900px){.bxh small{display:block}.sb a.ni{height:36px}}
+
+/* one white header strip across the top: the logo sits on white at the top bar's height, with one line under both;
+   the sidebar's divider starts below it (the content's left edge) so nothing cuts through the header */
+.app>.sb{--sbx:14px;padding-top:0;padding-left:var(--sbx);padding-right:var(--sbx);border-right:0}
+.app>.sb>.logo{position:sticky;top:0;z-index:2;flex:none;display:flex;align-items:center;gap:8px;height:64px;box-sizing:border-box;margin:0 calc(-1 * var(--sbx)) 4px;padding:0 calc(var(--sbx) + 8px);background:#fff;border-bottom:1px solid var(--line)}
+.app>.main>.top{height:64px;box-sizing:border-box}
+.app>.main>.view{border-left:1px solid var(--line)}
+@media (max-width:1100px){.app>.sb{--sbx:8px}.app>.sb>.logo{justify-content:center;padding:0}}

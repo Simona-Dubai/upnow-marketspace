@@ -600,7 +600,7 @@ function paintSeo() {
     : "";
   document.getElementById("seo").innerHTML =
     `<div><h4>More in ${esc(VERTICALS[S.v].label)}</h4>${offerLinks}</div><div><h4>${t("Popular areas")}</h4>${areaLinks}</div><div><h4>By type</h4>${popLinks}</div>
-    <p class="seo-text">UpNow lists verified ${esc(O.h1.toLowerCase())} across Dubai, priced ${esc(O.basis)}. ${O.permit ? `Every listing shows its ${esc(O.permit)} number. ` : ""}You contact the owner, agent or operator directly by phone, WhatsApp or request — no booking fees.</p>`;
+    <p class="seo-text">UpNow lists verified ${esc(O.h1.toLowerCase())} across Dubai, priced ${esc(O.basis)}. ${O.permit ? `Every listing shows its ${esc(O.permit)} number. ` : ""}You contact the owner, agent or operator directly by phone, WhatsApp or request.</p>`;
 }
 
 document.querySelector("main").addEventListener("click", (e) => {

@@ -158,6 +158,10 @@ function paint() {
       <div class="agent-card is-channels"><div class="agent-body"><h4>Contact ${esc(org)}</h4>
         <div class="agent-actions"><button class="agent-action" data-call="${L0.id}">${ico("phone")}<span><b>Call</b><small>Office line</small></span>${ico("chevR", "chevron")}</button>
           <button class="agent-action" data-wa="${L0.id}">${ico("wa")}<span><b>WhatsApp</b><small>Chat instantly</small></span>${ico("chevR", "chevron")}</button></div>
+        <div class="agent-more">More ways to contact</div>
+        <div class="agent-alt-actions"><button class="agent-alt-action is-sms" data-sms="${L0.id}">${ico("msg")}<span><b>SMS</b></span>${ico("chevR", "chevron")}</button>
+          <button class="agent-alt-action is-email" data-email="${L0.id}"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span><b>Email</b></span>${ico("chevR", "chevron")}</button>
+          ${SITE.chat ? `<button class="agent-alt-action is-chat" data-chat="${L0.id}"><svg class="icon" viewBox="0 0 24 24"><path d="M12 4c4.97 0 9 3.36 9 7.5S16.97 19 12 19c-1.1 0-2.15-.16-3.12-.46L4 20l1.4-3.6C4.5 15.1 3 13.4 3 11.5 3 7.36 7.03 4 12 4z"/></svg><span><b>Chat</b></span>${ico("chevR", "chevron")}</button>` : ""}</div>
         <div class="agent-more">Or pick an agent</div>
         <div class="team">${agents
           .slice(0, 4)
@@ -168,7 +172,7 @@ function paint() {
           .join("")}</div></div></div>
       ${PROFILE.aboutBox({
         title: "About " + org,
-        text: `${org} is a ${kind.toLowerCase()} with ${agents.length} ${agents.length === 1 ? "agent" : "agents"} on UpNow, listing ${cats.map((c) => offerOf(v, c).label.toLowerCase()).join(", ")} across ${areas.slice(0, 3).map((a) => areaName(a[0])).join(", ")}${areas.length > 3 ? " and " + (areas.length - 3) + " more communities" : ""}. Every enquiry goes straight to the agent handling the listing — no middleman, no fees for you.`,
+        text: `${org} is a ${kind.toLowerCase()} with ${agents.length} ${agents.length === 1 ? "agent" : "agents"} on UpNow, listing ${cats.map((c) => offerOf(v, c).label.toLowerCase()).join(", ")} across ${areas.slice(0, 3).map((a) => areaName(a[0])).join(", ")}${areas.length > 3 ? " and " + (areas.length - 3) + " more communities" : ""}. Every enquiry goes straight to the agent handling the listing — no middleman.`,
         facts: [
           ["Specialises in", esc(cats.map((c) => offerOf(v, c).label).join(", "))],
           ["Price range", `${money(prices[0])} – ${UP.K(prices[prices.length - 1])}`],
@@ -181,7 +185,7 @@ function paint() {
         <div class="verification-row">${ico("check")}<span>Trade licence</span><b>DED ${ded}</b></div>
         <div class="verification-row">${ico("check")}<span>${SP && LEASE ? "Agents with BRN" : "Team ID checked"}</span><b>${SP && LEASE ? agents.filter((a) => a.brn).length : agents.length}/${agents.length}</b></div>
         ${SP && LEASE ? `<div class="verification-row">${ico("check")}<span>Listings with DLD permit</span><b>${L.filter((l) => l.a.verified).length}/${L.length}</b></div>` : ""}
-        <p style="font-size:12px;color:var(--color-text-muted);margin:10px 0 0">UpNow never takes payments. <a class="text-link" href="#" onclick="UPUI.toast('Thanks — our trust team will review');return false">Report agency</a></p></div>
+        <p style="font-size:12px;color:var(--color-text-muted);margin:10px 0 0"><a class="text-link" href="#" onclick="UPUI.toast('Thanks — our trust team will review');return false">Report agency</a></p></div>
     </aside></div>
   </div>
   ${PROFILE.contactBar(L0.id, org)}`;

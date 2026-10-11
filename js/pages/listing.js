@@ -2,11 +2,14 @@ const { VERTICALS, LISTINGS, AREAS, areaName, offerOf } = UP;
 const { ico, esc, toQuery, blankState, money, moneyK, t } = UPUI;
 const id =
   new URLSearchParams(location.search).get("id") || LISTINGS[0].id;
-const l = UPUI.byId(id) || LISTINGS[0];
+// ?preview=1 with a provider's own listing id (js/marketplace/listing-form.js): how customers will see it — drawn from
+// the provider's saved listing in the marketplace's shape, with their own description and no reviews yet
+const OWN = new URLSearchParams(location.search).get("preview") === "1" && window.UPLF ? UPLF.byId(id) : null;
+const l = OWN ? Object.assign(UPLF.asListing(OWN), { ref: "Preview" }) : UPUI.byId(id) || LISTINGS[0];
 const O = offerOf(l.v, l.cat);
 const seg = O.defs.find((d) => d.type === "seg");
 let per = seg ? seg.options[0].v : null;
-UPUI.pushRecent(l.id);
+if (!OWN) UPUI.pushRecent(l.id);
 const DMB = DM.build(l);
 document.getElementById("hdr").innerHTML = UPUI.header(l.v, { tabs: false }); // phone: the sticky action bar replaces the tab bar
 document.getElementById("ftr").innerHTML = UPUI.footer({ cta: false }); // no "list your space" band on listing detail pages
@@ -377,17 +380,6 @@ function paint() {
       !fts.some((f) => String(v).includes(f)),
   );
   // phone / tablet only (hidden on desktop by css/pages/listing.css)
-  const act = LEASE ? "Request viewing" : O.action.replace(/ (a|an) /, " ");
-  // phone bar has room for ~15 characters
-  const actShort = LEASE
-    ? act
-    : /quote/i.test(act)
-      ? "Get a quote"
-      : /enquire|enrol|admission/i.test(act)
-        ? "Enquire now"
-        : act.length > 15
-          ? "Book now"
-          : act;
   const perToggle = seg
     ? `<div class="price-toggle">${seg.options.map((o) => `<button class="${per === o.v ? "is-active" : ""}" data-per="${esc(o.v)}">${esc(o.l)}</button>`).join("")}</div>`
     : "";
@@ -498,7 +490,7 @@ function paint() {
         <section class="section" style="border:0;padding-top:0">
           <h2>About this ${esc(O.label.toLowerCase().replace(/s$/, "").replace("holiday home", "home"))}</h2>
           <p class="listing-about">
-            ${esc(ABOUT[l.cat] ? ABOUT[l.cat]() : `${l.title} — offered by ${l.provider.name} (${l.provider.org}) ${O.locAll ? "across the UAE" : "in " + areaName(l.loc) + ", Dubai"}. Priced ${O.basis.toLowerCase()}. Call, WhatsApp or email — ref ${l.ref}.`)}
+            ${OWN && OWN.desc ? esc(OWN.desc) : esc(ABOUT[l.cat] ? ABOUT[l.cat]() : `${l.title} — offered by ${l.provider.name} (${l.provider.org}) ${O.locAll ? "across the UAE" : "in " + areaName(l.loc) + ", Dubai"}. Priced ${O.basis.toLowerCase()}. Call, WhatsApp or email — ref ${l.ref}.`)}
           </p>
         </section>
 
@@ -598,8 +590,7 @@ function paint() {
           ${DM.agentCard(l)}
           <div class="safety-note">
             <b>${ico("shield")}Deal safely</b>
-            ${LEASE ? "Never transfer a deposit or cheques before viewing and checking the permit on Dubai REST." : "Confirm details with the provider before paying any deposit."}
-            UpNow never takes payments.<br />
+            ${LEASE ? "Never transfer a deposit or cheques before viewing and checking the permit on Dubai REST." : "Confirm details with the provider before paying any deposit."}<br />
             <a href="#" onclick="UPUI.toast('Thanks — our team will review this listing');return false">${ico("flag")}Report this listing</a>
           </div>
         </section>
@@ -687,15 +678,15 @@ function paint() {
         ${DM.agentCard(l)}
         <div class="safety-note">
           <b>${ico("shield")}Deal safely</b>
-          ${LEASE ? "Never transfer a deposit or cheques before viewing and checking the permit on Dubai REST." : "Confirm details with the provider before paying any deposit."}
-          UpNow never takes payments.<br />
+          ${LEASE ? "Never transfer a deposit or cheques before viewing and checking the permit on Dubai REST." : "Confirm details with the provider before paying any deposit."}<br />
           <a href="#" onclick="UPUI.toast('Thanks — our team will review this listing');return false">${ico("flag")}Report this listing</a>
         </div>
       </aside>
     </div>`;
-  // sticky action bar (≤1100px): price (tablet) · call · WhatsApp · request
+  // sticky action bar (≤1100px): price (tablet) · call · WhatsApp · chat — customers reach the provider only through
+  // these channels (no booking or viewing requests on UpNow); every contact becomes a lead from that channel
   document.getElementById("mbar").innerHTML =
-    `<div class="mobile-bar-price"><b>${esc(pt.n)}</b><small>${esc(pt.u)}</small>${perToggle}</div><button class="btn btn-outline mobile-bar-call" data-call="${l.id}" aria-label="${t("Call")}">${ico("phone")}<span>${t("Call")}</span></button><button class="btn btn-whatsapp" data-wa="${l.id}">${ico("wa")}${t("WhatsApp")}</button><button class="btn btn-primary mobile-bar-request" data-email="${l.id}">${ico("cal")}<span class="is-long">${esc(act)}</span><span class="is-short">${esc(actShort)}</span></button>`;
+    `<div class="mobile-bar-price"><b>${esc(pt.n)}</b><small>${esc(pt.u)}</small>${perToggle}</div><button class="btn btn-outline mobile-bar-call" data-call="${l.id}" aria-label="${t("Call")}">${ico("phone")}<span>${t("Call")}</span></button><button class="btn btn-whatsapp" data-wa="${l.id}">${ico("wa")}${t("WhatsApp")}</button>${SITE.chat ? `<button class="btn btn-primary mobile-bar-request" data-chat="${l.id}">${ico("msg")}<span>${t("Chat")}</span></button>` : ""}`;
   const tr = document.querySelector(".mobile-hero-track"),
     hi = document.getElementById("mHeroI");
   if (tr && hi)
@@ -722,10 +713,9 @@ document.addEventListener("click", (e) => {
   if (g) PHONE.matches ? openTour(+g.dataset.lb) : openLb(+g.dataset.lb);
 });
 const PHONE = matchMedia("(max-width: 700px)");
-// phone photo tour (reference C09): all photos stacked, then a 2-col grid; sticky WhatsApp + request bar
+// phone photo tour (reference C09): all photos stacked, then a 2-col grid; sticky WhatsApp + call bar
 function openTour(i) {
   if (!l.img.length) return;
-  const act = LEASE ? "Request viewing" : O.action.replace(/ (a|an) /, " ");
   const big = l.img.length > 3 ? 2 : l.img.length;
   const im = (x, k) => `<img id="tour${k}" src="${x}" alt="${esc(l.title)} — photo ${k + 1} of ${l.img.length}">`;
   lb.innerHTML = `<div class="tour">
@@ -738,7 +728,7 @@ function openTour(i) {
     <p class="tour-sub">${esc(l.title)} · ${l.img.length} photo${l.img.length > 1 ? "s" : ""}${A.tour ? " · video tour on request" : ""}</p>
     <div class="tour-photos">${l.img.slice(0, big).map(im).join("")}</div>
     ${l.img.length > big ? `<div class="tour-grid">${l.img.slice(big).map((x, k) => im(x, k + big)).join("")}</div>` : ""}
-    <div class="tour-bar"><button class="btn btn-whatsapp" data-wa="${l.id}">${ico("wa")}${t("WhatsApp")}</button><button class="btn btn-primary" data-email="${l.id}">${ico("cal")}<span>${esc(act)}</span></button></div>
+    <div class="tour-bar"><button class="btn btn-whatsapp" data-wa="${l.id}">${ico("wa")}${t("WhatsApp")}</button><button class="btn btn-primary" data-call="${l.id}">${ico("phone")}<span>${t("Call")}</span></button></div>
   </div>`;
   lb.classList.add("is-active", "is-tour");
   lb.scrollTop = 0;
@@ -757,7 +747,7 @@ function openLb(i) {
 lb.addEventListener("click", (e) => {
   // tour: contact / save buttons go to the shared handlers (contact actions close the tour first)
   if (e.target.closest("[data-fav]")) return;
-  if (e.target.closest("[data-wa],[data-email],[data-call]")) {
+  if (e.target.closest("[data-wa],[data-call]")) {
     lb.classList.remove("is-active", "is-tour");
     return;
   }
@@ -786,3 +776,20 @@ document.addEventListener("upnow:leads", () => {
   paint();
   scrollTo(0, sc);
 });
+
+// preview of the provider's own listing: no sample ratings, views, reviews or similar listings, and the contact
+// buttons only say what they'll do — a provider tapping them shouldn't send themselves a lead
+if (OWN) {
+  const tidy = () => {
+    document.querySelectorAll(".stars, .mobile-rating").forEach((x) => x.remove());
+    document.querySelectorAll(".subtitle > span").forEach((x) => { if (/views this week/.test(x.textContent)) x.remove(); });
+    document.querySelectorAll("#main section.section").forEach((x) => { const h = x.querySelector("h2"); if (h && /^(Reviews|Similar)/.test(h.textContent.trim())) x.remove(); });
+  };
+  tidy();
+  document.addEventListener("upnow:leads", tidy);
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("[data-call],[data-wa],[data-email],[data-sms],[data-chat],[data-enq],[data-fav]")) return;
+    e.preventDefault(); e.stopPropagation();
+    UPUI.toast("Preview — customers contact you from here once it's live");
+  }, true);
+}

@@ -61,7 +61,9 @@
   PWA.acts.stageI = a => { const [id, k] = a.split('|'); S.stages[id] = k; save(); render(); toast('Stage → ' + VX().stages[k]); if (k === 'viewing') setTimeout(() => PWA.acts.newEvent(id), 250); };
 
   /* ============ CALENDAR ============ */
-  const H0 = 8, H1 = 21, RH = 52;
+  // hour height: worked out from the space the week grid has (PWA.after.calendar), so 8 AM–9 PM fits without scrolling
+  const H0 = 8, H1 = 21;
+  let RH = 52;
   PWA.pages.calendar = () => {
     const E = events().filter(e => !S.calOff.includes(e.type));
     const types = [...new Set(events().map(e => e.type))];
@@ -76,7 +78,7 @@
     if (S.calView === 'agenda') return head + `<div class="calg"><section class="pn agenda">${[1, 2, 3, 4, 5, 6].map(d => { const es = upcoming.filter(e => e.d === d && !S.calOff.includes(e.type)); return es.length ? `<div class="dg">${DAYS[d]} ${28 + d > 30 ? (28 + d - 30) + ' Oct' : (28 + d) + ' Sep'}${d === 1 ? ' · Today' : ''}</div><div class="nx">${es.map(e => `<div class="r" data-act="openEvent" data-arg="${e.id}"><div class="tm">${hm(e.s)}<small>${hm(e.e)}</small></div><i class="bar" style="--c:${PW.ETYPE[e.type][1]}"></i><div><b>${esc(e.t)}</b><small>${esc(e.where)} · ${esc(e.who)}</small></div>${st(PW.ETYPE[e.type][0], 'mute')}</div>`).join('')}</div>` : ''; }).join('')}</section>${side}</div>`;
     const hrs = Array.from({ length: H1 - H0 }, (_, i) => `<div>${hm(H0 + i)}</div>`).join('');
     const nowY = (10.6 - H0) * RH;
-    return head + `<div class="calg"><div class="calw" style="max-height:calc(100vh - 250px);overflow:auto;display:grid"><div class="dh" style="border-left:0"></div>${DAYS.map((d, i) => `<div class="dh ${i === 1 ? 'td' : ''}"><small>${d}</small><b>${28 + i > 30 ? 28 + i - 30 : 28 + i}</b></div>`).join('')}
+    return head + `<div class="calg"><div class="calw ${RH < 34 ? 'is-tight' : ''}" style="max-height:calc(100vh - 250px);overflow:auto;display:grid;--rh:${RH}px"><div class="dh" style="border-left:0"></div>${DAYS.map((d, i) => `<div class="dh ${i === 1 ? 'td' : ''}"><small>${d}</small><b>${28 + i > 30 ? 28 + i - 30 : 28 + i}</b></div>`).join('')}
       <div class="hrs" style="height:${(H1 - H0) * RH}px">${hrs}</div>
       ${DAYS.map((d, i) => `<div class="col ${i === 1 ? 'td' : ''}" data-day="${i}" style="height:${(H1 - H0) * RH}px">${i === 1 ? `<div class="nowl" style="top:${nowY}px"></div>` : ''}${E.filter(e => e.d === i).map(e => { const T = PW.ETYPE[e.type]; const top = (e.s - H0) * RH, h = Math.max(24, (e.e - e.s) * RH - 3); return `<div class="ev" data-ev="${e.id}" style="top:${top}px;height:${h}px;--c:${T[1]};--b:${T[2]}"><b>${esc(e.t)}</b>${h > 36 ? `<small>${hm(e.s)} · ${esc(e.where)}</small>` : ''}</div>`; }).join('')}</div>`).join('')}
       </div>${side}</div>`;
@@ -84,8 +86,29 @@
   PWA.after.calendar = () => {
     PWA.$$('.ev').forEach(el => el.onclick = e => { e.stopPropagation(); openEvent(el.dataset.ev, e.clientX, e.clientY); });
     PWA.$$('.col').forEach(c => c.ondblclick = e => { const r = c.getBoundingClientRect(); const h = H0 + Math.floor((e.clientY - r.top) / RH * 2) / 2; PWA.acts.newEvent(null, null, null, { d: +c.dataset.day, s: h }); });
-    const cw = PWA.$('.calw'); if (cw) cw.scrollTop = 60;
+    // measure once every module has finished with the page (notes above the grid are added or removed after render)
+    requestAnimationFrame(() => requestAnimationFrame(fitCalendar));
   };
+  // the whole day fits the screen: hour rows take the grid's height, and the side panel shows what fits
+  function fitCalendar() {
+    const cw = PWA.$('.view.pg-calendar .calw'); if (!cw) return;
+    // from where the hours start to the bottom of the card
+    const hrs = cw.querySelector('.hrs'); if (!hrs) return;
+    const room = cw.getBoundingClientRect().bottom - hrs.getBoundingClientRect().top - 4;
+    const rh = Math.max(22, Math.min(64, Math.floor(room / (H1 - H0))));
+    if (rh !== RH && Math.abs(rh - RH) > 1) { RH = rh; PWA.render(); return; }
+    const side = PWA.$('.view.pg-calendar .calg > aside'); if (!side) return;
+    const over = () => side.scrollHeight > side.clientHeight + 1;
+    // first drop the team card, then the furthest "Up next" items, pointing to the agenda for the rest
+    side.querySelectorAll('section.pn.mt').forEach((p, i) => { if (i > 0 && over()) p.remove(); });
+    const rows = [...side.querySelectorAll('.nx > .r')];
+    let hidden = 0;
+    while (over() && rows.length > 1) { rows.pop().remove(); hidden++; }
+    // not even one item fits under the month: the month alone
+    if (over()) { side.querySelectorAll('section.pn.mt').forEach(p => p.remove()); return; }
+    if (hidden) { const nx = side.querySelector('.nx'); if (nx) nx.insertAdjacentHTML('beforeend', `<a class="nx-more" data-act="calView" data-arg="agenda">+${hidden} more · See agenda</a>`); while (over() && nx.querySelector('.r:last-of-type') && nx.querySelectorAll('.r').length > 1) { nx.querySelector('.r:last-of-type').remove(); const m = nx.querySelector('.nx-more'); m.textContent = `+${++hidden} more · See agenda`; } }
+  }
+  let fitT; window.addEventListener('resize', () => { if (PWA.S.page !== 'calendar') return; clearTimeout(fitT); fitT = setTimeout(() => { RH = 52; PWA.render(); }, 150); });
   function openEvent(id, x, y) {
     const e = events().find(z => z.id === id); if (!e) return; const T = PW.ETYPE[e.type];
     const l = e.lead && leads().find(z => z.id === e.lead);

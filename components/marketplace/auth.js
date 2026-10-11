@@ -168,6 +168,12 @@
   function codeEntered() {
     const byEmail = A.codeFor === 'email';
     if (!byEmail) A.phoneVerified = true;
+    // the UpNow team's number (SITE.admin) opens the admin dashboard — it never becomes a customer or provider account
+    const adm = SITE.admin;
+    if (!byEmail && adm && byIso(A.iso).dial === adm.dial && digits(A.phone) === adm.phone && PATHS.href.admin) {
+      localStorage.setItem(SITE.storageKey + '.admin', JSON.stringify({ dial: adm.dial, phone: adm.phone, since: Date.now() }));
+      clearInterval(A.timer); A = null; closeModal(); location.href = PATHS.href.admin; return;
+    }
     const known = accounts()[keyOf(byEmail ? { email: A.email } : { dial: byIso(A.iso).dial, phone: digits(A.phone) })];
     // an existing account logs in, whichever screen they came from (providers still need a verified mobile)
     if (known && !(provider() && !known.phone && !A.phoneVerified)) {
@@ -297,17 +303,17 @@
     if (!u) return `<button class="btn btn-outline btn-sm" data-open="signin" data-auth-slot>${ico('user')}${U.t ? U.t('Log in') : 'Log in'}</button>`;
     // this account's provider application (js/pages/join.js), if any
     const app = (() => { try { const d = JSON.parse(localStorage.getItem('upnow.join') || 'null'); return d && (!d.owner || d.owner === (u.email || u.dial + u.phone)) ? d : null; } catch (e) { return null; } })();
-    const st = app && (app.status || (app.done ? 'submitted' : 'draft')), applied = st === 'submitted', approved = st === 'approved', draft = st === 'draft' && app.role;
+    const sent = PATHS.providerApp && PATHS.providerApp(), approved = !!sent && sent.status === 'approved', applied = !!sent && !approved, draft = !sent && app && app.role;
     return `<div class="account-menu" data-auth-slot><button class="account-btn" type="button" data-account aria-label="Account menu">${photoOf() ? `<span class="account-menu-avatar has-photo"><img src="${photoOf()}" alt=""></span>` : `<span class="account-menu-avatar">${esc(initialsOf(u))}</span>`}<span class="account-name">${esc(u.first || 'Account')}</span>${ico('chev')}</button>
       <div class="account-drop"><div class="account-who"><b>${esc(u.name || u.email || 'Your account')}</b><small>${u.phone ? esc(u.dial + ' ' + fmt(u.iso || 'AE', u.phone)) : esc(u.email)}</small></div>
         <a href="${HREF.account}">${ico('home')}My account</a>
         <a href="${HREF.account}#enquiries">${ico('list')}My enquiries</a>
-        <a href="${HREF.account}#messages">${ico('msg')}Messages</a>
+        ${SITE.chat ? `<a href="${HREF.account}#messages">${ico('msg')}Messages</a>` : ''}
         <a href="${HREF.account}#saved">${ico('heart')}Saved</a>
         <a href="${HREF.account}#profile">${ico('user')}Profile &amp; privacy</a>
         <span class="account-drop-divider"></span>
         <a href="${(applied || approved) && HREF.dashboard ? HREF.dashboard + '?pack=' + encodeURIComponent(app.v || '') : HREF.join}">${ico('brief')}${approved ? 'Provider dashboard' : applied ? 'Provider dashboard · in review' : draft ? 'Finish your provider application' : 'Become a provider'}</a>
-        ${(applied || approved) && HREF.listingNew ? `<a href="${HREF.listingNew}#new">${ico('plus')}Create listing</a><a href="${HREF.listingNew}#mine">${ico('list')}Your listings</a>` : ''}
+        ${(applied || approved) && HREF.listingNew ? `<a href="${HREF.listingNew}#new">${ico('plus')}Add listing</a>` : ''}
         <button type="button" data-auth-out>${ico('x')}Sign out</button></div></div>`;
   };
 

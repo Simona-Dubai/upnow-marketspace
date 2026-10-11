@@ -33,6 +33,14 @@
     if (m) m.classList.toggle("is-open"); else location.href = PATHS.href.account;
   }, true);
 
+  // "Become a provider" → "Provider dashboard" once this account has sent its provider application (js/pages/join.js)
+  function providerCta(cta) {
+    if (!HREF.dashboard || cta.href !== HREF.join || !PATHS.providerApp || !PATHS.providerApp()) return cta;
+    return Object.assign({}, cta, { label: 'Provider dashboard', href: HREF.dashboard });
+  }
+  const ctaHtml = c => `<a class="btn btn-primary btn-sm" href="${c.href}" data-header-cta>${c.icon ? ico(c.icon) : ''}${t(c.label)}</a>`;
+  // signing in or out swaps it too (a customer never keeps a provider's "Provider dashboard")
+  document.addEventListener('upnow:auth', () => { const b = document.querySelector('.header-actions [data-header-cta]'); if (b && SITE.header.cta) b.outerHTML = ctaHtml(providerCta(SITE.header.cta)); });
   function header(active, { nav = true, tabs = true } = {}) {
     const H = SITE.header, main = H.nav.slice(0, H.visible), rest = H.nav.slice(H.visible), cur = rest.find(x => x.id === active);
     const link = x => `<a href="${x.href}" data-nav="${x.id}" class="${active === x.id ? 'is-active' : ''}">`;
@@ -48,7 +56,7 @@
         ${H.saved ? `<button class="icon-btn header-saved" data-open="saved" title="${t('Saved')}" aria-label="${t('Saved')}">${ico('heart')}<em id="hdrFav" hidden></em></button>` : ''}
         ${H.enquiries ? `<button class="icon-btn" data-open="enq" title="${t('Enquiries & replies')}" aria-label="${t('Enquiries & replies')}">${ico('msg')}<em id="hdrLead" hidden></em></button>` : ''}
         ${H.signIn ? (U.accountButton ? U.accountButton() : `<button class="btn btn-outline btn-sm" data-open="signin">${ico('user')}${t('Sign in')}</button>`) : ''}
-        ${H.cta ? `<a class="btn btn-primary btn-sm" href="${H.cta.href}">${H.cta.icon ? ico(H.cta.icon) : ''}${t(H.cta.label)}</a>` : ''}
+        ${H.cta ? ctaHtml(providerCta(H.cta)) : ''}
       </div></div></header>${tabs ? mTabs() : ''}`;
   }
   document.addEventListener('click', e => {

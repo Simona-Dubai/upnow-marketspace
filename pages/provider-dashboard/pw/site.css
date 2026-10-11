@@ -1,0 +1,384 @@
+/* The marketplace's look in the provider dashboard: the website's brand green and the customer account's sidebar
+   (css/pages/account.css — profile card, menu card, solid active item, dashed link back to the site).
+   Loaded after pw/app.css on every dashboard page. */
+:root {
+  --g7: #047246;          /* --color-primary on the website */
+  --g6: #1a7a53;
+  --g5: #25946a;
+}
+
+/* ---------- sidebar ---------- */
+.app {
+  grid-template-columns: 264px 1fr;
+}
+
+.sb {
+  gap: 12px;
+  padding: 16px 14px;
+  background: #f6f8f6;
+}
+
+.sb .logo {
+  padding: 2px 6px 4px;
+}
+
+/* who you are: the account's profile card */
+.sb .biz {
+  gap: 12px;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.sb .biz .av {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--g7);
+  font-size: 14px;
+}
+
+.sb .biz b {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.sb .biz small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--g5);
+}
+
+/* the menu: one card, solid green for where you are */
+.sb .osbox {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.sb a.ni,
+.sb a.ni.os {
+  height: 44px;
+  gap: 11px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink2);
+}
+
+.sb a.ni .ico {
+  width: 18px;
+  height: 18px;
+}
+
+.sb .osbox a.ni:not(.on):hover {
+  background: var(--g1);
+  color: var(--ink);
+}
+
+.sb .osbox a.ni.on,
+.sb .osbox a.ni.os.on {
+  background: var(--g7);
+  color: #fff;
+  font-weight: 700;
+}
+
+.sb .osbox a.ni .n {
+  min-width: 22px;
+  height: 20px;
+  background: var(--g1);
+  color: var(--g7);
+  font-size: 11px;
+}
+
+.sb .osbox a.ni .n.r {
+  background: var(--red);
+  color: #fff;
+}
+
+.sb .osbox a.ni.on .n,
+.sb .osbox a.ni.os.on .n {
+  background: rgba(255, 255, 255, .2);
+  color: #fff;
+}
+
+.sb .nv-rule {
+  margin: 4px 10px;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+/* back to the marketplace, as the account page's "Explore marketplace" */
+.sb .explore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  border: 1.5px dashed var(--g7);
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--g7);
+}
+
+.sb .explore:hover {
+  background: var(--g1);
+}
+
+.sb .explore .ico {
+  width: 17px;
+  height: 17px;
+}
+
+/* narrow screens: the dashboard's icon rail */
+@media (max-width: 1100px) {
+  .app {
+    grid-template-columns: 76px 1fr;
+  }
+
+  .sb {
+    padding: 12px 8px;
+  }
+
+  .sb .biz {
+    justify-content: center;
+    padding: 8px;
+  }
+
+  .sb .biz .av {
+    width: 36px;
+    height: 36px;
+  }
+
+  .sb a.ni,
+  .sb a.ni.os {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .sb a.ni .n {
+    display: none;
+  }
+
+  .sb .explore span {
+    display: none;
+  }
+}
+
+/* ---------- Communications: the wider sidebar leaves less room, so the columns may shrink and the header wraps ---------- */
+.ibx {
+  grid-template-columns: 200px 300px minmax(0, 1fr) 280px;
+}
+
+.ibx > * {
+  min-width: 0;
+}
+
+.cv .hd {
+  height: auto;
+  min-height: 64px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.cv .hd > div {
+  min-width: 0;
+}
+
+.cv .hd b {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cv .hd small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.ibx .ich a {
+  white-space: nowrap;
+}
+
+/* lead details only when there's room for it beside the conversation */
+@media (max-width: 1480px) {
+  .ibx {
+    grid-template-columns: 190px 280px minmax(0, 1fr);
+  }
+
+  .ibx .ctx {
+    display: none;
+  }
+}
+
+@media (max-width: 1180px) {
+  .ibx {
+    grid-template-columns: 250px minmax(0, 1fr);
+  }
+
+  .ibx .ich {
+    display: none;
+  }
+}
+
+/* ---------- Communications fits the screen height: the channel column sizes itself from the viewport ----------
+   It holds the title, 3 folders, up to 10 channels and 2–3 group labels. Rows shrink from 36px to 26px and the
+   labels' spacing from 14px to 6px as the screen gets shorter, so the column never needs to scroll.
+   Only the conversation list (and a long conversation) scroll — inside their own panel, never the page. */
+.ibx .ich {
+  padding: clamp(10px, 1.8vh, 18px) 10px;
+}
+
+.ibx .ich h1 {
+  font-size: clamp(21px, 3vh, 26px);
+  padding: 0 8px clamp(6px, 1.4vh, 14px);
+}
+
+.ibx .ich a {
+  height: clamp(26px, 4.1vh, 36px);
+  font-size: clamp(12.5px, 1.6vh, 13px);
+}
+
+.ibx .ich .gl {
+  padding: clamp(6px, 1.5vh, 14px) 10px clamp(3px, .6vh, 6px);
+}
+
+/* the lists that do scroll: a thin, quiet scrollbar */
+.ibx .ls,
+.ibx .msgs,
+.ibx .ctx,
+.ibx .ich {
+  scrollbar-width: thin;
+  scrollbar-color: #d3dad5 transparent;
+}
+
+.ibx ::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ibx ::-webkit-scrollbar-thumb {
+  border-radius: 99px;
+  background: #d3dad5;
+}
+
+.ibx ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* top bar badge stays on one line */
+.top .live {
+  white-space: nowrap;
+  flex: none;
+}
+
+/* ---------- full-height pages keep a margin at the bottom, so nothing runs into the screen edge ---------- */
+/* Communications: the inbox sits as a card with space around it */
+.view.flush.pg-inbox {
+  padding: 16px 20px 20px;
+}
+
+.view.pg-inbox .ibx {
+  height: 100%;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 40, 28, .05);
+}
+
+.view.pg-inbox .ibx .ctx {
+  border-left: 1px solid var(--line);
+}
+
+/* Calendar: the page fills the screen, the week grid takes the rest of the height and scrolls its hours inside */
+.view.pg-calendar {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 24px;
+}
+
+.view.pg-calendar > * {
+  flex: none;
+}
+
+.view.pg-calendar > .calg {
+  flex: 1 1 0;
+  min-height: 320px;
+  grid-template-rows: minmax(0, 1fr);   /* the row is the space left, not the side panel's full length */
+}
+
+.view.pg-calendar .calw {
+  max-height: none !important;
+  height: 100%;
+  align-content: start;          /* the day row keeps its own height; the hours take the rest */
+  overflow: hidden !important;   /* hour rows are sized to fit (pw/engage.js fitCalendar) */
+}
+
+/* the side panel shows what fits; the rest is one tap away in the agenda */
+.view.pg-calendar .calg > aside {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.view.pg-calendar .calg > .agenda {
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #d3dad5 transparent;
+}
+
+.view.pg-calendar .nx-more {
+  display: block;
+  padding: 10px 0 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--g7);
+  cursor: pointer;
+}
+
+@media (max-width: 1100px) {
+  .view.pg-calendar {
+    display: block;
+  }
+
+  .view.pg-calendar .calw {
+    height: auto;
+    max-height: calc(100vh - 220px) !important;
+  }
+}
+
+/* hour labels and lines follow the fitted hour height (--rh, set by pw/engage.js) */
+.view.pg-calendar .calw .hrs div {
+  height: var(--rh, 52px);
+}
+
+.view.pg-calendar .calw .col {
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--rh, 52px) - 1px), var(--line) calc(var(--rh, 52px) - 1px), var(--line) var(--rh, 52px));
+}
+
+/* short hours: one line per event */
+.view.pg-calendar .calw.is-tight .ev {
+  padding: 3px 7px;
+}
+
+.view.pg-calendar .calw.is-tight .ev b {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -103,6 +103,6 @@ CONTENT.home = {
     ["Find what you need", "Choose a category, then search with the filters that matter."],
     ["Compare verified providers", "Check photos, pricing, permits and provider details."],
     ["Call, WhatsApp or email", "It reaches the provider instantly as a lead with your details."],
-    ["Deal directly", "Viewings, contracts and payments are agreed with the provider — UpNow never takes your money."]
+    ["Deal directly", "Viewings, contracts and payments are agreed with the provider."]
   ]
 };
