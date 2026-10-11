@@ -53,13 +53,32 @@
       <div class="header-actions">
         ${H.currency ? `<label class="header-select"><select id="hCur">${Object.keys(CUR).map(k => `<option value="${k}" ${prefs.cur === k ? 'selected' : ''}>${CUR[k][2]} ${k}</option>`).join('')}</select>${ico('chev')}</label>` : ''}
         ${H.language ? `<label class="header-select is-subtle"><select id="hLang">${SITE.languages.map(([k, l]) => `<option value="${k}" ${prefs.lang === k ? 'selected' : ''}>${l}</option>`).join('')}</select>${ico('chev')}</label>` : ''}
+        ${regionHtml(H)}
         ${H.saved ? `<button class="icon-btn header-saved" data-open="saved" title="${t('Saved')}" aria-label="${t('Saved')}">${ico('heart')}<em id="hdrFav" hidden></em></button>` : ''}
         ${H.enquiries ? `<button class="icon-btn" data-open="enq" title="${t('Enquiries & replies')}" aria-label="${t('Enquiries & replies')}">${ico('msg')}<em id="hdrLead" hidden></em></button>` : ''}
         ${H.signIn ? (U.accountButton ? U.accountButton() : `<button class="btn btn-outline btn-sm" data-open="signin">${ico('user')}${t('Sign in')}</button>`) : ''}
         ${H.cta ? ctaHtml(providerCta(H.cta)) : ''}
       </div></div></header>${tabs ? mTabs() : ''}`;
   }
+  /* currency + language in one compact button — shown where the header has no room for the two selects (≤1180px),
+     so every screen size can still change them */
+  const LANG_NAME = { en: 'English', ar: 'العربية' };
+  function regionHtml(H) {
+    if (!H.currency && !H.language) return '';
+    const lang = SITE.languages.find(x => x[0] === prefs.lang) || SITE.languages[0];
+    return `<div class="header-region"><button type="button" class="header-region-btn" aria-haspopup="dialog" aria-expanded="false" aria-label="Currency and language">
+        ${H.currency ? `<span>${CUR[prefs.cur] ? CUR[prefs.cur][2] + ' ' : ''}${esc(prefs.cur)}</span>` : ''}${H.currency && H.language ? '<i aria-hidden="true">·</i>' : ''}${H.language ? `<span>${esc(lang[1])}</span>` : ''}${ico('chev')}</button>
+      <div class="header-region-pop" role="dialog" aria-label="Currency and language">
+        ${H.currency ? `<p>Currency</p><div class="header-region-grid">${Object.keys(CUR).map(k => `<button type="button" data-region-cur="${k}" class="${prefs.cur === k ? 'is-on' : ''}" aria-pressed="${prefs.cur === k}">${CUR[k][2]} ${k}</button>`).join('')}</div>` : ''}
+        ${H.language ? `<p>Language</p><div class="header-region-grid is-lang">${SITE.languages.map(([k, l]) => `<button type="button" data-region-lang="${k}" class="${prefs.lang === k ? 'is-on' : ''}" aria-pressed="${prefs.lang === k}" lang="${k}">${esc(LANG_NAME[k] || l)}</button>`).join('')}</div>` : ''}
+      </div></div>`;
+  }
   document.addEventListener('click', e => {
+    const rb = e.target.closest('.header-region-btn'), rc = e.target.closest('[data-region-cur]'), rl = e.target.closest('[data-region-lang]');
+    if (rc) { prefs.cur = rc.dataset.regionCur; store.set('prefs', prefs); location.reload(); return; }
+    if (rl) { prefs.lang = rl.dataset.regionLang; store.set('prefs', prefs); location.reload(); return; }
+    document.querySelectorAll('.header-region').forEach(x => { if (!(rb && x === rb.parentNode) && !e.target.closest('.header-region-pop')) { x.classList.remove('is-open'); x.firstElementChild.setAttribute('aria-expanded', 'false'); } });
+    if (rb) { const on = rb.parentNode.classList.toggle('is-open'); rb.setAttribute('aria-expanded', on); return; }
     const m = e.target.closest('.nav-more > button'); document.querySelectorAll('.nav-more').forEach(x => { if (!m || x !== m.parentNode) x.classList.remove('is-open'); });
     if (m) m.parentNode.classList.toggle('is-open');
   });

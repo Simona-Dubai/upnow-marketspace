@@ -18,6 +18,11 @@
   .header-select {
     display: none;
   }
+
+  /* …and the one button that holds both takes their place */
+  .header-region {
+    display: inline-flex;
+  }
 }
 
 @media (max-width: 960px) {

@@ -69,7 +69,9 @@
   const dateDef = O => O.defs.find(d => isDate(d) && !d.noMatch);
   const priceDef = O => O.defs.find(d => d.id === 'price') || { label: 'Price' };
   // a per-listing permit: every property ad in Dubai needs a DLD permit (Trakheesi); a holiday home needs its unit permit
-  const permitOf = O => O.lease ? { label: 'DLD advertising permit number', hint: 'The Trakheesi permit for this unit. Every property ad in Dubai needs one.', ok: v => /^\d{6,12}$/.test(v), msg: 'Enter the permit number — 6 to 12 digits' }
+  // the DLD (Trakheesi) permit is hidden for now — set to true to ask for it again (field, check and checklist all follow)
+  const ASK_DLD_PERMIT = false;
+  const permitOf = O => O.lease ? ASK_DLD_PERMIT ? { label: 'DLD advertising permit number', hint: 'The Trakheesi permit for this unit. Every property ad in Dubai needs one.', ok: v => /^\d{6,12}$/.test(v), msg: 'Enter the permit number — 6 to 12 digits' } : null
     : O.id === 'holiday' ? { label: 'Holiday home permit number', hint: 'The DET permit for this unit.', ok: v => /^[A-Za-z0-9-]{4,20}$/.test(v), msg: 'Enter the permit number from DET' } : null;
   // licences onboarding lets them add later ("those listings stay in draft"): listings in that category wait for them
   const GATE = { holiday: a => isBiz(a) ? 'hhCo' : 'hhIndiv', yacht: () => 'yacht', venue: () => 'venue', safari: () => 'safari', gym: () => 'reps' };
@@ -166,7 +168,7 @@
   const help = (text, tone = '', ic = '') => `<p class="listing-help ${tone ? 'is-' + tone : ''}">${ic ? icon(ic) : ''}<span>${text}</span></p>`;
   const SQM = 10.7639;
   // the most a size can sensibly be, by category (sqft) — past it, it's almost always a typo
-  const MAX_SQFT = { residential: 40000, holiday: 40000, commercial: 500000, mixed: 2000000, industrial: 5000000, land: 20000000 };
+  const MAX_SQFT = { residential: 40000, holiday: 40000, commercial: 500000, industrial: 5000000, land: 20000000 };
   // a home bigger than this per bedroom is worth a second look (not an error)
   const roomy = L => { const b = +[].concat(L.a.beds || [])[0] || 1, sq = +L.a.sqft || 0; return ['residential', 'holiday'].includes(L.cat) && sq > Math.max(1, b) * 2500 && sq <= (MAX_SQFT[L.cat] || Infinity); };
   const fmtN = n => n === '' || n == null || isNaN(n) ? '' : Number(n).toLocaleString('en-US');
@@ -280,7 +282,7 @@
     programs: ['Classrooms', 'Facilities', 'Activities', 'Entrance'],
     health: ['Reception', 'Treatment room', 'Equipment', 'Your team']
   };
-  const shotsFor = L => SHOTS[{ residential: 'lease', commercial: 'office', mixed: 'office', industrial: 'industrial', land: 'land', holiday: 'holiday', venue: 'venue', court: 'court', yacht: 'yacht' }[L.cat] || L.v] || [];
+  const shotsFor = L => SHOTS[{ residential: 'lease', commercial: 'office', industrial: 'industrial', land: 'land', holiday: 'holiday', venue: 'venue', court: 'court', yacht: 'yacht' }[L.cat] || L.v] || [];
   function photos(L, ctx) {
     use(ctx);
     const O = offerOf(L.v, L.cat), min = minPhotos(L.v, O), target = photoTarget(L), count = L.img.length;
@@ -299,6 +301,7 @@
         ${count < MAX_PHOTOS ? `<label class="listing-photo-add" title="Add photos — you can pick several at once">${input}<span class="listing-photo-add-ic">${ico('plus')}</span><b>Add photos</b>${count < min ? `<small>${min - count} more needed</small>` : ''}</label>` : ''}</div>`;
     return SECX('ln-photos', 'Photos', count ? 'Drag to reorder — the first photo is the cover customers see in search.' : '', `<div class="listing-photos ${count ? '' : 'is-empty'} ${E.photos ? 'has-error' : ''}" data-f="photos">${body}</div>
       ${E.photos ? help(esc(E.photos), 'error', 'alert') : ''}
+      <p class="listing-photo-rules">${icon('info')}<span><b>Before you upload:</b> JPG, PNG or WebP · at least 800 px wide · up to ${MAX_PHOTOS} photos · clear, bright shots taken sideways (landscape) look best · no logos, watermarks or phone numbers on the photo</span></p>
       ${shots.length ? `<p class="listing-shots"><span>Suggested shots</span>${shots.map(x => `<em>${esc(x)}</em>`).join('')}</p>` : ''}`, status);
   }
   // under the description: the contact details are already on the listing, from the profile — not typed in here
@@ -323,6 +326,8 @@
   function price(L, ctx) {
     use(ctx);
     const O = offerOf(L.v, L.cat), pf = priceFields(O), dd = dateDef(O), pm = permitOf(O);
+    // yearly / monthly is never left blank: the first option (yearly) is picked until they switch
+    { const tf = priceFields(O).find(f => f.kind === 'one' && f.arr), first = tf && ((tf.d.options || [])[0] || {}).v; if (first && !termOf(L)) L.a[tf.key] = [first]; }
     const term = termOf(L), monthly = term === 'monthly', basis = (O.unit(asListing(L), viewState(L)) || '').replace(/^\//, 'per '), pd = priceDef(O);
     const rentLike = L.cat === 'residential';
     const p = +L.price || 0, termF = pf.find(f => f.kind === 'one' && f.arr), otherOne = pf.filter(f => f.kind === 'one' && f !== termF);
@@ -342,8 +347,8 @@
     const now = L.availNow !== false && (!L.from || L.from <= today());
     const dateLabel = dd ? ({ start: 'Starts' }[dd.id] || 'Available') : '';
     const permitOk = pm && pm.ok(String(L.permit).trim());
-    const avail = dd ? `<div class="listing-q" data-f="from"><span>${esc(dateLabel)}</span><div class="listing-pr-when"><div class="onboarding-segmented-control">${[['now', 'Now'], ['date', 'From a date']].map(([k, t]) => `<button type="button" class="${(k === 'now') === now ? 'is-active' : ''}" data-ln-avail="${k}" aria-pressed="${(k === 'now') === now}">${t}</button>`).join('')}</div>
-        ${now ? '' : `<input type="date" class="onboarding-date listing-date ${E.from ? 'has-error' : ''}" data-ln-date value="${esc(L.from)}" min="${today()}" aria-label="${esc(dateLabel)} from">`}</div>${err('from')}</div>` : '';
+    const avail = dd ? `<div class="listing-q" data-f="from">${pm ? `<span>${esc(dateLabel)}</span>` : ''}<div class="listing-pr-when"><div class="onboarding-segmented-control">${[['now', 'Now'], ['date', 'From a date']].map(([k, t]) => `<button type="button" class="${(k === 'now') === now ? 'is-active' : ''}" data-ln-avail="${k}" aria-pressed="${(k === 'now') === now}">${t}</button>`).join('')}</div>
+        ${now ? '' : `<input type="date" class="onboarding-date listing-date ${E.from ? 'has-error' : ''}" data-ln-date value="${esc(L.from)}" min="${today()}" aria-label="${esc(dateLabel)} from">`}</div>${E.from ? err('from') : help(now ? `Customers see “Available now” on your listing.` : L.from ? `Customers see “Available from ${new Date(L.from + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}”.` : 'Pick the first day it’s free.')}</div>` : '';
     const days = weekly(L.v) ? `<div class="listing-q is-many ${E.days ? 'has-error' : ''}" data-f="days"><span>Days you work</span><div class="onboarding-categories listing-chips">${DAYS.map(x => `<button type="button" class="onboarding-chip ${L.days.includes(x) ? 'is-active' : ''}" data-ln-day="${x}"><span>${x}</span><span class="onboarding-tick">${ico('check')}</span></button>`).join('')}</div>${err('days')}</div>
           <div class="listing-q"><span>Hours</span><div class="onboarding-segmented-control">${HOURS.map(([id, t]) => `<button type="button" class="${L.hours === id ? 'is-active' : ''}" data-ln-hours="${id}">${t}</button>`).join('')}</div></div>` : '';
     const permit = pm ? `<div class="field onboarding-field ${E.permit ? 'has-error' : ''}" data-f="permit"><label for="ln-permit">${O.lease ? 'DLD advertising permit' : 'DET holiday home permit'}</label><div class="listing-unit"><input id="ln-permit" data-ln-k="permit" value="${esc(L.permit)}" placeholder="${O.lease ? 'e.g. 7123456789' : 'e.g. HH-245981'}" ${O.lease ? 'inputmode="numeric"' : ''}>${permitOk ? `<span class="is-ok">${ico('check')}Format OK</span>` : ''}</div>${E.permit ? err('permit') : help(O.lease ? 'Required for every rental ad in Dubai — we confirm it with DLD.' : 'Every holiday home needs its own — we confirm it with DET.')}</div>` : '';
@@ -353,7 +358,7 @@
         ${cheques}
         ${nums.length ? `<div class="listing-grid">${nums.map(f => control(L, f)).join('')}</div>` : ''}
         ${ctx && ctx.oddPrice ? `<p class="listing-notice is-amber">${ico('spark')}<span>Is AED ${esc(fmtN(p))} ${esc(basis)} right? It's far from similar listings. Continue again if it is.</span></p>` : ''}`)}
-      ${avail || days || permit ? SECX('ln-when', avail || days ? (permit ? 'Availability and permit' : 'Availability') : 'Permit', '', `${avail ? `<div class="listing-pr-grid">${avail}${permit}</div>` : permit}${days}`) : ''}`;
+      ${avail || days || permit ? SECX('ln-when', avail || days ? (permit ? 'Availability and permit' : 'Availability') : 'Permit', avail && !permit ? (O.lease ? 'When can a tenant move in? Pick a date if the place is still occupied.' : dd.id === 'start' ? 'When does it start? Pick a date if it isn’t running yet.' : 'When is it free? Pick a date if it isn’t ready yet.') : '', `${avail ? `<div class="listing-pr-grid">${avail}${permit}</div>` : permit}${days}`) : ''}`;
   }
   // the provider's categories to choose from (only when they offer more than one)
   function categories(a, cur, ctx) {
@@ -479,7 +484,7 @@
         img.src = url;
       });
       Promise.all(all.slice(0, room).map(one)).then(() => {
-        const why = [[skip.small, 'too small (use photos at least 800 px wide)'], [skip.type, 'not JPG or PNG'], [skip.read, 'couldn’t be opened'],
+        const why = [[skip.small, 'too small (use photos at least 800 px wide)'], [skip.type, 'not JPG, PNG or WebP'], [skip.read, 'couldn’t be opened'],
           [skip.space, 'this browser is out of space — remove a photo or two'], [skip.limit, `over the limit of ${MAX_PHOTOS} photos`]].filter(x => x[0]);
         if (!why.length) return;
         const n = why.reduce((t, x) => t + x[0], 0), added = all.length - n;

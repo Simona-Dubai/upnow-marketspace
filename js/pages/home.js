@@ -127,7 +127,6 @@ function paint() {
     residential: "home",
     commercial: "office",
     industrial: "factory",
-    mixed: "layers",
     agricultural: "leaf",
     "resi-retail": "home",
     "office-retail": "office",

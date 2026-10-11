@@ -2849,13 +2849,17 @@ button.listing-strength-item:hover { background: var(--color-primary-tint-light)
   border-color: var(--color-danger);
 }
 
+.listing-titlebox input,
 .listing-flow .listing-titlebox input {
   flex: 1;
+  width: auto !important;
   min-width: 0;
   height: 100% !important;
   border: 0 !important;
   box-shadow: none !important;
   background: none;
+  border-radius: 0 !important;
+  outline: none;
   padding: 0 12px !important;
   font-size: 14px;
   font-weight: 500;
@@ -3018,6 +3022,30 @@ button.listing-strength-item:hover { background: var(--color-primary-tint-light)
 
 .listing-photo-grid .listing-photo-add b {
   font-size: 12.5px;
+}
+
+/* what a photo needs, shown before uploading */
+.listing-photo-rules {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.listing-photo-rules .icon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin-top: 2px;
+  color: var(--color-text-muted);
+}
+
+.listing-photo-rules b {
+  font-weight: 600;
+  color: var(--color-text);
 }
 
 /* suggested shots */
@@ -3494,3 +3522,43 @@ button.listing-strength-item:hover { background: var(--color-primary-tint-light)
 .listing-photos.has-error .listing-photo-grid .listing-photo-add small { font-weight: 700; }
 /* .listing-photos is still a grid from the older layout: the photo row spans all of it instead of sitting in one cell */
 .listing-photos > .listing-photo-grid, .listing-photos > .listing-photo-drop { grid-column: 1 / -1; }
+
+/* example text inside money / size / title boxes reads as a hint, never as a typed value */
+.listing-money input::placeholder,
+.listing-unit input::placeholder,
+.listing-stepper input::placeholder,
+.listing-titlebox input::placeholder,
+.listing-flow .listing-money input::placeholder,
+.listing-flow .listing-unit input::placeholder {
+  font-weight: 400;
+  color: var(--color-text-muted);
+  opacity: .8;
+}
+
+/* "optional" beside a field name: a quiet tag set a little apart from the label */
+.onboarding-field label small,
+.listing-q > span small {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--color-text-muted);
+}
+
+/* "AED" and the amount sit on one text line (the label used to float above the typed text) */
+.listing-money > span,
+.listing-money > input {
+  align-self: baseline;
+}
+
+.listing-money > span {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--color-text-secondary);
+}
+
+.listing-money > input {
+  line-height: normal;
+}

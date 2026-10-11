@@ -45,7 +45,7 @@
   document.documentElement.lang = LANG; document.documentElement.dir = ((window.SITE && SITE.rtl) || []).includes(LANG) ? 'rtl' : 'ltr';
   if (CUR !== 'AED') {
     const [rate, code] = CURS[CUR], RX = /AED\s?(-?\d[\d,]*(?:\.\d+)?)(\s?[kKmM])?/g;
-    const conv = t => t.replace(RX, (m, n, k) => { const v = parseFloat(n.replace(/,/g, '')) * rate; return code + ' ' + (k ? (v < 10 ? v.toFixed(1) : Math.round(v)) + k.trim() : v < 100 && v % 1 ? v.toFixed(1) : Math.round(v).toLocaleString('en-US')); });
+    const conv = t => t.replace(RX, (m, n, k) => { const v = parseFloat(n.replace(/,/g, '')) * rate; return code + ' ' + (k ? (v < 10 ? v.toFixed(1) : Math.round(v)) + k.trim() : v < 100 && v % 1 ? v.toFixed(2) : Math.round(v).toLocaleString('en-US')); });
     const fixText = n => { if (n.nodeValue.includes('AED') && !(n.parentNode && n.parentNode.closest && n.parentNode.closest('textarea,script,style,[data-aed]'))) { const v = conv(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v; } };
     const walk = root => { if (root.nodeType === 3) return fixText(root); if (root.nodeType !== 1) return; const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) fixText(n); };
     new MutationObserver(ms => ms.forEach(m => m.type === 'characterData' ? fixText(m.target) : m.addedNodes.forEach(walk))).observe(document.documentElement, { subtree: true, childList: true, characterData: true });
@@ -232,10 +232,8 @@
     const s = session();
     $('#sb').innerHTML = `<a class="logo" href="index.html"><b>U</b><span>UpNow</span><small class="pro ad-pro">Admin</small></a>
       <div class="biz"><span class="av">UT</span><div><b>UpNow team</b><small>Admin</small></div></div>
-      <nav class="osbox" aria-label="Admin">${NAV().map(([id, l, i, n, red]) => (id === 'settings' ? '<hr class="nv-rule">' : '') + `<a class="ni os ${PAGE === id || ({ provider: (APPS.find(x => x.id === new URLSearchParams(location.search).get('id')) || {}).status === 'verified' ? 'providers' : 'applications', listing: 'listings' })[PAGE] === id ? 'on' : ''}" href="${id}.html">${ico(i)}<span>${esc(l)}</span>${n ? `<em class="n ${red ? 'r' : ''}" style="font-style:normal">${n}</em>` : ''}</a>`).join('')}</nav>
-      <a class="explore" href="../../index.html">${ico('compass')}<span>Customer site</span></a>
-      <div class="sp"></div>
-      <button class="ad-out" type="button" data-act="signout">${ico('out')}<span>Sign out</span></button>`;
+      <nav class="osbox" aria-label="Admin">${NAV().map(([id, l, i, n, red]) => (id === 'settings' ? '<hr class="nv-rule">' : '') + `<a class="ni os ${PAGE === id || ({ provider: (APPS.find(x => x.id === new URLSearchParams(location.search).get('id')) || {}).status === 'verified' ? 'providers' : 'applications', listing: 'listings' })[PAGE] === id ? 'on' : ''}" href="${id}.html">${ico(i)}<span>${esc(l)}</span>${n ? `<em class="n ${red ? 'r' : ''}" style="font-style:normal">${n}</em>` : ''}</a>`).join('')}<button class="ni os ad-out" type="button" data-act="signout">${ico('out')}<span>Sign out</span></button></nav>
+      <a class="explore" href="../../index.html">${ico('compass')}<span>Customer site</span></a>`;
     const w = mainApps().filter(isWaiting), late = [...w, ...LST.filter(isWaitingL)].filter(x => NOW - x.t > S.sla * 36e5);
     $('#top').innerHTML = `<label class="srch">${ico('search')}<input id="gsearch" placeholder="Search providers, listings, licence numbers…" autocomplete="off"></label><span class="sp"></span>
       <span class="live hide-s">Review target · ${S.sla} hours</span>
@@ -369,18 +367,24 @@
   /* ================= PROVIDER REQUESTS ================= */
   const APP_ST = { submitted: ['Waiting', 'warn'], changes: ['Changes asked', 'info'], verified: ['Approved', ''], rejected: ['Rejected', 'risk'] };
   const vChips = (list, key) => `<div class="ad-vchips"><button class="chip ${S.vf === 'all' ? 'on' : ''}" data-act="vf" data-arg="all">All verticals <span class="c">${list.length}</span></button>${Object.keys(VL).map(v => { const n = list.filter(x => x.v === v).length; return n ? `<button class="chip ${S.vf === v ? 'on' : ''}" data-act="vf" data-arg="${v}">${ico(VI[v])}${VL[v]} <span class="c">${n}</span></button>` : ''; }).join('')}</div>`;
+  // one queue card: a number, what it means and what to do about it; the clickable ones filter the list below
+  const qCard = (act, cur, k, tone, n, t, sub, icon) => `<button type="button" class="ad-qc ${tone} ${cur === k ? 'on' : ''}" data-act="${act}" data-arg="${k}"><i>${ico(icon)}</i><span><b>${n}</b><em>${t}</em><small>${sub}</small></span></button>`;
+  const qPace = (avg, sub) => `<div class="ad-qc pace ${avg && avg <= S.sla * 36e5 ? 'ok' : 'warn'}"><i>${ico('trend')}</i><span><b>${avg ? dur(avg) : '—'}</b><em>Your pace this month</em><small>${sub}</small></span></div>`;
   pages.applications = () => {
     const tabs = [['waiting', 'Waiting', a => a.status === 'submitted'], ['changes', 'Changes asked', a => a.status === 'changes'], ['approved', 'Approved', a => a.status === 'verified'], ['rejected', 'Rejected', a => a.status === 'rejected'], ['all', 'All', () => true]];
     const tab = tabs.find(t => t[0] === S.appTab) || tabs[0], inTab = APPS.filter(tab[2]).sort((a, b) => tab[0] === 'waiting' ? a.t - b.t : (b.decided || b.t) - (a.decided || a.t));
-    const list = inTab.filter(a => S.vf === 'all' || a.v === S.vf).filter(a => !S.q || [a.name, a.d.display, a.type, a.email].join(' ').toLowerCase().includes(S.q));
     const W = APPS.filter(isWaiting);
-    return `${head('Provider requests', `Providers asking to join UpNow. Check their documents and what they want to list, then approve or send it back — they hear from us on WhatsApp.`)}
-    <div class="ad-mini-stats">
-      <div><small>Waiting</small><b data-count="${W.length}">${W.length}</b><span>${W.filter(a => NOW - a.t > S.sla * 36e5).length} past ${S.sla}h</span></div>
-      <div><small>Ready to approve</small><b data-count="${W.filter(a => !appChecks(a).some(c => c.tone === 'fail')).length}">${W.filter(a => !appChecks(a).some(c => c.tone === 'fail')).length}</b><span>nothing failed · only your checks left</span></div>
-      <div><small>Need a closer look</small><b data-count="${W.filter(a => appChecks(a).some(c => c.tone === 'fail')).length}">${W.filter(a => appChecks(a).some(c => c.tone === 'fail')).length}</b><span>missing or expired documents</span></div>
-      <div><small>Average time to decide</small><b>${(() => { const d = APPS.filter(a => a.decided && inP(a.decided, 'month')); return d.length ? dur(d.reduce((s, a) => s + a.decided - a.t, 0) / d.length) : '—'; })()}</b><span>this month</span></div>
-    </div>
+    const QF = { late: a => isWaiting(a) && NOW - a.t > S.sla * 36e5, ready: a => isWaiting(a) && !appChecks(a).some(c => c.tone === 'fail'), look: a => isWaiting(a) && appChecks(a).some(c => c.tone === 'fail') }[tab[0] === 'waiting' ? S.appQ : ''] || (() => true);
+    const list = inTab.filter(QF).filter(a => S.vf === 'all' || a.v === S.vf).filter(a => !S.q || [a.name, a.d.display, a.type, a.email].join(' ').toLowerCase().includes(S.q));
+    const oldest = W.slice().sort((a, b) => a.t - b.t)[0];
+    return `${head('Provider requests', `Providers asking to join UpNow. Check their documents and what they want to list, then approve or send it back — they hear from us on WhatsApp.`, oldest ? `<button class="btn btn-g btn-sm" data-act="openApp" data-arg="${oldest.id}" title="${esc(oldest.name)} · waiting ${ago(oldest.t)}">${ico('chevR')}Review the oldest</button>` : '')}
+    <div class="ad-q4">${(() => {
+      const late = W.filter(a => NOW - a.t > S.sla * 36e5), ready = W.filter(a => !appChecks(a).some(c => c.tone === 'fail')), look = W.filter(a => appChecks(a).some(c => c.tone === 'fail'));
+      const dec = APPS.filter(a => a.decided && inP(a.decided, 'month')), avg = dec.length ? dec.reduce((s, a) => s + a.decided - a.t, 0) / dec.length : 0, inSla = dec.length ? Math.round(dec.filter(a => a.decided - a.t <= S.sla * 36e5).length / dec.length * 100) : 0;
+      return qCard('appQ', S.appQ, 'late', late.length ? 'risk' : 'ok', late.length, `Waiting over ${S.sla}h`, late.length ? `They were told “usually within ${S.sla} hours” — start here` : `Everyone is within the ${S.sla}-hour promise`, 'clock')
+        + qCard('appQ', S.appQ, 'ready', 'ok', ready.length, 'Nothing failed', 'Check their documents with the issuing authority, then approve', 'check')
+        + qCard('appQ', S.appQ, 'look', look.length ? 'warn' : 'ok', look.length, 'Need a closer look', look.length ? 'Something failed — missing, expired or hard-to-read documents' : 'Nothing failed', 'alert')
+        + qPace(avg, dec.length ? `${inSla}% decided within ${S.sla}h · ${dec.length} decided` : 'No decisions yet this month'); })()}</div>
     <div class="tabs">${tabs.map(([k, l, f]) => `<button class="${S.appTab === k ? 'on' : ''}" data-act="appTab" data-arg="${k}">${l}<span class="c">${APPS.filter(f).length}</span></button>`).join('')}</div>
     <div class="fbar">${vChips(inTab)}<span class="sp"></span><label class="ad-find">${ico('search')}<input data-q placeholder="Find a provider" value="${esc(S.q)}"></label></div>
     ${list.length ? `<div class="pn ad-tw"><table class="tbl ad-tbl"><thead><tr><th>Provider</th><th>Wants to list</th><th>Documents</th><th>Checks</th><th>First listing</th><th>${tab[0] === 'waiting' ? 'Waiting' : 'Decided'}</th><th>Status</th><th></th></tr></thead><tbody>
@@ -497,9 +501,9 @@
         ${a.reason && a.status !== 'verified' ? `<p class="ad-note ${a.status === 'rejected' ? 'risk' : 'info'}">${ico(a.status === 'rejected' ? 'x' : 'edit')}<span><b>${a.status === 'rejected' ? 'Rejected' : 'Changes asked'}:</b> ${esc(a.reason)}</span></p>` : ''}
         ${checkList(cs)}
         <div class="sect-t">Documents</div>
-        ${isWaiting(a) ? `<p class="ad-hint">${ico('search')}Open each document, check it with the issuing authority, then mark it checked.</p>` : ''}
+        ${isWaiting(a) ? `<p class="ad-hint">${ico('search')}Open each document, compare it with the details we read and check it with the issuing authority, then tap “Details match — mark verified”.</p>` : ''}
         ${ds.map(x => `<div class="ad-doc ${x.tone} ${x.f && !x.checked ? 'ad-unck' : ''}" data-k="${x.k}"><div class="ad-doc-h"><i>${ico(WHO.includes(x.k) ? 'user' : 'doc')}</i><div><b>${esc(x.D[0])}</b><small><span class="ad-doc-st ${x.tone}">${esc(x.note)}</span>${x.f ? ' · ' + esc(x.f.name || 'Uploaded') : ''}</small></div>
-            ${x.f && isWaiting(a) ? `<label class="ad-mark ${x.checked ? 'on' : ''}"><input type="checkbox" data-doccheck="${a.id}|${x.k}" ${x.checked ? 'checked' : ''}>${ico('check')}<span>${x.checked ? 'Checked' : 'Mark checked'}</span></label>` : x.checked ? `<span class="ad-mark on static">${ico('check')}<span>Checked</span></span>` : ''}</div>
+            ${x.f && isWaiting(a) ? (x.checked ? `<label class="ad-mark on" title="Click to undo"><input type="checkbox" data-doccheck="${a.id}|${x.k}" checked>${ico('check')}<span>Verified<small> · Undo</small></span></label>` : `<button type="button" class="ad-mark todo" data-act="viewDoc" data-arg="${a.id}|${x.k}" title="Opens the document beside what we read from it — verify it there">${ico('search')}<span>Open and compare</span></button>`) : x.checked ? `<span class="ad-mark on static">${ico('check')}<span>Verified</span></span>` : ''}</div>
           ${x.f ? `<div class="ad-doc-b"><button type="button" class="ad-thumb" data-act="viewDoc" data-arg="${a.id}|${x.k}" data-thumb="${a.id}|${x.k}" aria-label="Open ${esc(x.D[0])}"><span class="ad-thumb-load"></span></button><dl class="ad-rows">${x.D[2].map(([k, l, ty]) => { const v = d[k], un = a.src[k] === 'check', ex = ty === 'date' && expOf(v), flag = ex && ex < NOW ? ['bad', 'Expired'] : ex && ex < NOW + S.warnDays * DAY ? ['soon', 'Runs out soon'] : un ? ['un', 'Hard to read — compare'] : null;
               return `<div class="${flag ? flag[0] : ''}"><dt>${esc(l)}</dt><dd>${esc(ty === 'date' && ex ? dateY(ex) : v || '—')}${flag ? `<em>${flag[1]}</em>` : ''}</dd></div>`; }).join('')}</dl></div>
           <p class="ad-where">${ico('search')}How to check: <b>${esc(x.D[1])}</b></p>` : ''}</div>`).join('')}
@@ -663,7 +667,7 @@
         <dl class="ad-rows">${y.D[2].map(([k, l, ty]) => { const v = a.d[k], un = a.src[k] === 'check', ex = ty === 'date' && expOf(v), flag = ex && ex < NOW ? ['bad', 'Expired'] : ex && ex < NOW + S.warnDays * DAY ? ['soon', 'Runs out soon'] : un ? ['un', 'Hard to read'] : null;
           return `<div class="${flag ? flag[0] : ''}"><dt>${esc(l)}</dt><dd>${esc(ty === 'date' && ex ? dateY(ex) : v || '—')}${flag ? `<em>${flag[1]}</em>` : ''}</dd></div>`; }).join('')}</dl>
         <p class="ad-where">${ico('search')}How to check: <b>${esc(y.D[1])}</b></p>
-        ${isWaiting(a) ? `<button type="button" class="ad-mark big ${y.checked ? 'on' : ''}" data-vw="check" data-arg="${a.id}|${x.k}">${ico('check')}<span>${y.checked ? 'Checked' : 'Mark checked'}</span></button>` : y.checked ? `<span class="ad-mark on static">${ico('check')}<span>Checked</span></span>` : ''}
+        ${isWaiting(a) ? `<button type="button" class="ad-mark big ${y.checked ? 'on' : 'todo'}" data-vw="check" data-arg="${a.id}|${x.k}">${ico('check')}<span>${y.checked ? 'Verified<small> · Undo</small>' : 'Details match — mark verified'}</span></button>` : y.checked ? `<span class="ad-mark on static">${ico('check')}<span>Verified</span></span>` : ''}
         ${isWaiting(a) && y.checked ? nextStep(a, x.k) : ''}
         <p class="adv-keys">Use ← → to move between documents</p>`; } }));
   }
@@ -688,22 +692,25 @@
   pages.listings = () => {
     const tabs = [['review', 'In review', l => l.status === 'review'], ['waiting', 'Waiting on provider', l => ['verify', 'licence'].includes(l.status)], ['changes', 'Changes asked', l => l.status === 'changes'], ['live', 'Live', l => l.status === 'live'], ['rejected', 'Not approved', l => l.status === 'rejected']];
     const tab = tabs.find(t => t[0] === S.lstTab) || tabs[0], inTab = LST.filter(tab[2]).sort((a, b) => tab[0] === 'review' ? a.t - b.t : (b.decided || b.t) - (a.decided || a.t));
-    const list = inTab.filter(l => S.vf === 'all' || l.v === S.vf).filter(l => !S.q || [l.title, (appOf(l) || {}).name, l.permit].join(' ').toLowerCase().includes(S.q));
     const R = LST.filter(isWaitingL);
+    const QF = { late: l => isWaitingL(l) && NOW - l.t > S.sla * 36e5, ready: l => isWaitingL(l) && !listingChecks(l).some(c => c.tone === 'fail'), look: l => isWaitingL(l) && listingChecks(l).some(c => c.tone === 'fail') }[tab[0] === 'review' ? S.lstQ : ''] || (() => true);
+    const list = inTab.filter(QF).filter(l => S.vf === 'all' || l.v === S.vf).filter(l => !S.q || [l.title, (appOf(l) || {}).name, l.permit].join(' ').toLowerCase().includes(S.q));
     return `${head('Listing requests', 'Listings providers sent to go live. Check the provider may list it and that it’s done right — photos, price, permit — then put it live.')}
-    <div class="ad-mini-stats">
-      <div><small>In review</small><b data-count="${R.length}">${R.length}</b><span>${R.filter(l => NOW - l.t > S.sla * 36e5).length} past ${S.sla}h</span></div>
-      <div><small>Ready to go live</small><b data-count="${R.filter(l => !listingChecks(l).some(c => c.tone === 'fail')).length}">${R.filter(l => !listingChecks(l).some(c => c.tone === 'fail')).length}</b><span>nothing failed · only your checks left</span></div>
-      <div><small>Live on UpNow</small><b data-count="${LST.filter(l => l.status === 'live').length}">${LST.filter(l => l.status === 'live').length}</b><span>${LST.filter(l => l.status === 'live' && inP(l.decided)).length} ${esc(pLabel())}</span></div>
-      <div><small>Sent back</small><b>${LST.filter(l => ['changes', 'rejected'].includes(l.status) && inP(l.decided, 'month')).length}</b><span>this month</span></div>
-    </div>
+    <div class="ad-q4">${(() => {
+      const late = R.filter(l => NOW - l.t > S.sla * 36e5), ok = R.filter(l => !listingChecks(l).some(c => c.tone === 'fail')), look = R.filter(l => listingChecks(l).some(c => c.tone === 'fail'));
+      const dec = LST.filter(l => l.decided && inP(l.decided, 'month') && ['live', 'changes', 'rejected'].includes(l.status)), avg = dec.length ? dec.reduce((s, l) => s + l.decided - l.t, 0) / dec.length : 0;
+      const went = dec.filter(l => l.status === 'live').length, back = dec.length - went;
+      return qCard('lstQ', S.lstQ, 'late', late.length ? 'risk' : 'ok', late.length, `Waiting over ${S.sla}h`, late.length ? `Providers expect an answer within ${S.sla} hours — start here` : `Everything is within ${S.sla} hours`, 'clock')
+        + qCard('lstQ', S.lstQ, 'ready', 'ok', ok.length, 'Nothing failed', 'Look at the photos and tick your checks, then put it live', 'check')
+        + qCard('lstQ', S.lstQ, 'look', look.length ? 'warn' : 'ok', look.length, 'Need a closer look', look.length ? 'Something failed — price, permit, photos or category' : 'Nothing failed', 'alert')
+        + qPace(avg, dec.length ? `${went} went live · ${back} sent back this month` : 'No decisions yet this month'); })()}</div>
     <div class="tabs">${tabs.map(([k, l, f]) => `<button class="${S.lstTab === k ? 'on' : ''}" data-act="lstTab" data-arg="${k}">${l}<span class="c">${LST.filter(f).length}</span></button>`).join('')}</div>
     <div class="fbar">${vChips(inTab)}<span class="sp"></span><label class="ad-find">${ico('search')}<input data-q placeholder="Find a listing or permit" value="${esc(S.q)}"></label></div>
     ${list.length ? `<div class="lgrid ad-lgrid">${list.map((l, i) => { const cs = listingChecks(l), bad = cs.filter(c => c.tone === 'fail'), warn = cs.filter(c => c.tone === 'warn'), a = appOf(l) || {}, over = isWaitingL(l) && NOW - l.t > S.sla * 36e5;
-      return `<article class="lcard ad-lc" style="--i:${i}" data-act="openListing" data-arg="${l.id}"><div class="im"><img src="${esc(l.img[0])}" alt="" loading="lazy">${st(...L_ST[l.status])}<span class="cat">${esc(catLabel(l.v, l.cat))}</span>${l.real ? '<span class="ad-real on-img">This browser</span>' : ''}</div>
+      return `<article class="lcard ad-lc" style="--i:${i}" data-act="openListing" data-arg="${l.id}"><div class="im"><img src="${esc(l.img[0])}" alt="" loading="lazy">${tab[0] === 'review' ? '' : st(...L_ST[l.status])}<span class="cat">${esc(catLabel(l.v, l.cat))}</span>${l.real ? '<span class="ad-real on-img">This browser</span>' : ''}</div>
         <div class="bd"><b class="t">${esc(l.title)}</b><span class="ad-by">${av(a.name || '?', 'sm')}${esc(a.name || '')}</span><span class="pr">${l.price ? aed(l.price) : 'No price'}${l.basis ? ` <span>/ ${esc(l.basis)}</span>` : ''}</span>
-        ${bad.length ? `<span class="ad-flag risk">${ico('x')}${esc(bad[0].t)}${bad.length > 1 ? ` +${bad.length - 1}` : ''}</span>` : warn.length ? `<span class="ad-flag warn">${ico('alert')}${esc(warn[0].t)}</span>` : `<span class="ad-flag ok">${ico('check')}Checks passed</span>`}</div>
-        <div class="ms"><div><small>Photos</small><b>${l.photos}</b></div><div><small>${l.status === 'live' ? 'Leads' : 'Checks'}</small><b>${l.status === 'live' ? l.leads : scoreOf(cs) + '%'}</b></div><div><small>${isWaitingL(l) ? 'Waiting' : 'Sent'}</small><b class="${over ? 'ad-red-t' : ''}">${isWaitingL(l) ? ago(l.t) : dateS(l.t)}</b></div></div></article>`; }).join('')}</div>`
+        ${bad.length ? `<span class="ad-flag risk" title="${esc(bad.map(c => c.t + (c.sub ? ' — ' + c.sub : '')).join('\n'))}">${ico('x')}<span class="ad-flag-t">${esc(bad[0].t)}${bad[0].sub && /needed|missing|waits/i.test(bad[0].sub) ? ` · ${esc(bad[0].sub)}` : ''}</span>${bad.length > 1 ? `<em>+${bad.length - 1}</em>` : ''}</span>` : warn.length ? `<span class="ad-flag warn" title="${esc(warn.map(c => c.t).join('\n'))}">${ico('alert')}<span class="ad-flag-t">${esc(warn[0].t)}</span>${warn.length > 1 ? `<em>+${warn.length - 1}</em>` : ''}</span>` : isWaitingL(l) ? `<span class="ad-flag ok">${ico('check')}Ready · only your checks left</span>` : `<span class="ad-flag ok">${ico('check')}Checks passed</span>`}</div>
+        <div class="ms"><div><small>Photos</small><b>${l.photos}</b></div><div><small>${l.status === 'live' ? 'Leads' : 'Checks'}</small><b>${l.status === 'live' ? l.leads : `${cs.filter(c => c.tone === 'ok').length} of ${cs.length}`}</b></div><div><small>${isWaitingL(l) ? 'Waiting' : 'Sent'}</small><b class="${over ? 'ad-red-t' : ''}">${isWaitingL(l) ? ago(l.t) : dateS(l.t)}</b></div></div></article>`; }).join('')}</div>`
       : `<div class="pn ad-empty big">${ico('check')}<b>${tab[0] === 'review' ? 'No listing is waiting' : 'Nothing here'}</b><small>${tab[0] === 'review' ? 'Listings arrive here once their provider is approved.' : 'Try another tab or vertical.'}</small></div>`}`;
   };
   function openListing(id) {
@@ -725,7 +732,7 @@
         ${l.status === 'live' ? perfBlockL(l) : ''}
         <div class="sect-t">Provider</div>
         <div class="ad-lrow" data-act="openApp" data-arg="${a.id}">${av(a.name || '?')}<div><b>${esc(a.name || '')}</b><small>${esc(TYPE_L[a.type] || a.type || '')} · ${a.status === 'verified' ? 'Approved ' + dateS(a.decided || a.t) : 'Not approved yet'}</small></div>${st(...APP_ST[a.status || 'submitted'])}${ico('chevR')}</div>
-        ${a.id ? planBox(a, (a.status === 'verified' ? '' : 'Starts when they’re approved. ') + planUse(a)) : ''}
+        ${a.id ? `<p class="ad-planline"><span class="ad-plan" data-tier="${a.plan || 'launch'}" style="--c:${PLAN(a.plan || 'launch').c}">${esc(PLAN(a.plan || 'launch').n)} plan</span><span>${a.status === 'verified' ? '' : 'Starts when they’re approved · '}${planUse(a)}</span><a class="ad-full" href="provider.html?id=${encodeURIComponent(a.id)}#dt-plan">${a.status === 'verified' ? 'Change or suggest a plan' : 'Pick a plan'}${ico('chevR')}</a></p>${typeof sugLine === 'function' ? sugLine(a) : ''}` : ''}
       </div>
       <div class="dr-f ad-df">${isWaitingL(l) ? whyBlock(cs, 'put it live') : ''}${isWaitingL(l) ? `<button class="btn btn-g" data-act="liveL" data-arg="${l.id}" ${cs.some(c => c.tone === 'fail' || c.tone === 'todo') ? 'disabled title="Finish the checks first"' : ''}>${ico('check')}Put it live</button><button class="btn btn-o" data-act="changesL" data-arg="${l.id}">${ico('edit')}Ask for changes</button><button class="btn btn-o ad-danger" data-act="rejectL" data-arg="${l.id}">${ico('x')}Not approve</button>`
         : l.status === 'live' ? `<button class="btn btn-o" data-act="changesL" data-arg="${l.id}">${ico('edit')}Take down and ask for changes</button>` : `<span class="hint">${esc(L_ST[l.status][0])}${l.decided ? ' · ' + dateS(l.decided) : ''}</span>`}
@@ -909,9 +916,9 @@
           ${x.f ? `<dl class="dc-kv">${x.D[2].map(([k, l, ty]) => { const v = d[k], un = a.src[k] === 'check', ex = ty === 'date' && expOf(v), fl = ex && ex < NOW ? ['bad', 'Expired'] : ex && ex < NOW + S.warnDays * DAY ? ['soon', 'Runs out soon'] : un ? ['un', 'Hard to read'] : null;
               return `<div class="${fl ? fl[0] : ''}"><dt>${esc(l)}</dt><dd>${esc(ty === 'date' && ex ? dateY(ex) : v || '—')}${fl ? `<em>${fl[1]}</em>` : ''}</dd></div>`; }).join('')}</dl>` : ''}
           <div class="dc-f"><span class="dc-where">${ico('search')}How to check: <b>${esc(x.D[1])}</b></span>
-            ${x.f && isWaiting(a) ? `<label class="ad-mark ${x.checked ? 'on' : ''}"><input type="checkbox" data-doccheck="${a.id}|${x.k}" ${x.checked ? 'checked' : ''}>${ico('check')}<span>${x.checked ? 'Checked' : 'Mark checked'}</span></label>`
+            ${x.f && isWaiting(a) ? (x.checked ? `<label class="ad-mark on" title="Click to undo"><input type="checkbox" data-doccheck="${a.id}|${x.k}" checked>${ico('check')}<span>Verified<small> · Undo</small></span></label>` : `<button type="button" class="ad-mark todo" data-act="viewDoc" data-arg="${a.id}|${x.k}" title="Opens the document beside what we read from it — verify it there">${ico('search')}<span>Open and compare</span></button>`)
               : x.f ? `<span class="dc-chk ${x.checked ? 'on' : ''}">${ico(x.checked ? 'check' : 'clock')}${x.checked ? 'Checked by the team' + (x.checkedAt ? ' · ' + dateS(x.checkedAt) : '') : 'Not checked yet'}</span>` : ''}</div></div></article>`; };
-    return `${head}${isWaiting(a) ? `<p class="ad-hint">${ico('search')}Open each document, check it with the issuing authority, then mark it checked.</p>` : ''}<div class="dc-grid">${ds.map(card).join('')}</div>`;
+    return `${head}${isWaiting(a) ? `<p class="ad-hint">${ico('search')}Open each document, compare it with the details we read and check it with the issuing authority, then tap “Details match — mark verified”.</p>` : ''}<div class="dc-grid">${ds.map(card).join('')}</div>`;
   }
   pages.provider = () => {
     const a = APPS.find(x => x.id === qid()); if (!a) return notFound('Provider', 'providers', 'Providers');
@@ -924,7 +931,7 @@
       cs.filter(c => c.tone === 'fail').forEach(c => I.push(['risk', esc(c.t), esc(c.sub || ''), '']));
       cs.filter(c => c.tone === 'warn').forEach(c => I.push(['warn', esc(c.t), esc(c.sub || ''), '']));
       const left = ds.filter(x => x.f && !x.checked).length;
-      if (left) I.push(['warn', `${left} document${left > 1 ? 's' : ''} still to check`, 'Open each one below, check it with the issuing authority, then mark it checked.', `<a class="btn btn-o btn-sm" href="#dt-docs">Go to documents</a>`]);
+      if (left) I.push(['warn', `${left} document${left > 1 ? 's' : ''} still to check`, 'Open each one below, compare it with the details we read and check it with the issuing authority, then tap “Details match — mark verified”.', `<a class="btn btn-o btn-sm" href="#dt-docs">Go to documents</a>`]);
     } else if (a.status !== 'verified') I.push(['warn', APP_ST[a.status][0], esc(a.reason || ''), '']);
     if (a.status === 'verified' && !p.live) I.push(['risk', 'No live listing', 'Customers can’t find them, so no leads come in.', waBtn(a, `Hi ${fn}, this is the UpNow team. You don’t have a live listing yet — can we help you add one?`)]);
     if (p.live && !p.leads) I.push(['risk', 'No leads in 30 days', `${p.views.toLocaleString()} people saw their listings but nobody contacted them. Photos, price or title may be the reason.`, waBtn(a, `Hi ${fn}, this is the UpNow team. Your listings got views but no enquiries this month — we have a few tips to help.`)]);
@@ -958,8 +965,8 @@
         ${lst.map(l => { const q = perfL(l), live = l.status === 'live'; return `<tr class="ck" onclick="location.href='listing.html?id=${encodeURIComponent(l.id)}'"><td><span class="pf-l"><img src="${esc(l.img[0])}" alt=""><span><b>${esc(l.title)}</b><small>${esc(catLabel(l.v, l.cat))}${l.loc ? ' · ' + esc(areaN(l.loc)) : ''}</small></span></span></td><td>${st(...L_ST[l.status])}</td><td>${live ? q.views.toLocaleString() : '—'}</td><td><b>${live ? q.leads : '—'}</b></td><td>${live ? fmtRate(q.rate) : '—'}</td><td>${live ? fmtReply(q.reply) : '—'}</td><td>${live && q.leads ? chg(change(q.weeks)) : '—'}</td><td>${ico('chevR')}</td></tr>`; }).join('')}</tbody></table>` : `<p class="hint">${waiting ? 'They chose to add their first listing later.' : 'No listings yet.'}</p>`}</section>
     ${waiting ? '' : `${docsFull}
     <section class="pn dt-card"><div class="dt-h"><h2>Contact</h2></div><dl class="ad-rows"><div><dt>Mobile</dt><dd>${esc(a.phone)}</dd></div><div><dt>Email</dt><dd>${esc(a.email || '—')}</dd></div><div><dt>Shown to customers as</dt><dd>${esc(d.display || a.name)}</dd></div><div><dt>Languages</dt><dd>${esc((d.langs || []).join(', ') || 'English')}</dd></div></dl></section>`}
-    <section class="pn dt-card">${planBox(a, a.status === 'verified' ? planUse(a) : 'Starts when they’re approved. You can pick it now or later. ' + planUse(a))}</section>
-    ${a.status === 'verified' ? `<section class="pn dt-card" id="dt-pay"><div class="dt-h"><h2>Payments</h2></div>${inv.length ? `<table class="tbl"><tbody>${inv.slice(0, 12).map(i => `<tr><td>${dateS(i.t)}</td><td>${esc(i.plan.n)}</td><td><b>${aed(i.amt)}</b></td><td>${st(...INV_ST[i.state])}</td></tr>`).join('')}</tbody></table>` : `<p class="hint">On ${esc(PLAN(a.plan || 'launch').n)} (${aed(0)} a month) — nothing is billed.</p>`}</section>` : ''}
+    <section class="pn dt-card" id="dt-plan">${planBox(a, a.status === 'verified' ? planUse(a) : 'Starts when they’re approved. You can pick it now or later. ' + planUse(a))}</section>
+    ${a.status === 'verified' ? `<section class="pn dt-card" id="dt-pay"><div class="dt-h"><h2>Payments</h2><small>Billed monthly · due within 7 days</small></div>${inv.length ? `<table class="tbl dt-pay-tbl"><thead><tr><th>Billed</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead><tbody>${inv.slice(0, 12).map(i => `<tr><td>${dateS(i.t)}</td><td>${esc(i.plan.n)}</td><td><b>${aed(i.amt)}</b></td><td>${st(...INV_ST[i.state])}</td></tr>`).join('')}</tbody></table>` : `<p class="hint">On ${esc(PLAN(a.plan || 'launch').n)} (${aed(0)} a month) — nothing is billed.</p>`}</section>` : ''}
     ${waiting ? decBar(whyLine(cs, 'approve'), `<button class="btn btn-g" data-act="approveApp" data-arg="${a.id}" ${cs.some(c => c.tone === 'fail' || c.tone === 'todo') ? 'disabled title="Finish the checks first"' : ''}>${ico('check')}Approve</button><button class="btn btn-o" data-act="changesApp" data-arg="${a.id}">${ico('edit')}Ask for changes</button><button class="btn btn-o ad-danger" data-act="rejectApp" data-arg="${a.id}">${ico('x')}Reject</button>`) : ''}`;
   };
 
@@ -1108,13 +1115,13 @@
     const q = $('[data-q]', v); if (q) q.oninput = e => { S.q = e.target.value.toLowerCase(); clearTimeout(q._t); q._t = setTimeout(() => { const pos = e.target.selectionStart; render(); const n = $('[data-q]'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }, 200); };
   }
   // after a decision: redraw the page, and the drawer if one is open
-  function refresh() { const k = drawerFor, sc = $('#view').scrollTop, db = $('#drawer .dr-b'), ds = db ? db.scrollTop : 0; render(); $('#view').scrollTop = sc; v2(k); const n = $('#drawer .dr-b'); if (n) { n.classList.add('ad-still'); n.scrollTop = ds; } }
+  function refresh() { const k = drawerFor, sc = $('#view').scrollTop, db = $('#drawer .dr-b'), ds = db ? db.scrollTop : 0; render(); $('#view').classList.add('ad-still'); $('#view').scrollTop = sc; v2(k); $('#drawer').classList.add('ad-still'); const n = $('#drawer .dr-b'); if (n) { n.classList.add('ad-still'); n.scrollTop = ds; } }
   const v2 = k => { if (!k) return; const [t, id] = [k.slice(0, 1), k.slice(2)]; ({ a: openApp, l: openListing, p: openProv })[t](id); };
   const openFromHash = () => { const h = location.hash.slice(1); if (/^(a|l|p):/.test(h)) v2(h); };
 
   /* ---------- actions ---------- */
   const acts = {
-    period: k => { S.period = k; save(); render(); }, appTab: k => { S.appTab = k; save(); render(); }, lstTab: k => { S.lstTab = k; save(); render(); }, provTab: k => { S.provTab = k; save(); render(); }, provSort: k => { S.provSort = k; save(); render(); }, bigDrawer: () => { S.big = !S.big; save(); const d = $('#drawer'); d.classList.toggle('ad-big', S.big); const b = $('.ad-big-btn', d); if (b) b.outerHTML = bigBtn(); }, provView: k => { S.provView = k; S.provTab = 'all'; save(); render(); },
+    period: k => { S.period = k; save(); render(); }, appTab: k => { S.appTab = k; save(); render(); }, lstTab: k => { S.lstTab = k; save(); render(); }, provTab: k => { S.provTab = k; save(); render(); }, provSort: k => { S.provSort = k; save(); render(); }, appQ: k => { S.appQ = S.appQ === k ? '' : k; S.appTab = 'waiting'; save(); render(); }, lstQ: k => { S.lstQ = S.lstQ === k ? '' : k; S.lstTab = 'review'; save(); render(); }, bigDrawer: () => { S.big = !S.big; save(); const d = $('#drawer'); d.classList.toggle('ad-big', S.big); const b = $('.ad-big-btn', d); if (b) b.outerHTML = bigBtn(); }, provView: k => { S.provView = k; S.provTab = 'all'; save(); render(); },
     vf: v => { S.vf = v; save(); render(); }, close: closeDrawer, closeModal,
     openApp: id => { const a = APPS.find(x => x.id === id); if (a && a.status === 'verified' && PAGE === 'providers') openProv(id); else openApp(id); }, openListing, openProv,
     approveApp: id => decide('approveApp', id), changesApp: id => decide('changesApp', id), rejectApp: id => decide('rejectApp', id),
@@ -1185,7 +1192,7 @@
     else if (k === 'check' || k === 'lcheck') { const [id, key] = b.dataset.arg.split('|'), M = k === 'check' ? S.checks : S.lchecks; (M[id] = M[id] || {})[key] = (M[id] || {})[key] ? false : Date.now(); save(); refresh();
       // the items close over the old data: rebuild them for the same position
       const keep = VW.i; if (k === 'check') VW.items = docItems(APPS.find(x => x.id === id)); else VW.items = photoItems(LST.find(x => x.id === id)); VW.i = keep;
-      $('#adv .adv-side').innerHTML = VW.items[VW.i].side(); toast(M[id][key] ? 'Marked as checked' : 'Unmarked'); }
+      $('#adv .adv-side').innerHTML = VW.items[VW.i].side(); toast(M[id][key] ? (k === 'check' ? 'Marked as verified' : 'Marked as checked') : 'Unmarked'); }
   }, true);
   document.addEventListener('click', e => { if (VW && e.target.id === 'adv') closeViewer(); });
   $('#dscrim').onclick = e => { if (e.target.id === 'dscrim') closeDrawer(); };

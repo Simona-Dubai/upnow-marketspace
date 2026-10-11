@@ -160,7 +160,7 @@
       form: [F.company, F.activity, F.licence, ['power', 'Power needed', 'select', ['Under 50 kW', '50–200 kW', '200 kW+']], F.movein, F.slot] },
 
     { id: 'land', label: 'Land', icon: 'plot', h1: 'Land & plots for lease', short: 'Plots', basis: 'AED / year',
-      hero: ['Build on', 'the right plot.'], sub: 'Residential, commercial, industrial and mixed-use plots for long-term lease. Check zoning, permitted height and utilities before you enquire.',
+      hero: ['Build on', 'the right plot.'], sub: 'Residential, commercial, industrial and agricultural plots for long-term lease. Check zoning, permitted height and utilities before you enquire.',
       img: im(['aerial1', 'desert1', 'aerial2']), n: 9, people: 1, lease: 1, permit: 'DLD permit', perSqft: 1, locs: LAND,
       action: 'Enquire about plot', flow: ['Enquiry', 'Site visit', 'Due diligence', 'Land lease agreement', 'Handover'], org: ['Greenstone Properties', 'Dubai South Properties', 'Private owner'],
       fields: ['loc', 'landuse', 'size', 'price'],
@@ -797,6 +797,17 @@
   const first = LISTINGS.length; seed = 7919;
   VORDER.forEach(vid => V[vid].offers.forEach(off => { if (off.late) generate(vid, off); }));
   LISTINGS.slice(first).forEach((l, i) => { l.id = 'L' + (1000 + first + i); l.featured = rnd() < .18; });
+
+  // Mixed-use is no longer offered (2026-10-11), neither as a Spaces category nor as a land use. It is taken out after
+  // generation, so the random sequence — and every other listing's id — stays exactly as it was
+  V.spaces.offers = V.spaces.offers.filter(off => off.id !== 'mixed');
+  for (let i = LISTINGS.length - 1; i >= 0; i--) if (LISTINGS[i].cat === 'mixed') LISTINGS.splice(i, 1);
+  { const land = V.spaces.offers.find(off => off.id === 'land'), d = land && land.defs.find(x => x.id === 'landuse');
+    if (d) d.options = d.options.filter(opt => opt.v !== 'mixed');
+    LISTINGS.forEach(l => { if (l.cat !== 'land') return; const u = l.a.landuse;
+      if (Array.isArray(u)) { l.a.landuse = u.filter(x => x !== 'mixed'); if (!l.a.landuse.length) l.a.landuse = ['commercial']; } else if (u === 'mixed') l.a.landuse = 'commercial';
+      // titles were written from the land use when the listing was made: say what the plot is now
+      if (/Mixed-use/i.test(l.title)) l.title = l.title.replace(/Mixed-use/gi, 'Commercial'); }); }
 
   const offerOf = (v, c) => { const vv = V[v] || V.spaces; return vv.offers.find(x => x.id === c) || vv.offers[0]; };
   window.UP = { AREAS, areaById, areaName, LISTINGS, VERTICALS: V, VORDER, offerOf, K };

@@ -60,6 +60,12 @@
       <label class="tsel g"><select id="lgSel"><option value="en" ${S.lang === 'en' ? 'selected' : ''}>English</option><option value="ar" ${S.lang === 'ar' ? 'selected' : ''}>العربية</option></select>${ico('chev')}</label>
       <button class="ib" data-go="inbox" title="Notifications">${ico('bell')}<i></i></button>
       ${account()}`);
+    // an approved provider: the sidebar shows their own business, not the sample (pw/new-provider.js covers the in-review case)
+    const app = read('upnow.join'), u = user(), who = u && (u.email || (u.dial || '') + u.phone);
+    if (app && app.status === 'verified' && who && (!app.owner || app.owner === who)) {
+      const d = app.d || {}, name = d.display || d.trade || d.legal || app.name || '', ini = name.split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase(), V = window.SITEUP && SITEUP.VERTICALS && SITEUP.VERTICALS[app.v];
+      const biz = document.querySelector('#sb .biz'); if (biz && name) biz.innerHTML = `<span class="av">${esc(ini)}</span><div><b>${esc(name)}</b><small>Verified provider${V ? ' · ' + esc(V.label) : ''}</small></div>`;
+    }
     top.querySelector('#lgSel').onchange = e => {
       S.lang = e.target.value; P.save();
       document.documentElement.lang = S.lang; document.documentElement.dir = S.lang === 'ar' ? 'rtl' : 'ltr';

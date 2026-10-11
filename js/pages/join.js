@@ -23,6 +23,9 @@
     return v && VERTICALS[v] && main && main.status && main.status !== 'draft' ? { v, cat: q.get('cat') || '', main } : null;
   })();
   const STORE = ADD ? KEY + '.add.' + ADD.v : KEY;
+  // adding a category to a vertical already on the account: these categories are there already
+  const HAVE = ADD ? [...(ADD.main.v === ADD.v ? ADD.main.cats || [] : []), ...(ADD.main.more || []).filter(t => t.v === ADD.v).flatMap(t => t.cats || [])] : [];
+  const SAMEV = !!ADD && (ADD.main.v === ADD.v || (ADD.main.more || []).some(t => t.v === ADD.v));
   const calm = matchMedia('(prefers-reduced-motion: reduce)');
 
   /* ---------- provider types (vertical-agnostic) ---------- */
@@ -63,13 +66,13 @@
     // holiday homes are run by owners or DET-registered operators. Venues, sports courts (DSC) and yacht charters (DMA) are company-only.
     spaces: {
       individual: [
-        { id: 'owner', cats: ['residential', 'commercial', 'industrial', 'land', 'mixed', 'holiday'], t: 'Owner / landlord', sub: 'You rent out or sell property you own', icon: 'key', docs: ID_SET, size: [['units', 'How many properties do you own?', ['1', '2–3', '4–10', '11–25', '25+']]] },
-        { id: 'broker', cats: ['residential', 'commercial', 'industrial', 'land', 'mixed'], t: 'Property manager', sub: 'You manage and list owners’ properties under your own licence', local: { AE: 'You manage and list owners’ properties with your RERA card' }, icon: 'brief', docs: [['brn', 'req'], ...ID_SET], size: [['units', 'How many units do you handle?', ['1–5', '6–20', '21–50', '50+']]] }
+        { id: 'owner', cats: ['residential', 'commercial', 'industrial', 'land', 'holiday'], t: 'Owner / landlord', sub: 'You rent out or sell property you own', icon: 'key', docs: ID_SET, size: [['units', 'How many properties do you own?', ['1', '2–3', '4–10', '11–25', '25+']]] },
+        { id: 'broker', cats: ['residential', 'commercial', 'industrial', 'land'], t: 'Property manager', sub: 'You manage and list owners’ properties under your own licence', local: { AE: 'You manage and list owners’ properties with your RERA card' }, icon: 'brief', docs: [['brn', 'req'], ...ID_SET], size: [['units', 'How many units do you handle?', ['1–5', '6–20', '21–50', '50+']]] }
       ],
       company: [
-        { id: 'landlord', cats: ['residential', 'commercial', 'industrial', 'land', 'mixed'], t: 'Landlord company', sub: 'Your company rents out or sells property it owns', icon: 'building', docs: [['tl', 'req'], ...SIG_SET, ['vat', 'opt']], size: [['units', 'How many units does the company own?', ['1–5', '6–20', '21–100', '101–500', '500+']]] },
-        { id: 'brokerage', cats: ['residential', 'commercial', 'industrial', 'land', 'mixed'], t: 'Real estate brokerage', sub: 'Licensed agency — your agents list under it', local: { AE: 'RERA-registered office (ORN) — your agents list under it' }, icon: 'brief', docs: [['tl', 'req'], ['orn', 'req'], ...SIG_SET, ['vat', 'opt']], size: [['units', 'How many listings do you handle?', ['1–20', '21–100', '101–500', '500+']], ['team', 'How many agents (BRN holders)?', ['1', '2–5', '6–20', '21–50', '50+']]] },
-        { id: 'manager', cats: ['residential', 'commercial', 'industrial', 'land', 'mixed'], t: 'Property management company', sub: 'Company that manages property for owners', local: { AE: 'RERA-approved company that manages property for owners' }, icon: 'users', docs: [['tl', 'req'], ['orn', 'req'], ...SIG_SET, ['vat', 'opt']], size: [['units', 'How many units do you manage?', ['1–20', '21–100', '101–500', '500+']], ['team', 'How many property managers?', ['1–5', '6–20', '21–50', '50+']]] },
+        { id: 'landlord', cats: ['residential', 'commercial', 'industrial', 'land'], t: 'Landlord company', sub: 'Your company rents out or sells property it owns', icon: 'building', docs: [['tl', 'req'], ...SIG_SET, ['vat', 'opt']], size: [['units', 'How many units does the company own?', ['1–5', '6–20', '21–100', '101–500', '500+']]] },
+        { id: 'brokerage', cats: ['residential', 'commercial', 'industrial', 'land'], t: 'Real estate brokerage', sub: 'Licensed agency — your agents list under it', local: { AE: 'RERA-registered office (ORN) — your agents list under it' }, icon: 'brief', docs: [['tl', 'req'], ['orn', 'req'], ...SIG_SET, ['vat', 'opt']], size: [['units', 'How many listings do you handle?', ['1–20', '21–100', '101–500', '500+']], ['team', 'How many agents (BRN holders)?', ['1', '2–5', '6–20', '21–50', '50+']]] },
+        { id: 'manager', cats: ['residential', 'commercial', 'industrial', 'land'], t: 'Property management company', sub: 'Company that manages property for owners', local: { AE: 'RERA-approved company that manages property for owners' }, icon: 'users', docs: [['tl', 'req'], ['orn', 'req'], ...SIG_SET, ['vat', 'opt']], size: [['units', 'How many units do you manage?', ['1–20', '21–100', '101–500', '500+']], ['team', 'How many property managers?', ['1–5', '6–20', '21–50', '50+']]] },
         { id: 'holidayop', cats: ['holiday'], t: 'Holiday home operator', sub: 'Runs short-stay homes for owners', local: { AE: 'Registered with DET to run holiday homes for owners' }, icon: 'key', docs: [['tl', 'req'], ...SIG_SET, ['vat', 'opt']], size: [['units', 'How many holiday homes do you operate?', ['1–5', '6–20', '21–100', '100+']]] },
         { id: 'venueop', cats: ['venue'], t: 'Venue operator', sub: 'Hotel, restaurant, events venue or business centre', icon: 'party', docs: [['tl', 'req'], ...SIG_SET, ['vat', 'opt']], size: [['locations', 'How many venues?', ['1', '2–5', '6+']]] },
         { id: 'sportsop', cats: ['court'], t: 'Sports facility operator', sub: 'Club, academy, hotel or community with courts', icon: 'racket', docs: [['tl', 'req'], ...SIG_SET, ['vat', 'opt']], size: [['courts', 'How many courts?', ['1–2', '3–6', '7+']]] },
@@ -286,6 +289,8 @@
     // who you are was checked when you joined: those documents come along, only the business ones are asked
     ['eid', 'passport', 'visa', 'sig', 'sigPass'].forEach(k => { if (m.docs && m.docs[k]) S.docs[k] = m.docs[k]; });
     Object.assign(S.src, m.src || {});
+    // the same vertical: the business type, its licence and the signatory were already sent — only the new category's extras are asked
+    if (m.v === ADD.v) { S.sub = m.sub || ''; Object.assign(S.docs, m.docs || {}); }
   }
   if (ADD) { S.v = ADD.v; S.status = 'draft'; }
   // drafts from the earlier flows (vertical, categories, areas in onboarding): keep the profile answers, start verification again
@@ -387,7 +392,8 @@
       ? `<label class="onboarding-country onboarding-city ${errors.city ? 'has-error' : ''}" title="City">${ico('pin')}<select data-city aria-label="City"><option value="">City</option>${cities.map(c => `<option ${S.d.city === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}<option value="__other" ${S.d.city && !cities.includes(S.d.city) ? 'selected' : ''}>Other…</option></select>${ico('chev')}</label>${S.d.city && !cities.includes(S.d.city) || A.otherCity ? `<input class="onboarding-city-input" data-cityin placeholder="Type your city" value="${esc(cities.includes(S.d.city) ? '' : S.d.city || '')}">` : ''}`
       : `<input class="onboarding-city-input ${errors.city ? 'has-error' : ''}" data-cityin placeholder="City" value="${esc(S.d.city || '')}">`;
     const pick = `<span class="onboarding-where">${countryPick}${cityPick}</span>`;
-    let html = ADD ? hero(`Add ${esc(VERTICALS[S.v].label)} to your account`, 'Tell us what you offer, add the licence it needs and your first listing for it. Your profile stays as it is.', 'business')
+    let html = ADD && SAMEV ? hero(`Add a category to ${esc(VERTICALS[S.v].label)}`, `${ADD.main.status === 'verified' ? 'Pick what else you offer' : `Your ${esc(VERTICALS[S.v].label)} application is in review — you can add another category now. Pick it`}, add any licence it needs and we’ll review it${ADD.main.status === 'verified' ? ', usually within 24 hours' : ' alongside'}. Your business details and ID carry over.`, 'business')
+      : ADD ? hero(`Add ${esc(VERTICALS[S.v].label)} to your account`, 'Tell us what you offer, add the licence it needs and your first listing for it. Your profile stays as it is.', 'business')
       : hero('Tell us what you do', `${firstName() ? `Hi ${esc(firstName())}! ` : ''}A few quick taps — your answers decide which documents we ask for.`, 'business');
     if (!ADD) html += sec('what', 'What would you like to list?', `<div class="onboarding-verticals">${verticalsInOrder().map(v => `<button type="button" class="onboarding-tile ${S.v === v ? 'is-active' : ''}" data-vert="${v}"><i>${ico(VERTICALS[v].icon)}</i><span>${esc(VERTICALS[v].label)}</span></button>`).join('')}</div>`);
     // individual or company first (when the vertical allows individuals), so we only offer what they may list:
@@ -398,7 +404,7 @@
     if (S.role) {
       const locked = o => indiv && !indivTypes(S).some(t => t.cats.includes(o.id)), lockedAll = cats.filter(locked);
       const listNames = os => os.map(o => o.label.toLowerCase()).join(', ').replace(/, ([^,]*)$/, ' and $1').replace(/^./, c => c.toUpperCase());
-      html += sec('list', 'What do you offer?', `<div class="onboarding-categories ${errors.cats ? 'has-error' : ''}">${cats.map(o => { const on = S.cats.includes(o.id), lock = locked(o); return `<button type="button" class="onboarding-chip ${on ? 'is-active' : ''} ${lock ? 'is-locked' : ''}" data-cat="${o.id}" ${lock ? `disabled title="Listed by licensed businesses — choose Company to offer it"` : ''}>${ico(o.icon || UPF.OICO[o.id] || VERTICALS[S.v].icon)}<span>${esc(o.label)}</span>${lock ? '<em>Company</em>' : `<span class="onboarding-tick">${ico('check')}</span>`}</button>`; }).join('')}</div>${lockedAll.length ? `<p class="onboarding-type-hint">${esc(listNames(lockedAll))} ${lockedAll.length > 1 ? 'are' : 'is'} listed by licensed businesses.</p>` : ''}${err('cats')}`, '<small>Choose all that apply</small>');
+      html += sec('list', 'What do you offer?', `<div class="onboarding-categories ${errors.cats ? 'has-error' : ''}">${cats.map(o => { const have = HAVE.includes(o.id), on = !have && S.cats.includes(o.id), lock = have || locked(o); return `<button type="button" class="onboarding-chip ${on ? 'is-active' : ''} ${lock ? 'is-locked' : ''}" data-cat="${o.id}" ${lock ? `disabled title="${have ? 'Already on your account' : 'Listed by licensed businesses — choose Company to offer it'}"` : ''}>${ico(o.icon || UPF.OICO[o.id] || VERTICALS[S.v].icon)}<span>${esc(o.label)}</span>${have ? '<em>On your account</em>' : lock ? '<em>Company</em>' : `<span class="onboarding-tick">${ico('check')}</span>`}</button>`; }).join('')}</div>${lockedAll.length ? `<p class="onboarding-type-hint">${esc(listNames(lockedAll))} ${lockedAll.length > 1 ? 'are' : 'is'} listed by licensed businesses.</p>` : ''}${err('cats')}`, '<small>Choose all that apply</small>');
     }
     if (only && S.cats.length) {
       const sole = !askTypes(S).length && autoTypes(S)[0];
@@ -971,8 +977,9 @@
     const sendListing = listingReady();
     if (sendListing) LF.submit(listing());
     const { photo, bio, ...d } = S.d;
-    m.more = (m.more || []).filter(t => !(t.v === S.v && t.status !== 'approved'));
-    m.more.push({ v: S.v, cats: S.cats.slice(), role: S.role, sub: S.sub, docs: S.docs, d, listing: sendListing ? S.listing : '', status: 'submitted', t: Date.now() });
+    const prev = (m.more || []).find(t => t.v === S.v && t.status !== 'approved'), cats = S.cats.filter(c => !HAVE.includes(c) || (prev && prev.cats.includes(c)));
+    m.more = (m.more || []).filter(t => t !== prev);
+    m.more.push({ v: S.v, cats: [...new Set([...(prev ? prev.cats : []), ...cats])], role: S.role, sub: S.sub, docs: Object.assign({}, prev && prev.docs, S.docs), d: Object.assign({}, prev && prev.d, d), listing: sendListing ? S.listing : (prev && prev.listing) || '', status: 'submitted', t: Date.now() });
     try { localStorage.setItem(KEY, JSON.stringify(m)); localStorage.removeItem(STORE); } catch (e) { toast('Couldn’t save — try again'); return; }
     location.href = `${PATHS.href.portfolio || PATHS.href.dashboard}?added=${encodeURIComponent(S.v)}`;
   }

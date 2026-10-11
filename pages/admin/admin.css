@@ -741,7 +741,15 @@ body.ad-gate-on .app { display: block; overflow: auto; }
 .ad-gal .ad-big-btn { position: absolute; top: 12px; right: 56px; margin: 0; background: rgba(255, 255, 255, .95); border-color: transparent; box-shadow: 0 4px 14px rgba(0, 0, 0, .18); }
 .drawer.ad-drawer.ad-big { width: calc(100vw - 264px); transition: transform .25s ease, width .25s ease; }
 .ad-big .dr-b { padding-left: max(24px, calc((100% - 980px) / 2)); padding-right: max(24px, calc((100% - 980px) / 2)); }
-.ad-big .ad-gal { grid-template-rows: 150px 150px; }
+.ad-big .ad-gal { grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 140px; }
+.ad-big .ad-gal img.big { grid-row: auto; }
+/* wide: the review gets the room — a tight header and a one-line bottom bar (shortcuts still work, their hints hide) */
+.ad-big .dr-h.ad-dh { padding-top: 14px; padding-bottom: 12px; }
+.ad-big .dr-f.ad-df { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+.ad-big .dr-f.ad-df .ad-why { order: 9; flex: 1 1 auto; flex-basis: auto; min-width: 0; margin: 0 0 0 8px; padding: 6px 10px; }
+.ad-big .dr-f.ad-df .ad-why span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ad-big .dr-f.ad-df .ad-keys { display: none; }
+.ad-big .dr-f.ad-df .btn-wa { order: 10; }
 .ad-big .dr-h, .ad-big .dr-f, .ad-big .ad-prog { padding-left: max(24px, calc((100% - 980px) / 2)); padding-right: max(24px, calc((100% - 980px) / 2)); }
 @media (max-width: 1100px) { .drawer.ad-drawer.ad-big { width: calc(100vw - 72px); } }
 @media (max-width: 640px) { .drawer.ad-drawer.ad-big { width: 100%; } .ad-big-btn span { display: none; } .ad-big-btn { padding: 0 9px; } }
@@ -876,3 +884,97 @@ body.ad-gate-on .app { display: block; overflow: auto; }
 /* "How to check: …" reads as one sentence on the document cards */
 .dc-where { display: block; line-height: 1.45; }
 .dc-where .ico { display: inline-block; vertical-align: -2px; margin-right: 5px; }
+
+/* the document action: a filled button until it's verified, then a quiet green state that can be undone */
+.ad-mark.todo { background: var(--g7); border-color: var(--g7); color: #fff; }
+.ad-mark.todo .ico { color: #fff; }
+.ad-mark.todo:hover { background: var(--g8); border-color: var(--g8); color: #fff; }
+.ad-mark small { font-size: inherit; font-weight: 600; color: var(--ink3); }
+.ad-mark.on:hover small { color: var(--g8); text-decoration: underline; }
+
+/* listing review: the provider's plan in one line (the full picker lives in the provider panel) */
+.ad-planline { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 10px 0 0; font-size: 13px; color: var(--ink2); }
+#dt-plan { scroll-margin-top: 16px; }
+
+/* "Verified · Undo" stays on one line */
+.ad-mark > span { display: inline-flex; align-items: baseline; white-space: nowrap; }
+.ad-mark small { display: inline; margin: 0; white-space: nowrap; }
+
+/* the decisions on a full page: a full-width bar fixed to the bottom of the page, like the review panel's footer */
+.pg-provider .dt-dec, .pg-listing .dt-dec { bottom: 0; margin: 0 -28px -60px; padding: 12px 28px; border-width: 1px 0 0; border-radius: 0; background: #fff; box-shadow: 0 -10px 24px -18px rgba(11, 61, 42, .35); flex-wrap: nowrap; gap: 12px; }
+.pg-provider, .pg-listing { padding-bottom: 0; }
+.dt-dec .btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.dt-dec .ad-why { order: 2; flex: 0 1 auto; flex-basis: auto; max-width: 52%; margin: 0 0 0 auto; padding: 7px 12px; border-radius: 10px; white-space: nowrap; overflow: hidden; }
+.dt-dec .ad-why span { overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 700px) { .pg-provider .dt-dec, .pg-listing .dt-dec { margin: 0 -16px -48px; padding: 10px 16px; flex-wrap: wrap; } .dt-dec .ad-why { max-width: none; flex-basis: 100%; order: 0; margin: 0; } }
+
+/* plan cards: the name and its tag (Asked for / Suggested / Current) sit on one row, and wrap cleanly under the name when narrow */
+.ad-plans { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.ad-plans button > b { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-bottom: 4px; line-height: 1.3; }
+.ad-plans button > b .ad-asked,
+.ad-plans button > b .ad-cur { margin-left: 0; vertical-align: 0; line-height: 1.6; white-space: nowrap; }
+.ad-plans button > small { margin-top: 2px; }
+
+/* an in-place save (a tick, a plan, a decision) redraws quietly: the page and panel behind don't replay their entrance */
+.view.ad-still *, .view.ad-still *::before, .view.ad-still *::after, #drawer.ad-still *, #drawer.ad-still *::before, #drawer.ad-still *::after { animation: none !important; }
+
+/* provider page: the plan card's title reads like the other cards' (Contact, Payments), not a small caps label */
+#dt-plan > .sect-t { margin: 0 0 14px; font-size: 16px; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--ink); }
+#dt-plan > .sect-t .ad-asked-h { font-size: 12.5px; }
+
+/* payments: headed columns, lined up with the rows of the cards above */
+.dt-pay-tbl { width: 100%; table-layout: fixed; }
+.dt-pay-tbl th, .dt-pay-tbl td { text-align: left; }
+.dt-pay-tbl th:first-child, .dt-pay-tbl td:first-child { padding-left: 0; }
+.dt-pay-tbl tbody tr:last-child td { border-bottom: 0; }
+
+/* room under the last card of the page */
+.dt-card:last-of-type { margin-bottom: 28px; }
+
+/* listing request cards: titles always take two lines, so provider, price and the numbers line up across a row */
+.ad-lc .bd b.t { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; min-height: calc(2em * 1.3); }
+.ad-lc .ad-flag { max-width: 100%; }
+.ad-lc .ad-flag-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ad-lc .ad-flag em { flex: none; margin-left: auto; padding-left: 6px; font-style: normal; font-weight: 700; opacity: .8; }
+
+/* sign out is the last row of the menu card, under Settings, drawn like the other menu items */
+#sb .osbox .ad-out { display: flex; align-items: center; justify-content: flex-start; gap: 11px; width: 100%; height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: none; font: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer; color: var(--ink2); }
+#sb .osbox .ad-out .ico { width: 18px; height: 18px; }
+#sb .osbox .ad-out:hover { background: #fbeeee; color: var(--red); }
+#sb .osbox .ad-out:hover .ico { color: var(--red); }
+
+/* listing request cards: smaller — more per row, a shorter photo, tighter text */
+.ad-lgrid { grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 12px; }
+.ad-lgrid .lcard .im { height: 128px; }
+.ad-lgrid .lcard .im .st { top: 8px; left: 8px; }
+.ad-lgrid .lcard .im .cat { bottom: 8px; left: 8px; font-size: 10.5px; padding: 2px 7px; }
+.ad-lgrid .lcard .bd { padding: 10px 12px; gap: 5px; }
+.ad-lgrid .lcard .bd b.t { font-size: 13px; }
+.ad-lgrid .lcard .ad-by { font-size: 12px; }
+.ad-lgrid .lcard .pr { font-size: 13.5px; }
+.ad-lgrid .lcard .pr span { font-size: 11px; }
+.ad-lgrid .lcard .ad-flag { padding: 4px 8px; font-size: 11.5px; }
+.ad-lgrid .lcard .ms div { padding: 7px 10px; }
+.ad-lgrid .lcard .ms small { font-size: 9.5px; }
+.ad-lgrid .lcard .ms b { font-size: 12.5px; }
+
+/* Provider requests: the people waiting first, then four ways into the queue (each card filters the list) */
+.ad-qhero { display: flex; align-items: center; gap: 18px; padding: 18px 22px; margin-bottom: 12px; border-radius: 18px; border: 1px solid #d8efe3; background: linear-gradient(120deg, #f2faf5, #fff 70%); }
+.ad-qhero.late { border-color: #f3cdc9; background: linear-gradient(120deg, #fff4f3, #fff 70%); }
+.ad-qhero > div { flex: 1; min-width: 0; } .ad-qhero h2 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.01em; } .ad-qhero h2 b { font-weight: 800; }
+.ad-qhero p { margin: 4px 0 0; font-size: 13.5px; color: var(--ink2); } .ad-qhero .btn { flex: none; }
+.ad-q4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+.ad-qc { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--line); background: #fff; text-align: left; font: inherit; color: inherit; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
+button.ad-qc:hover { border-color: var(--g5); box-shadow: 0 10px 24px -18px rgba(11, 61, 42, .45); transform: translateY(-1px); }
+.ad-qc.pace { cursor: default; }
+.ad-qc > i { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 10px; background: var(--g1); color: var(--g7); } .ad-qc > i .ico { width: 17px; height: 17px; }
+.ad-qc.risk > i { background: #fdecec; color: #b42318; } .ad-qc.warn > i { background: #fbf1e2; color: #a8701a; }
+.ad-qc span { min-width: 0; } .ad-qc b { display: block; font-size: 24px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; } .ad-qc.risk b { color: #b42318; }
+.ad-qc em { display: block; margin-top: 2px; font-style: normal; font-size: 13.5px; font-weight: 700; } .ad-qc small { display: block; margin-top: 3px; font-size: 12px; line-height: 1.4; color: var(--ink3); }
+.ad-qc.on { border-color: var(--g7); box-shadow: 0 0 0 3px var(--g2); } .ad-qc.risk.on { border-color: #b42318; box-shadow: 0 0 0 3px #fbd5d1; }
+@media (max-width: 1100px) { .ad-q4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .ad-qhero { flex-direction: column; align-items: flex-start; } .ad-q4 { grid-template-columns: 1fr; } }
+
+/* page header: the action stays beside the title, the description wraps under it */
+.ad-ph { flex-wrap: nowrap; align-items: flex-start; gap: 16px; } .ad-ph > div:first-child { min-width: 0; } .ad-ph .acts { flex: none; padding-top: 10px; }
+@media (max-width: 760px) { .ad-ph { flex-wrap: wrap; } }
