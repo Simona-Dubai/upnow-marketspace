@@ -828,7 +828,7 @@
       doc.fields.forEach(([k, , kind]) => { if (!String(d[k] || '').trim()) { if (!OPTIONAL_FIELDS.includes(k)) e[k] = 'This can’t be empty'; } else if (kind === 'date' && expired(d[k])) e[k] = 'This date has passed — upload a current document'; });
       if (!f.ok) e['ok_' + doc.id] = 'Check the details, then tick this box';
     });
-    if (step === 4) { const L = listing(); if (L && LF.started(L)) Object.assign(e, LF.validate(L, PARTS[part() - 1][0])); }
+    if (step === 4) { const L = listing(); if (L) Object.assign(e, LF.validate(L, PARTS[part() - 1][0])); }
     if (step === 3) {
       if (!String(d.display || '').trim()) e.display = 'Add the name customers will see';
       if (String(d.bio || '').trim().length < 60) e.bio = 'Add a little more — at least 60 characters, or tap “Write it for me”';
@@ -903,7 +903,7 @@
       <div class="onboarding-panel ${done ? 'is-done' : ''}"><div class="onboarding-scroll"><div class="onboarding-step ${A.dir ? 'is-in-' + A.dir : ''}">${fixNote()}${body}</div></div>
         ${done ? '' : `<div class="onboarding-nav">${S.step > 1 ? `<button type="button" class="btn btn-ghost" data-act="back" aria-label="Back">${ico('chevL')}<span class="nav-label">${S.step === LIST && listing() && LF.started(listing()) ? (part() > 1 ? esc(partName(part() - 1, listing())) : STEP[stepBefore(LIST)][0]) : 'Back'}</span></button>` : '<span></span>'}
           ${S.step === LIST && Object.keys(errors).length ? `<span class="listing-fix" role="alert">${Object.keys(errors).length} ${Object.keys(errors).length === 1 ? 'thing' : 'things'} to fix</span>` : `<span class="onboarding-save ${A.saved ? 'is-on' : ''}">${ico('check')}Draft saved</span>`}
-          ${locked ? `<button type="button" class="btn btn-primary onboarding-next" data-act="signin">Continue with your mobile${ico('chevR')}</button>` : S.step === LIST ? `<span class="listing-nav-end"><button type="button" class="btn btn-ghost" data-act="later">Add it later</button><button type="button" class="btn btn-primary onboarding-next" data-act="next">${listing() && LF.started(listing()) ? (part() < PARTS.length ? 'Continue to ' + esc(partName(part() + 1, listing()).toLowerCase()) : ADD ? 'Send for approval' : 'Review and send') : ADD ? 'Send for approval' : 'Review and send'}${ico('chevR')}</button></span>` : `<button type="button" class="btn btn-primary onboarding-next" data-act="next">Continue${ico('chevR')}</button>`}</div>`}</div>
+          ${locked ? `<button type="button" class="btn btn-primary onboarding-next" data-act="signin">Continue with your mobile${ico('chevR')}</button>` : S.step === LIST ? `<span class="listing-nav-end"><button type="button" class="btn btn-ghost" data-act="later">Add it later</button><button type="button" class="btn btn-primary onboarding-next" data-act="next">${listing() && listing() ? (part() < PARTS.length ? 'Continue to ' + esc(partName(part() + 1, listing()).toLowerCase()) : ADD ? 'Send for approval' : 'Review listing') : ADD ? 'Send for approval' : 'Continue'}${ico('chevR')}</button></span>` : `<button type="button" class="btn btn-primary onboarding-next" data-act="next">Continue${ico('chevR')}</button>`}</div>`}</div>
     </main>
       <aside class="onboarding-aside ${previewOpen ? 'is-open' : ''}"><button type="button" class="onboarding-preview-toggle" data-act="preview">${ico('eye')}<span>${previewOpen ? 'Hide profile preview' : 'Preview your profile'}</span>${ico('chev')}</button>${pv}</aside></div>`, !!A.dir || (wasMode && wasMode !== S.status));
     // motion: keep the reading position, fill the bar, spring the control just picked, bring a new part into view
@@ -960,7 +960,7 @@
     }
     if (S.step === LIST) {
       const L = listing();
-      if (L && LF.started(L) && part() < PARTS.length) return goPart(part() + 1);
+      if (L && part() < PARTS.length) return goPart(part() + 1);
       A.listingLater = !(L && LF.started(L));
       if (ADD) return addSubmit();
     }

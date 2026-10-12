@@ -224,7 +224,7 @@
 
   /* ---------- shell ---------- */
   const NAV = () => [['index', 'Overview', 'grid'], ['applications', 'Provider requests', 'users', mainApps().filter(isWaiting).length + APPS.filter(a => a.added && isWaiting(a)).length, 1],
-    ['listings', 'Listing requests', 'layers', LST.filter(isWaitingL).length, 1], ['providers', 'Providers', 'shield', provAlerts() || ''], ['income', 'Income', 'coin'], ['settings', 'Settings', 'gear']];
+    ['listings', 'Listing requests', 'layers', LST.filter(isWaitingL).length, 1], ['providers', 'Providers', 'shield', provAlerts() || ''], ...(window.ADM_CUST ? [['customers', 'Customers', 'user']] : []), ['income', 'Income', 'coin'], ['settings', 'Settings', 'gear']];
   const provAlerts = () => mainApps().filter(a => a.status === 'verified' && docsOf(a).some(d => d.f && d.exp && d.exp < NOW + S.warnDays * DAY)).length;
   const PAGE = window.ADM_START || 'index';
   const go = p => { location.href = p + '.html'; };
@@ -1116,8 +1116,8 @@
   }
   // after a decision: redraw the page, and the drawer if one is open
   function refresh() { const k = drawerFor, sc = $('#view').scrollTop, db = $('#drawer .dr-b'), ds = db ? db.scrollTop : 0; render(); $('#view').classList.add('ad-still'); $('#view').scrollTop = sc; v2(k); $('#drawer').classList.add('ad-still'); const n = $('#drawer .dr-b'); if (n) { n.classList.add('ad-still'); n.scrollTop = ds; } }
-  const v2 = k => { if (!k) return; const [t, id] = [k.slice(0, 1), k.slice(2)]; ({ a: openApp, l: openListing, p: openProv })[t](id); };
-  const openFromHash = () => { const h = location.hash.slice(1); if (/^(a|l|p):/.test(h)) v2(h); };
+  const v2 = k => { if (!k) return; const [t, id] = [k.slice(0, 1), k.slice(2)]; ({ a: openApp, l: openListing, p: openProv, c: x => window.ADM_CUST && ADM_CUST.open(x) })[t](id); };
+  const openFromHash = () => { const h = location.hash.slice(1); if (/^(a|l|p|c):/.test(h)) v2(h); };
 
   /* ---------- actions ---------- */
   const acts = {
@@ -1202,5 +1202,10 @@
 
   // ?tab= deep links (from the overview strip)
   { const t = new URLSearchParams(location.search).get('tab'); if (t) { if (PAGE === 'providers') S.provTab = t; if (PAGE === 'applications') S.appTab = t; if (PAGE === 'listings') S.lstTab = t; } }
+  // Customers (pages/admin/js/customers.js, loaded before this file): its page, its drawer and its actions
+  if (window.ADM_CUST) {
+    pages.customers = () => ADM_CUST.page();
+    ADM_CUST.init({ ico, esc, av, st, ago, aed, dateS, head, periodSeg, pLabel, inP, startOf, S, spark, hbars, dayChart, VI, drawer, render, refresh: () => refresh(), page: () => PAGE, addActs: o => Object.assign(acts, o) });
+  }
   if (!session()) gate(); else { render(); openFromHash(); }
 })();
