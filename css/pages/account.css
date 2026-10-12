@@ -7012,3 +7012,69 @@ label.account-setting {
     flex-basis: 72%;
   }
 }
+
+/* =====================================================================
+   Tablet and phone polish for the account (desktop, 1101px and up, is untouched — every rule here is inside a
+   max-width query)
+   ===================================================================== */
+@media (max-width: 1100px) {
+  /* the site's top links don't fit beside the account buttons on a tablet: the account has its own tabs, and
+     "Explore marketplace" / the logo lead back to the site (the same as below 960px on every page) */
+  body:has(#account-dashboard) .site-header .nav {
+    display: none;
+  }
+
+  /* the section tabs fit the width instead of running off the edge */
+  .account-nav {
+    justify-content: space-between;
+  }
+
+  .account-nav a {
+    flex: 0 0 auto;
+    padding: 0 10px;
+  }
+
+  /* home: "Continue searching" keeps its own height beside Saved, instead of stretching into an empty box */
+  .dashboard-side {
+    align-items: start;
+  }
+
+  /* enquiry: the other ways to contact share the row evenly (two or three of them) */
+  .account-main .agent-alt-actions {
+    display: flex;
+  }
+
+  .account-main .agent-alt-action {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  /* my enquiries: the "Via" channels wrap to the start of their own line */
+  .account-enquiry-filters {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .account-enquiry-channels {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  /* the tabs scroll on a phone; they start at the edge rather than spreading out */
+  .account-nav {
+    justify-content: flex-start;
+  }
+
+  /* saved: shorter photos, so more of the shortlist shows on one screen */
+  .account-main .account-saved .card .photo {
+    aspect-ratio: 16 / 10;
+  }
+}
+
+@media (min-width: 701px) and (max-width: 900px) {
+  .account-nav a {
+    padding: 0 8px;
+    gap: 6px;
+  }
+}
