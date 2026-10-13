@@ -681,6 +681,9 @@ ${channels}</div>`;
           <div class="account-details-header"><label class="account-photo" title="${D.photo ? 'Change photo' : 'Add a photo'}">${meAvatar(u, 'is-lg')}<i>${ico('camera')}</i><input type="file" accept="image/*" data-photo hidden></label><div><h3>${esc(u.name || 'Add your name')}</h3><small>${since ? `Member since ${MON[since.getMonth()]} ${since.getFullYear()}` : ''}${nationality ? ` · ${esc(nationality)}` : ''}</small><span class="account-photo-links">${D.photo ? `<label>${ico('camera')}Change photo<input type="file" accept="image/*" data-photo hidden></label><button type="button" data-act="delphoto">Remove</button>` : `<label>${ico('camera')}Add a photo<input type="file" accept="image/*" data-photo hidden></label>`}</span></div><button class="btn btn-ghost btn-sm" type="button" data-act="editname">${ico('pen')}Edit</button></div>
           ${u.phone ? row('phone', esc(U.fmtPhone(u.dial + u.phone)), 'Verified · used to sign in', '<span class="status-pill is-success">Verified</span>') : row('phone', 'No mobile yet', 'Add one so listers can reach you', '', 'is-todo')}
           ${row('mail', esc(u.email || 'No email yet'), u.email ? 'Copies of your enquiries and replies' : 'Get a copy of every enquiry and reply', `<button class="${u.email ? 'text-link' : 'btn btn-outline btn-sm'}" type="button" data-act="editemail">${u.email ? 'Change' : `${ico('plus')}Add`}</button>`, u.email ? '' : 'is-todo')}
+          ${(() => { const au = U.auth, g = (au.GENDERS.find(x => x[0] === u.gender) || [])[1], [y, m, d] = String(u.dob || '').split('-').map(Number), has = u.dob || u.gender;
+            return row('cake', has ? [u.dob ? `${d} ${au.MONTHS[m - 1]} ${y}` : 'Date of birth not added', g].filter(Boolean).map(esc).join(' · ') : 'Date of birth and gender', `${u.dob ? `Age ${au.ageOn(u.dob)} · ` : ''}For offers that suit you — listers never see it`,
+              `<button class="${has ? 'text-link' : 'btn btn-outline btn-sm'}" type="button" data-act="editabout">${has ? 'Change' : `${ico('plus')}Add`}</button>`, u.dob && u.gender ? '' : 'is-todo'); })()}
           ${row('shield', 'UAE PASS', 'Share your verified ID with listers in one tap', '<span class="status-pill is-muted">Coming soon</span>', 'is-later')}
         </section>
         <section class="account-box"><h3>Preferences</h3>
@@ -1057,6 +1060,16 @@ ${channels}</div>`;
       addplace: () => ask({ title: 'Add an address', text: 'Only shared when you send it to a lister.', fields: [{ name: 'l', label: 'Label', options: ['Home', 'Work', 'Other'], value: placesOf().some(a => a.label === 'Home') ? 'Work' : 'Home' }, { name: 'a', label: 'Building and area', placeholder: 'e.g. Marina Gate 2, Dubai Marina' }], ok: 'Add' }, v => { if (!v.a.trim()) return false; placesOf().push({ id: 'p' + now(), label: v.l, addr: v.a.trim() }); save(); render(); toast('Address saved'); }),
       delplace: () => { D.places = placesOf().filter(a => a.id !== id); save(); render(); },
       editname: () => { const u = user(); ask({ title: 'Your name', text: 'Shown to listers when you contact them.', fields: [{ name: 'f', label: 'First name', value: u.first }, { name: 'l', label: 'Last name', value: u.last }] }, v => { if (!v.f.trim()) return false; U.auth.setName(v.f.trim(), v.l.trim()); render(); toast('Name updated'); }); },
+      // date of birth and gender: the same choices as on sign-up (components/marketplace/auth.js)
+      editabout: () => { const u = user(), au = U.auth, [y, m, d] = String(u.dob || '').split('-').map(Number), yNow = new Date().getFullYear();
+        ask({ title: 'Date of birth and gender', text: 'So we can show you offers that suit you. Listers never see it.', ok: 'Save', fields: [
+          { name: 'd', label: 'Day', options: ['Day', ...Array.from({ length: 31 }, (_, i) => String(i + 1))], value: d ? String(d) : 'Day' },
+          { name: 'm', label: 'Month', options: ['Month', ...au.MONTHS], value: m ? au.MONTHS[m - 1] : 'Month' },
+          { name: 'y', label: 'Year', options: ['Year', ...Array.from({ length: 100 - au.MIN_AGE + 1 }, (_, i) => String(yNow - au.MIN_AGE - i))], value: y ? String(y) : 'Year' },
+          { name: 'g', label: 'Gender', options: ['Choose', ...au.GENDERS.map(x => x[1])], value: (au.GENDERS.find(x => x[0] === u.gender) || [0, 'Choose'])[1] }] }, v => {
+          const b = au.dobOf(+v.d || '', au.MONTHS.indexOf(v.m) + 1 || '', +v.y || ''), g = (au.GENDERS.find(x => x[1] === v.g) || [])[0];
+          if (b.err) { toast(b.err); return false; } if (!g) { toast('Choose a gender — or “Prefer not to say”'); return false; }
+          au.setAbout({ dob: b.dob, gender: g }); render(); toast('Saved'); }); },
       editemail: () => { const u = user(); ask({ title: u.email ? 'Change email' : 'Add email', fields: [{ name: 'e', label: 'Email', type: 'email', value: u.email, placeholder: 'you@email.com' }] }, v => { if (!/^\S+@\S+\.\S+$/.test(v.e)) return false; u.email = v.e.trim(); store.set('user', u); render(); toast('Email saved'); }); },
       export: () => {
         const data = { exported: new Date().toISOString(), account: user(), saved: savedList(), family: familyOf(), addresses: placesOf(), enquiries: leads(), progress: D.lead, searches: alerts(), recentlyViewed: store.get('recent') || [], notifications: D.notify, privacy: D.privacy };

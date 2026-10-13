@@ -3,9 +3,12 @@
    Mobile + code is the main way in; Google and Apple are the alternatives. Providers always end with a verified mobile,
    because leads reach them by call and WhatsApp.
    Prototype: the signed-in user and known accounts live in localStorage; any 6-digit code is accepted.
+   Customers also give their birth date and gender when they create an account ("A little about you", after the code):
+   the admin's Customers page groups people by age and gender with it, and offers can target them later. Listers never see it.
 
-   UPUI.auth.user()                       → { first, last, name, dial, phone, email, via } | null
+   UPUI.auth.user()                       → { first, last, name, dial, phone, email, via, dob: 'YYYY-MM-DD', gender: female|male|unsaid } | null
    UPUI.auth.open({ intent, next, onDone })  intent 'provider' changes the wording; next = URL to go to afterwards
+   UPUI.auth.setAbout({ dob, gender })    change them later (Profile & privacy)
    UPUI.auth.signOut()
    Links to the provider signup page open this modal first when nobody is signed in. */
 (function () {
@@ -27,6 +30,21 @@
   const fmt = (iso, p) => { p = digits(p); const out = []; let i = 0; for (const g of rules(iso).phone.groups) { if (i >= p.length) break; out.push(p.slice(i, i + g)); i += g; } if (i < p.length) out.push(p.slice(i)); return out.join(' '); };
   const phoneOk = (iso, p) => new RegExp(rules(iso).phone.pattern).test(digits(p));
   const emailOk = e => /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(String(e || '').trim());
+
+  /* ---------- birth date & gender (customers) ---------- */
+  const MIN_AGE = 18; // accounts are for adults; parents add children under Profile › Family
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const GENDERS = [['female', 'Female'], ['male', 'Male'], ['unsaid', 'Prefer not to say']];
+  const ageOn = (dob, t = Date.now()) => { const [y, m, d] = String(dob || '').split('-').map(Number); if (!y) return null; const n = new Date(t); return n.getFullYear() - y - (n.getMonth() + 1 < m || (n.getMonth() + 1 === m && n.getDate() < d) ? 1 : 0); };
+  // Day / Month / Year → 'YYYY-MM-DD', or an error in plain words
+  function dobOf(dd, mm, yy) {
+    if (!dd || !mm || !yy) return { err: 'Choose your day, month and year of birth' };
+    const d = new Date(+yy, +mm - 1, +dd);
+    if (d.getMonth() !== +mm - 1) return { err: `${MONTHS[+mm - 1]} ${yy} doesn’t have ${dd} days` };
+    const dob = `${yy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+    if (ageOn(dob) < MIN_AGE) return { err: `You need to be ${MIN_AGE} or older to create an account` };
+    return { dob };
+  }
 
   const SVG = {
     // official marks: Google "G" (brand colours), Apple logo
@@ -64,19 +82,28 @@
      and "Create account" (name, mobile, email → code) with "Already have an account? Log in". What was typed carries
      across. Safety nets: Log in never asks for a name (an unseen number just logs in); a known number on Create account just
      logs in. Google / Apple fill name and email; providers then add and verify a mobile. No modal title. */
-  let A = null; // { pane: login|signup|code|finish, from, intent, next, onDone, iso, phone, email, first, last, via, useEmail, codeFor, err, sent, phoneVerified }
+  let A = null; // { pane: login|signup|code|about|finish, from, intent, next, onDone, iso, phone, email, first, last, dd, mm, yy, gender, via, useEmail, codeFor, err, sent, phoneVerified }
   function open(opts = {}) {
     const u = user();
     if (u) { done(opts, u); return; }
     // providers have one door: mobile → code; a new number then only adds an email (their name comes from their ID)
     const pane = opts.intent === 'provider' ? 'login' : opts.mode || 'login';
-    A = { pane, from: pane, intent: opts.intent || '', next: opts.next || '', onDone: opts.onDone, iso: 'AE', phone: '', email: '', via: '', first: '', last: '', err: {}, sent: 0 };
+    A = { pane, from: pane, intent: opts.intent || '', next: opts.next || '', onDone: opts.onDone, iso: 'AE', phone: '', email: '', via: '', first: '', last: '', dd: '', mm: '', yy: '', gender: '', err: {}, sent: 0 };
     paint();
   }
   const provider = () => A.intent === 'provider';
   const emailRequired = () => provider(); // providers get approvals and lead summaries by email; customers may skip it
   // providers don't type their name: it comes from the ID they upload in onboarding (js/pages/join.js → setName)
   const askName = () => !provider();
+  // customers give their birth date and gender once, when they create the account (providers: their ID has it)
+  const askAbout = () => !provider();
+  const aboutOk = () => !askAbout() || (!dobOf(A.dd, A.mm, A.yy).err && !!A.gender);
+  function aboutErr(e) {
+    if (!askAbout()) return e;
+    const b = dobOf(A.dd, A.mm, A.yy); if (b.err) e.dob = b.err;
+    if (!A.gender) e.gender = 'Choose one — or “Prefer not to say”';
+    return e;
+  }
 
   function paint() {
     const c = byIso(A.iso), r = rules(A.iso);
@@ -89,6 +116,14 @@
     // one compact row: Google · Apple
     const socials = () => `<div class="or-divider"><span>or continue with</span></div>
       <div class="auth-alternatives is-row">${[['google', 'Google'], ['apple', 'Apple']].map(([k, t]) => `<button type="button" class="auth-alt" data-au="${k}" aria-label="Continue with ${t}">${SVG[k]}<span>${t}</span></button>`).join('')}</div>`;
+    // birth date as Day · Month · Year (quicker than a calendar for a date decades ago), gender as three buttons
+    const yNow = new Date().getFullYear();
+    const sel = (k, ph, opts, ac) => `<label class="auth-dob-s"><select data-au-k="${k}" aria-label="${ph}" autocomplete="${ac}"><option value="">${ph}</option>${opts.map(([v, l]) => `<option value="${v}" ${String(A[k]) === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select>${ico('chev')}</label>`;
+    const aboutBox = () => `<div class="field auth-dob ${A.err.dob ? 'has-error' : ''}" role="group" aria-labelledby="auth-dob-l"><label id="auth-dob-l">Date of birth</label>
+        <div class="auth-dob-row">${sel('dd', 'Day', Array.from({ length: 31 }, (_, i) => [i + 1, i + 1]), 'bday-day')}${sel('mm', 'Month', MONTHS.map((m, i) => [i + 1, m]), 'bday-month')}${sel('yy', 'Year', Array.from({ length: 100 - MIN_AGE + 1 }, (_, i) => [yNow - MIN_AGE - i, yNow - MIN_AGE - i]), 'bday-year')}</div></div>${err('dob')}
+      <div class="field auth-gender ${A.err.gender ? 'has-error' : ''}"><label id="auth-gender-l">Gender</label>
+        <div class="choice-buttons" role="radiogroup" aria-labelledby="auth-gender-l">${GENDERS.map(([k, l]) => `<button type="button" role="radio" aria-checked="${A.gender === k}" class="${A.gender === k ? 'is-active' : ''}" data-au="gender" data-g="${k}">${l}</button>`).join('')}</div></div>${err('gender')}
+      <p class="auth-hint auth-why">${ico('lock')}So we can show you offers that suit you. Listers never see it.</p>`;
     const terms = `<p class="auth-fine">By continuing you agree to ${esc(SITE.name)}'s <a class="text-link" href="#" onclick="return false">Terms</a> and <a class="text-link" href="#" onclick="return false">Privacy Policy</a>.</p>`;
     let body = '';
     if (A.pane === 'login') body = `
@@ -118,18 +153,24 @@
         <button class="btn btn-primary auth-cta" type="button" data-au="verify" disabled>Verify${ico('chevR')}</button>
         <p class="auth-fine">Demo: any 6 digits work.</p>`;
     }
+    // new customer, mobile just verified: the last step before the account is made
+    if (A.pane === 'about') body = `<div class="auth-art is-sm">${ART.finish}</div>
+        <div class="auth-hello"><h4>A little about you${A.first ? `, ${esc(A.first.trim())}` : ''}</h4><p>Your number is verified. Add your date of birth and gender to finish.</p></div>
+        ${aboutBox()}
+        <button class="btn btn-primary auth-cta" type="button" data-au="about">Create account${ico('chevR')}</button>`;
     if (A.pane === 'finish') {
       const needPhone = !A.phoneVerified, needEmail = !A.email || A.via === 'phone', social = A.via === 'google' || A.via === 'apple';
       body = `<div class="auth-art is-sm">${ART.finish}</div>
         <div class="auth-hello"><h4>${social && A.first ? `Almost there, ${esc(A.first)}` : provider() ? 'One last thing' : 'Finish signing up'}</h4><p>${provider()
           ? `Add your ${[needEmail && 'email', needPhone && 'mobile number'].filter(Boolean).join(' and ') || 'details'} so we can send you updates on your application. We'll take your name from your ID in the next step.`
-          : social ? 'Check your name and you’re in.' : `Welcome! Just your name${needEmail ? ' and email' : ''} and you’re in.`}</p></div>
+          : social ? 'Check your name, add your date of birth and gender, and you’re in.' : `Welcome! Just your name${needEmail ? ', email' : ''}, date of birth and gender and you’re in.`}</p></div>
         ${askName() ? `<div class="form-grid">${field('first', 'First name', 'autocomplete="given-name"')}${field('last', 'Last name', 'autocomplete="family-name"')}</div>${err('first') || err('last')}` : ''}
         ${needEmail ? `${field('email', `Email${emailRequired() ? '' : ' <small>(optional)</small>'}`, 'type="email" placeholder="you@example.com" autocomplete="email"')}${err('email')}` : `<p class="auth-known">${SVG.mail}${esc(A.email)}</p>`}
         ${needPhone ? `${phoneBox()}<p class="auth-hint">${ico('phone')}${provider() ? 'Customers will reach you on this number. ' : 'Optional. '}We'll text you a code to confirm it.</p>` : `<p class="auth-known">${ico('check')}${c.dial} ${esc(fmt(A.iso, A.phone))} · verified</p>`}
+        ${askAbout() ? aboutBox() : ''}
         <button class="btn btn-primary auth-cta" type="button" data-au="finish">${needPhone && provider() ? 'Continue' : 'Create account'}${ico('chevR')}</button>${terms}`;
     }
-    const back = A.pane === 'code' || A.pane === 'finish' ? `<button class="auth-back" type="button" data-au="back" aria-label="Back">${ico('chevL')}</button>` : '<span></span>';
+    const back = A.pane === 'code' || A.pane === 'finish' || A.pane === 'about' ? `<button class="auth-back" type="button" data-au="back" aria-label="Back">${ico('chevL')}</button>` : '<span></span>';
     openModal(`<div class="auth-head">${back}<button class="close-btn" aria-label="Close" data-close>${ico('x')}</button></div><div class="auth-body is-${A.pane} ${A.pane === 'login' || A.pane === 'signup' ? 'is-form' : ''}">${body}</div>`, 'auth-modal is-' + A.pane);
     const f = document.querySelector('.auth-modal [data-otp="0"]') || [...document.querySelectorAll('.auth-modal input[data-au-k]')].find(i => !i.value);
     if (f) setTimeout(() => f.focus(), 30);
@@ -182,9 +223,14 @@
     }
     // Log in means they're coming back: never ask for a name here (only Create account does). The prototype has no
     // server, so a number this browser hasn't seen logs in as a sample returning customer (name, and history on the dashboard).
-    if (A.from === 'login' && !provider()) return finish({ first: 'Sairah', last: 'Dan', email: byEmail ? A.email.trim() : 'sairah.dan@gmail.com', iso: A.iso, dial: byIso(A.iso).dial, phone: byEmail ? '' : digits(A.phone), via: byEmail ? 'email' : 'phone', since: Date.now() - 400 * 864e5 }, true);
-    if ((!askName() || (A.first.trim() && A.last.trim())) && (!emailRequired() || emailOk(A.email)) && (A.phoneVerified || !provider())) return complete();
+    // (Google / Apple adding a mobile on "Almost there" is a new account, not a log in)
+    if (A.from === 'login' && !provider() && A.via !== 'google' && A.via !== 'apple') return finish({ first: 'Sairah', last: 'Dan', email: byEmail ? A.email.trim() : 'sairah.dan@gmail.com', iso: A.iso, dial: byIso(A.iso).dial, phone: byEmail ? '' : digits(A.phone), via: byEmail ? 'email' : 'phone', dob: '1993-04-18', gender: 'female', since: Date.now() - 400 * 864e5 }, true);
+    if ((!askName() || (A.first.trim() && A.last.trim())) && (!emailRequired() || emailOk(A.email)) && (A.phoneVerified || !provider())) return aboutOk() ? complete() : (A.pane = 'about', A.err = {}, paint());
     A.pane = 'finish'; A.err = {}; paint();
+  }
+  function submitAbout() {
+    A.err = aboutErr({}); if (Object.keys(A.err).length) return paint();
+    complete();
   }
   function social(kind) {
     // simulated identity providers: they return a verified name and email
@@ -201,12 +247,13 @@
     if ((emailRequired() || A.email.trim()) && !emailOk(A.email)) e.email = A.email.trim() ? 'That email doesn’t look right — check for typos' : 'Add your email address';
     const needPhone = !A.phoneVerified;
     if (needPhone && (A.phone || provider()) && !phoneOk(A.iso, A.phone)) e.phone = phoneErr();
-    A.err = e; if (Object.keys(e).length) return paint();
+    A.err = aboutErr(e); if (Object.keys(e).length) return paint();
     if (needPhone && A.phone) return sendCode('phone'); // verify the mobile, then come back done
     complete();
   }
   function complete() {
     const u = { first: A.first.trim(), last: A.last.trim(), email: A.email.trim(), iso: A.iso, dial: byIso(A.iso).dial, phone: A.phoneVerified ? digits(A.phone) : '', via: A.via, since: Date.now() };
+    if (askAbout()) Object.assign(u, { dob: dobOf(A.dd, A.mm, A.yy).dob, gender: A.gender });
     finish(u, false);
   }
   function finish(u, returning) {
@@ -252,6 +299,8 @@
     else if (k === 'go') { A.pane = A.from = b.dataset.to; A.err = {}; paint(); }
     else if (k === 'google' || k === 'apple') social(k);
     else if (k === 'finish') submitFinish();
+    else if (k === 'about') submitAbout();
+    else if (k === 'gender') { A.gender = b.dataset.g; b.parentNode.querySelectorAll('button').forEach(x => { x.classList.toggle('is-active', x === b); x.setAttribute('aria-checked', x === b); }); clearErr('gender', b); }
     else if (k === 'verify') { const code = [...document.querySelectorAll('.auth-modal [data-otp]')].map(x => x.value).join(''); if (/^\d{6}$/.test(code)) codeEntered(); else { A.err = { code: 'Enter all 6 digits of the code' }; paint(); } }
     else if (k === 'edit' || k === 'back') { A.pane = A.pane === 'code' && (A.via === 'google' || A.via === 'apple') || (A.pane === 'code' && A.from !== 'signup' && A.via === 'email' && A.codeFor === 'phone') ? 'finish' : A.from; A.err = {}; paint(); }
     else if (k === 'resend') { A.sent = Date.now(); tick(); toast(A.codeFor === 'email' ? 'We’ve emailed you a new code' : 'We’ve texted you a new code'); }
@@ -260,6 +309,7 @@
   document.addEventListener('input', e => {
     if (!A) return;
     const i = e.target.closest('[data-au-k]');
+    if (i && /^(dd|mm|yy)$/.test(i.dataset.auK)) { A[i.dataset.auK] = i.value; clearErr('dob', i); return; }
     if (i) { A[i.dataset.auK] = i.value; if (A.err[i.dataset.auK]) { delete A.err[i.dataset.auK]; const m = i.closest('.auth-body').querySelector('.auth-error'); if (m) m.remove(); i.closest('.has-error') && i.closest('.has-error').classList.remove('has-error'); } if (i.dataset.auK === 'phone') A.phoneVerified = false; return; }
     const o = e.target.closest('[data-otp]'); if (!o) return;
     const boxes = [...document.querySelectorAll('.auth-modal [data-otp]')];
@@ -281,6 +331,12 @@
     if (!A) return;
     const s = e.target.closest('[data-au-cc]'); if (s) { A.iso = s.value; A.phoneVerified = false; delete A.err.phone; paint(); }
   });
+  // a field was corrected: drop its own error line (the one right after its .field)
+  function clearErr(k, el) {
+    if (!A.err[k]) return; delete A.err[k];
+    const f = el.closest('.field'); if (!f) return; f.classList.remove('has-error');
+    if (f.nextElementSibling && f.nextElementSibling.classList.contains('auth-error')) f.nextElementSibling.remove();
+  }
   // the modal was closed (×, Esc, backdrop) — forget the half-finished flow
   document.addEventListener('upnow:modal-closed', () => { if (A) { clearInterval(A.timer); A = null; } });
 
@@ -294,6 +350,12 @@
     store.set('user', u);
     const all = accounts(); all[keyOf(u)] = u; if (u.email) all[u.email.toLowerCase()] = u; store.set('accounts', all);
     refreshHeader(); document.dispatchEvent(new CustomEvent('upnow:auth', { detail: u }));
+  }
+  // birth date / gender changed on Profile & privacy (no sign-in event: nothing new happened to the account)
+  function setAbout(o) {
+    const u = user(); if (!u) return;
+    Object.assign(u, o); store.set('user', u);
+    const all = accounts(); all[keyOf(u)] = u; if (u.email) all[u.email.toLowerCase()] = u; store.set('accounts', all);
   }
 
   /* ---------- header account button (used by components/layout.js) ----------
@@ -317,5 +379,5 @@
         <button type="button" data-auth-out>${ico('x')}Sign out</button></div></div>`;
   };
 
-  Object.assign(U, { auth: { user, open, signOut, setName, initialsOf } });
+  Object.assign(U, { auth: { user, open, signOut, setName, setAbout, initialsOf, ageOn, dobOf, MONTHS, GENDERS, MIN_AGE } });
 })();

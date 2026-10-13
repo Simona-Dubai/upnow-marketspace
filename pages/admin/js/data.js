@@ -207,6 +207,13 @@
           views: st === 'live' ? between(120, 3400) : 0, leads: st === 'live' ? between(2, 60) : 0 });
       }
     });
+    // where each provider is based (their sign-up answer) — most in the UAE, some abroad with listings in Dubai.
+    // Kept apart from the seeded numbers above so the rest of the sample stays the same. Some abroad keep a UAE mobile.
+    const HOMES = [['AE', 'Dubai'], ['AE', 'Dubai'], ['GB', 'London', '+44 7700 9'], ['AE', 'Dubai'], ['AE', 'Abu Dhabi'], ['AE', 'Dubai'], ['IN', 'Mumbai', '+91 98200 1'], ['AE', 'Dubai'],
+      ['AE', 'Sharjah'], ['AE', 'Dubai'], ['SA', 'Riyadh', '+966 55 30'], ['AE', 'Dubai'], ['RU', 'Moscow', '+7 916 20'], ['AE', 'Dubai'], ['GB', 'Manchester', '+44 7700 8'], ['AE', 'Dubai'],
+      ['DE', 'Berlin', '+49 151 22'], ['AE', 'Dubai'], ['EG', 'Cairo', '+20 100 41'], ['US', 'New York', '+1 917 55']];
+    apps.forEach((a, i) => { const h = HOMES[(i * 7 + 3) % HOMES.length]; a.cc = h[0]; a.city = h[1]; if (h[2] && i % 3) a.phone = h[2] + String(1000 + i * 37).slice(-4) + ' ' + (10 + i); });
+    lst.forEach(l => { l.city = 'Dubai'; l.cc = 'AE'; });
     return { apps, lst };
   }
 
@@ -220,12 +227,12 @@
     const name = (a.role === 'company' ? d.legal || d.trade : d.fullName) || a.name || 'New provider';
     const T = a.sent || (read(PFX + '.admin.seen') || {})[owner] || NOW - 2 * 36e5;
     const st = a.status === 'verified' || a.status === 'approved' ? 'verified' : a.review && a.review.st ? a.review.st : 'submitted';
-    const out = [{ id: 'REAL', real: true, req: a.plan || '', owner, name, role: a.role || 'individual', v: a.v, type: a.sub || '', cats: a.cats || [], docs, d, src: a.src || {}, t: T, status: st,
+    const out = [{ id: 'REAL', real: true, req: a.plan || '', owner, name, cc: a.country || 'AE', city: d.city || '', role: a.role || 'individual', v: a.v, type: a.sub || '', cats: a.cats || [], docs, d, src: a.src || {}, t: T, status: st,
       decided: a.review ? a.review.t : null, reason: a.review ? a.review.reason || '' : '', plan: a.review ? a.review.plan || '' : '', phone: (a.dial || '+971') + ' ' + (a.phone || ''), email: a.email || '', size: '', later: a.later || {}, more: a.more || [],
       // sent again after changes: the team's earlier note; fixing: they're changing it right now
       prev: (a.reviews || []).slice(-1)[0] || null, fixing: a.status === 'draft' }];
     // a business type added after joining is its own request
-    (a.more || []).forEach((m, i) => out.push({ id: 'REAL+' + i, real: true, moreOf: i, owner, name, role: a.role || 'individual', v: m.v, type: m.sub || '', cats: m.cats || [], docs: Object.assign({}, docs, m.docs || {}), d: Object.assign({}, d, m.d || {}), src: a.src || {},
+    (a.more || []).forEach((m, i) => out.push({ id: 'REAL+' + i, real: true, moreOf: i, owner, name, cc: a.country || 'AE', city: d.city || '', role: a.role || 'individual', v: m.v, type: m.sub || '', cats: m.cats || [], docs: Object.assign({}, docs, m.docs || {}), d: Object.assign({}, d, m.d || {}), src: a.src || {},
       t: m.t || T, status: m.status === 'approved' ? 'verified' : m.review && m.review.st ? m.review.st : 'submitted', decided: m.review ? m.review.t : null, reason: m.review ? m.review.reason || '' : '', plan: '', phone: (a.dial || '+971') + ' ' + (a.phone || ''), email: a.email || '', added: true, more: [] }));
     return out;
   }
@@ -236,6 +243,7 @@
     const db = read(PFX + '.listings@' + owner); if (!db) return [];
     return (db.items || []).filter(L => L.status !== 'draft').map(L => ({ id: 'REAL-' + L.id, rid: L.id, app: 'REAL', real: true, v: L.v, cat: L.cat, title: L.title || 'Untitled ' + catLabel(L.v, L.cat).toLowerCase(),
       loc: L.loc || (L.areas || [])[0] || '', building: L.building || '', price: +L.price || 0, basis: (L.a && (L.a.term || L.a.billing)) || '', photos: (L.img || []).length, img: L.img && L.img.length ? L.img : img(L.cat), desc: L.desc || '',
+      city: L.city || 'Dubai', cc: L.cc || 'AE', // listings are in Dubai for now (the listing form offers Dubai areas)
       permit: L.permit || '', t: L.updated || L.created || NOW, status: L.status, decided: null, reason: L.reason || '', views: 0, leads: 0, raw: L }));
   }
   // write a decision back where the provider's pages read it

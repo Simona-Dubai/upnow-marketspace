@@ -54,6 +54,26 @@
   const SRC_BACK = [['direct', 55], ['google', 18], ['whatsapp', 15], ['instagram', 12]];
   const CHW = [['wa', 46], ['call', 30], ['email', 14], ['sms', 10]];
 
+  /* ---------- age and gender: given by customers when they create an account (components/marketplace/auth.js) ----------
+     Only people with an account have them; visitors without one are never guessed. */
+  const BANDS = [['18–24', 18, 24], ['25–34', 25, 34], ['35–44', 35, 44], ['45–54', 45, 54], ['55–64', 55, 64], ['65+', 65, 200]];
+  const BC = ['#9fd3b5', '#4fae7f', '#1f8a5a', '#136142', '#0e4a33', '#5f7189'];
+  const GL = { female: 'Female', male: 'Male', unsaid: 'Prefer not to say' }, GC = { female: '#7b5ea7', male: '#256aa5', unsaid: '#b9c3be' }, GORD = ['female', 'male', 'unsaid'];
+  const ageOf = dob => { const [y, m, d] = String(dob || '').split('-').map(Number); if (!y) return null; const n = new Date(NOW); return n.getFullYear() - y - (n.getMonth() + 1 < m || (n.getMonth() + 1 === m && n.getDate() < d) ? 1 : 0); };
+  const bandOf = c => { const a = ageOf(c.dob); if (a == null) return ''; const b = BANDS.find(([, lo, hi]) => a >= lo && a <= hi); return b ? b[0] : ''; };
+  // the sample accounts' birth dates and genders: from a hash of the visitor id (the seeded sample above stays as it was),
+  // gender from the first name, ages leaning by what they look at (programs: parents, experiences: younger …)
+  const FEMALE = new Set('Mariam Fatima Hessa Noura Lina Joanna Anita Elena Priya Kavya Sneha Meera Emily Sophie Reem Sara Ayesha Maria Anna Ashley Hannah Dana Camille'.split(' '));
+  const AGE_W = { spaces: [14, 36, 27, 13, 7, 3], services: [8, 34, 30, 16, 8, 4], experiences: [24, 40, 20, 9, 5, 2], memberships: [22, 42, 22, 9, 4, 1], programs: [3, 28, 46, 16, 5, 2], health: [6, 22, 26, 22, 15, 9], insurance: [4, 24, 32, 24, 12, 4] };
+  const hash = (str, salt) => { let h = 2166136261 ^ salt; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return ((h >>> 0) % 100000) / 100000; };
+  function sampleAbout(c) {
+    if (hash(c.vid, 1) < .07) return; // an older account, from before we asked
+    c.gen = hash(c.vid, 2) < .05 ? 'unsaid' : FEMALE.has(c.name.split(' ')[0]) ? 'female' : 'male';
+    const W = AGE_W[c.interest] || AGE_W.spaces, tot = W.reduce((t, x) => t + x, 0); let r = hash(c.vid, 3) * tot, bi = 0; while (bi < W.length - 1 && (r -= W[bi]) >= 0) bi++;
+    const [, lo, hi] = BANDS[bi], age = lo + Math.floor(hash(c.vid, 4) * ((Math.min(hi, 78) - lo) + 1)), born = new Date(new Date(NOW).setHours(12, 0, 0, 0) - (age + .02 + hash(c.vid, 5) * .96) * 365.25 * DAY); // never on a birthday edge, so the same every load
+    c.dob = born.getFullYear() + '-' + String(born.getMonth() + 1).padStart(2, '0') + '-' + String(born.getDate()).padStart(2, '0');
+  }
+
   function sample() {
     seed = 9173; const E = [], V = [];
     const L = (window.UP && UP.LISTINGS) || []; if (!L.length) return { E, V };
@@ -106,8 +126,8 @@
     const s = sample(), real = (read('upnow.track') || []).filter(e => e && e.vid && e.k).map(e => Object.assign({ real: true }, e));
     const E = [...s.E, ...real].sort((a, b) => a.t - b.t), M = {};
     E.forEach(e => {
-      const c = M[e.vid] || (M[e.vid] = { vid: e.vid, real: !!e.real, events: [], sessions: {}, cc: '', city: '', dev: '', lang: '', cur: '', ccBy: '', first: e.t, last: e.t, name: '', uid: '' });
-      c.events.push(e); c.last = e.t; if (e.uid) { c.uid = e.uid; if (e.name) c.name = e.name; }
+      const c = M[e.vid] || (M[e.vid] = { vid: e.vid, real: !!e.real, events: [], sessions: {}, cc: '', city: '', dev: '', lang: '', cur: '', ccBy: '', first: e.t, last: e.t, name: '', uid: '', dob: '', gen: '' });
+      c.events.push(e); c.last = e.t; if (e.uid) { c.uid = e.uid; if (e.name) c.name = e.name; if (e.dob) c.dob = e.dob; if (e.gen) c.gen = e.gen; }
       const S = c.sessions[e.sid] || (c.sessions[e.sid] = { sid: e.sid, t0: e.t, t1: e.t, events: [], src: '', dev: '' }); S.events.push(e); S.t1 = e.t;
       if (e.k === 'visit') { S.src = e.src; S.dev = e.dev; c.dev = e.dev || c.dev; c.lang = e.lang || c.lang; c.cur = e.cur || c.cur; if (e.cc) { c.cc = e.cc; c.ccBy = e.ccBy || ''; } if (e.city) c.city = e.city; }
       if ((e.k === 'login' || e.k === 'signup') && e.cc) { c.cc = e.cc; c.ccBy = 'phone'; }
@@ -119,6 +139,7 @@
       return Object.assign(c, { sessions: ss, visits: ss.length, views: n('view'), saves: n('save'), contacts: n('contact'), searches: n('search'), signedUp: signedUp ? signedUp.t : 0,
         account: !!c.uid, interest: interest ? interest[0] : '', src: ss[0] ? ss[0].src : 'direct', label: c.name || 'Visitor ' + c.vid.slice(-4) });
     });
+    list.forEach(c => { if (c.account && !c.real) sampleAbout(c); c.age = ageOf(c.dob); c.band = bandOf(c); });
     C = { E, list, byVid: Object.fromEntries(list.map(c => [c.vid, c])) };
     return C;
   }
@@ -165,10 +186,10 @@
   const KIND_TONE = { contact: 'ok', signup: 'info', save: 'pink', follow: 'pink', alert: 'info', login: 'info', search: 'blue', view: 'violet', prov: 'violet', visit: 'mute' };
 
   /* ---------- the page: a vertical filter, then Overview · People · Contacts · Activity (the first page's look) ---------- */
-  const VIEWS = [['summary', 'Overview'], ['wants', 'What they want'], ['where', 'Where they come from'], ['people', 'People'], ['contacts', 'Contacts'], ['activity', 'Activity']];
+  const VIEWS = [['summary', 'Overview'], ['wants', 'What they want'], ['where', 'Where they come from'], ['who', 'Age & gender'], ['people', 'People'], ['contacts', 'Contacts'], ['activity', 'Activity']];
   const VORD = ['spaces', 'services', 'experiences', 'memberships', 'programs', 'health', 'insurance'];
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem('upnow.admin.' + k); localStorage.setItem('upnow.admin.' + k, v); } catch (e) {} return null; };
-  let TAB = 'all', Q = '', VIEW = ['wants', 'where', 'people', 'contacts', 'activity'].includes(store('cuView')) ? store('cuView') : 'summary', VERT = store('cuVert') || 'all', CF = 'all', AF = 'all';
+  let TAB = 'all', Q = '', VIEW = ['wants', 'where', 'who', 'people', 'contacts', 'activity'].includes(store('cuView')) ? store('cuView') : 'summary', VERT = store('cuVert') || 'all', CF = 'all', AF = 'all';
   // pages of the long lists, and "focus": a group of people picked from an insight card (shown on People)
   let PG = { people: 0, contacts: 0, activity: 0 }, FOC = null, FOCI = {};
   // "Visitors and contacts" can show the dates, the time of day, or the day of the week
@@ -279,7 +300,7 @@
     const ctx = { P: cur.E, PV: prev.E, vis: cur.vis, pvis: prev.vis, people, P0 };
     return `${head('Customers', `Who visits UpNow, what they look for and which providers they contact — every contact is a lead.`,
       `${liveNow.length ? `<span class="cu-live"><i></i>${liveNow.length} on UpNow now</span>` : ''}${segC()}`)}
-      ${tabs}${chips}${(({ people: peopleView, contacts: contactsView, activity: activityView, wants: c => summary(c, 'wants'), where: c => summary(c, 'where') })[VIEW] || summary)(ctx)}`;
+      ${tabs}${chips}${(({ people: peopleView, contacts: contactsView, activity: activityView, wants: c => summary(c, 'wants'), where: c => summary(c, 'where'), who: whoView })[VIEW] || summary)(ctx)}`;
   }
 
   /* "Worth a look": the 3 strongest findings for this period — one big number, one line, one button.
@@ -585,20 +606,98 @@
   }
 
   /* People: who, and their journey (as on the first page) */
+  /* ---------- Age & gender: from the birth date and gender customers give when they create an account ----------
+     The groups in this period (age, gender, what each looks for), and "People for an offer": pick ages and genders, see how
+     many people with an account that reaches and open them in People. Visitors without an account are never guessed. */
+  let WHO_BY = store('cuWho') === 'gender' ? 'gender' : 'age';
+  const AUD = { a: [], g: [] };
+  // one short bar per group, split female · male · prefer not to say
+  const gBar = (grp, mx) => `<span class="cu-gb"><span style="width:${Math.max(4, grp.length / mx * 100)}%">${GORD.map(g => { const n = grp.filter(c => c.gen === g).length; return n ? `<i style="flex:${n};background:${GC[g]}"></i>` : ''; }).join('')}</span></span>`;
+  const avgAge = G => { const a = G.filter(c => c.age != null); return a.length ? Math.round(a.reduce((t, c) => t + c.age, 0) / a.length) : 0; };
+  function whoView({ P, people }) {
+    const { esc } = A, all = VERT === 'all', vn = all ? '' : VL[VERT];
+    const acc = people.filter(c => c.account), aged = acc.filter(c => c.band), gend = acc.filter(c => c.gen);
+    const vnote = !all ? `<p class="cu-vnote"><span class="ad-v" style="--c:${VC[VERT]}">${A.ico(A.VI[VERT])}${esc(vn)}</span> Only customers who searched, opened, saved or contacted something in ${esc(vn.toLowerCase())}. <a data-act="cuVert" data-arg="all">Show all verticals</a></p>` : '';
+    const how = `<p class="hint cu-how cu-who-how">${A.ico('user')}<span><b>${acc.length.toLocaleString('en-US')} of ${people.length.toLocaleString('en-US')}</b> people ${esc(labelC())} have an account${acc.length ? ` · ${aged.length === acc.length ? 'all' : aged.length.toLocaleString('en-US')} gave their date of birth` : ''}. Age and gender come from what customers give when they create an account — people without one aren’t counted, and we never guess.</span></p>`;
+    if (!acc.length) return `${vnote}${how}<div class="ad-empty big">${A.ico('user')}<b>Nobody with an account in this period</b><small>Try a longer period.</small></div>`;
+
+    // age groups: a short bar split by gender, people and share
+    const byBand = BANDS.map(([l], i) => ({ l, i, G: aged.filter(c => c.band === l) })), mxB = Math.max(...byBand.map(b => b.G.length), 1);
+    const topB = byBand.filter(b => b.G.length).sort((x, y) => y.G.length - x.G.length);
+    const gCount = G => GORD.map(g => [g, G.filter(c => c.gen === g).length]).filter(x => x[1]);
+    const legend = `<div class="cu-glg">${GORD.map(g => `<span><i style="background:${GC[g]}"></i>${GL[g]}</span>`).join('')}</div>`;
+    const ages = `<div class="cu-ags">${byBand.map(b => `<div class="cu-ag" style="--i:${b.i}" ${tip(b.l + ' years', `${b.G.length} ${b.G.length === 1 ? 'person' : 'people'} · ${pct(b.G.length, aged.length)}%`, gCount(b.G).map(([g, n]) => `${GL[g]} ${n}`).join(' · '))}><span class="cu-ag-l">${b.l}</span>${gBar(b.G, mxB)}<b>${b.G.length.toLocaleString('en-US')}</b><em>${pct(b.G.length, aged.length)}%</em></div>`).join('')}</div>`;
+    const gRows = GORD.map(g => ({ l: GL[g], ico: 'user', c: GC[g], v: gend.filter(c => c.gen === g).length })).filter(r => r.v);
+    const fem = gend.filter(c => c.gen === 'female'), mal = gend.filter(c => c.gen === 'male'), uns = gend.length - fem.length - mal.length;
+
+    // what each group looks for (this period): most wanted category, area, and how many contacted a provider
+    const contacted = new Set(P.filter(e => e.k === 'contact').map(e => e.vid));
+    const groups = WHO_BY === 'age' ? byBand.filter(b => b.G.length).map(b => ({ key: 'a:' + b.l, l: b.l, c: BC[b.i], G: b.G }))
+      : GORD.map(g => ({ key: 'g:' + g, l: GL[g], c: GC[g], G: gend.filter(c => c.gen === g) })).filter(x => x.G.length);
+    const tot = WHO_BY === 'age' ? aged.length : gend.length;
+    const grow = x => { const set = new Set(x.G.map(c => c.vid)), E = P.filter(e => set.has(e.vid)), tc = tally(E.filter(e => (e.k === 'view' || e.k === 'search') && e.v && (e.cat || e.o)), e => e.v + '|' + (e.cat || e.o))[0], ta = areasOf(E)[0], k = x.G.filter(c => contacted.has(c.vid)).length;
+      FOCI['who-' + x.key] = { l: (WHO_BY === 'age' ? 'Aged ' + x.l : x.l) + ' · ' + labelC(), vids: [...set] };
+      const [v, cc] = tc ? tc[0].split('|') : [];
+      // one row per group: who · what they want most and where · how many contacted a provider
+      const r = pct(k, x.G.length);
+      return `<button type="button" class="cu-wg" style="--c:${x.c}" data-act="cuFocus" data-arg="who-${x.key}" ${tip(x.l, `${x.G.length} ${x.G.length === 1 ? 'person' : 'people'} · ${pct(x.G.length, tot)}%`, 'Click to see them in People')}>
+        <span class="cu-wg-g"><b><i></i>${esc(x.l)}</b><small>${x.G.length.toLocaleString('en-US')} ${x.G.length === 1 ? 'person' : 'people'} · ${pct(x.G.length, tot)}%</small></span>
+        <span class="cu-wg-w">${tc ? `<b><i class="cu-vdot" style="background:${VC[v]}"></i>${esc(cat(v, cc))}</b>` : '<b class="no">Nothing opened yet</b>'}${ta ? `<small>${A.ico('pin')}${esc(area(ta[0]))}</small>` : ''}</span>
+        <span class="cu-wg-c ${k ? '' : 'no'}"><b>${k ? r + '%' : '—'}</b><span class="cu-wg-t"><i style="width:${r}%"></i></span><small>${k ? `${k} ${k === 1 ? 'person' : 'people'}` : 'nobody yet'}</small></span>
+        ${A.ico('chevR')}</button>`; };
+    const best = groups.map(x => ({ x, r: pct(x.G.filter(c => contacted.has(c.vid)).length, x.G.length) })).filter(o => o.x.G.length >= 5).sort((a, b) => b.r - a.r)[0];
+
+    return `${vnote}${how}
+    <div class="g2 cu-eq">
+      <section class="pn">${sh('users', 'Age groups', `${aged.length.toLocaleString('en-US')} people who gave their date of birth`)}
+        ${aged.length ? ages + legend : '<p class="cu-empty">Nobody gave a date of birth in this period.</p>'}
+        ${take(topB[0] ? `Most are <b>${topB[0].l}</b> (${pct(topB[0].G.length, aged.length)}%)${topB[1] ? `, then ${topB[1].l} (${pct(topB[1].G.length, aged.length)}%)` : ''}. Average age ${avgAge(aged)}.` : '')}</section>
+      <section class="pn">${sh('user', 'Gender', `${gend.length.toLocaleString('en-US')} people who answered`)}
+        ${gRows.length ? donut(gRows, gend.length.toLocaleString('en-US'), gend.length === 1 ? 'person' : 'people') : '<p class="cu-empty">Nobody answered in this period.</p>'}
+        ${take(gend.length ? `<b>${pct(fem.length, gend.length)}% female</b> and <b>${pct(mal.length, gend.length)}% male</b>${uns ? `; ${pct(uns, gend.length)}% would rather not say` : ''}.${fem.length && mal.length ? ` Average age: female ${avgAge(fem)}, male ${avgAge(mal)}.` : ''}` : '')}</section>
+    </div>
+    <div class="gd mt">
+      <section class="pn">${sh('search', 'What each group looks for', esc(labelC()) + ' · click a row to see them', `<div class="cu-fchips">${[['age', 'By age'], ['gender', 'By gender']].map(([k, l]) => `<button class="chip ${WHO_BY === k ? 'on' : ''}" data-act="cuWho" data-arg="${k}">${l}</button>`).join('')}</div>`).replace('cu-h"', 'cu-h cu-who-t"')}
+        ${groups.length ? `<div class="cu-wgs"><div class="cu-wg-h"><span>${WHO_BY === 'age' ? 'Age group' : 'Gender'}</span><span>Most wanted · area</span><span>Contacted a provider</span></div>${groups.map(grow).join('')}</div>` : '<p class="cu-empty">Nobody in this period.</p>'}
+        ${take(best && best.r ? `<b>${esc(WHO_BY === 'age' ? best.x.l + '-year-olds' : best.x.l === GL.unsaid ? 'People who didn’t say' : best.x.l + ' customers')}</b> contact providers most — ${best.r}% of them did.` : '')}</section>
+      <section class="pn">${audience()}</section>
+    </div>`;
+  }
+  // People for an offer: everyone with an account (any time, not just this period), narrowed by age and gender
+  function audience() {
+    const { esc } = A, all = VERT === 'all', everV = all ? null : vids(C.E, VERT);
+    const pool = C.list.filter(c => c.account && (all || everV.has(c.vid)));
+    const hit = pool.filter(c => (!AUD.a.length || AUD.a.includes(c.band)) && (!AUD.g.length || AUD.g.includes(c.gen)));
+    const chip = (k, l) => { const on = AUD[k[0]].includes(k.slice(2)); return `<button type="button" class="chip ${on ? 'on' : ''}" data-act="cuAud" data-arg="${esc(k)}" aria-pressed="${on}">${esc(l)}</button>`; };
+    const lbl = [AUD.a.length ? 'Aged ' + AUD.a.join(', ') : '', AUD.g.length ? AUD.g.map(g => GL[g]).join(', ') : '', all ? '' : 'into ' + VL[VERT].toLowerCase()].filter(Boolean).join(' · ') || 'Everyone with an account';
+    FOCI.aud = { l: lbl, vids: hit.map(c => c.vid) };
+    const recent = hit.filter(c => NOW - c.last < 30 * DAY).length, warm = hit.filter(c => !c.contacts && c.events.some(e => ['save', 'follow', 'alert'].includes(e.k))).length;
+    const into = tally(hit.filter(c => c.interest), c => c.interest).slice(0, 3);
+    return `${sh('bolt', 'People for an offer', 'Everyone with an account, any time')}
+      <div class="cu-aud"><small>Age</small><div class="cu-aud-b a">${BANDS.map(([l]) => chip('a:' + l, l)).join('')}</div>
+        <small>Gender</small><div class="cu-aud-b g">${GORD.map(g => chip('g:' + g, GL[g])).join('')}</div>
+        <p class="cu-aud-n">Pick none to include everyone.</p></div>
+      <div class="cu-aud-r"><div><b data-count="${hit.length}">${hit.length.toLocaleString('en-US')}</b><span>${hit.length === 1 ? 'person' : 'people'}<small>${esc(lbl)}${hit.length !== pool.length ? ` · ${pct(hit.length, pool.length)}% of ${pool.length.toLocaleString('en-US')}` : ''}</small></span></div>
+        <div class="cu-aud-s"><span><b>${recent.toLocaleString('en-US')}</b><small>visited in the last 30 days</small></span><span><b>${warm.toLocaleString('en-US')}</b><small>saved something but haven’t contacted anyone</small></span></div>
+        ${into.length ? `<p class="cu-aud-i"><small>Mostly into</small>${into.map(([v]) => `<span class="ad-v" style="--c:${VC[v]}">${A.ico(A.VI[v])}${esc(VL[v])}</span>`).join('')}</p>` : ''}
+        <button type="button" class="btn btn-g btn-sm" data-act="cuFocus" data-arg="aud" ${hit.length ? '' : 'disabled'}>See them in People${A.ico('chevR')}</button></div>
+      <p class="hint cu-how">${ic('bell')}Offers can only go to people who turned on “Tips &amp; news” in their notifications.</p>`;
+  }
+
   function peopleView({ people: inPeriod }) {
     const { esc } = A, inP = inC;
     // a group picked from a "Worth a look" card replaces everyone in the period
     const people = FOC ? FOC.vids.map(v => C.byVid[v]).filter(Boolean) : inPeriod;
     const tabs = [['all', 'Everyone', () => true], ['new', 'New', c => inP(c.first)], ['back', 'Came back', cameBack], ['account', 'Have an account', c => c.account], ['contacted', 'Contacted a provider', c => c.contacts > 0], ['anon', 'No account yet', c => !c.account]];
     const tab = tabs.find(t => t[0] === TAB) || tabs[0];
-    const rows = people.filter(tab[2]).filter(c => !Q || [c.label, c.name, cname(c.cc), c.city, srcName(c.src), VL[c.interest]].join(' ').toLowerCase().includes(Q)).sort((a, b) => b.last - a.last);
+    const rows = people.filter(tab[2]).filter(c => !Q || [c.label, c.name, cname(c.cc), c.city, srcName(c.src), VL[c.interest], c.band, GL[c.gen]].join(' ').toLowerCase().includes(Q)).sort((a, b) => b.last - a.last);
     const status = c => c.account ? (inP(c.signedUp) ? ['New account', 'info'] : ['Has an account', '']) : c.visits > 1 ? ['Came back', 'warn'] : ['First visit', 'mute'];
     return `<section class="pn"><div class="pn-h"><h2>People</h2><span class="sub">${rows.length} ${FOC ? '' : esc(labelC()) + ' '}· click anyone to see their journey</span><span class="sp"></span><label class="ad-find">${A.ico('search')}<input data-cuq placeholder="Name, country, interest" value="${esc(Q)}"></label></div>
       ${FOC ? `<div class="cu-foc">${ic('funnel')}<span>Showing <b>${esc(FOC.l)}</b> · ${people.length} ${people.length === 1 ? 'person' : 'people'}</span><button type="button" class="btn btn-sm" data-act="cuUnfocus">${A.ico('x')}Show everyone</button></div>` : ''}
       <div class="cu-fchips cu-pf">${tabs.map(([k, l, f]) => `<button class="chip ${TAB === k ? 'on' : ''}" data-act="cuTab" data-arg="${k}">${l} <span class="c">${people.filter(f).length}</span></button>`).join('')}</div>
-      ${rows.length ? `<div class="ad-tw cu-list"><table class="tbl ad-tbl cu-tbl"><thead><tr><th>Person</th><th>From</th><th>Found UpNow via</th><th>Interested in</th><th>Visits</th><th>Opened</th><th>Saved</th><th>Contacts</th><th>Last seen</th></tr></thead><tbody>
+      ${rows.length ? `<div class="ad-tw cu-list"><table class="tbl ad-tbl cu-tbl"><thead><tr><th>Person</th><th>From</th><th>Age</th><th>Found UpNow via</th><th>Interested in</th><th>Visits</th><th>Opened</th><th>Saved</th><th>Contacts</th><th>Last seen</th></tr></thead><tbody>
         ${pageOf(rows, 'people').map((c, i) => { const s2 = status(c); return `<tr class="ck" style="--i:${i}" data-act="cuOpen" data-arg="${c.vid}"><td><div class="li">${c.account ? A.av(c.label) : `<span class="av cu-anon">${ic(c.dev === 'desktop' ? 'desktop' : 'device')}</span>`}<div><b>${esc(c.label)}${c.real ? ' <span class="ad-real">This browser</span>' : ''}</b><small>${A.st(...s2)}</small></div></div></td>
-          <td><span class="cu-from">${flag(c.cc)} ${esc(c.city || cname(c.cc))}</span></td><td>${esc(srcName(c.src))}</td><td>${c.interest ? `<span class="ad-v" style="--c:${VC[c.interest]}">${A.ico(A.VI[c.interest])}${esc(VL[c.interest])}</span>` : '—'}</td>
+          <td><span class="cu-from">${flag(c.cc)} ${esc(c.city || cname(c.cc))}</span></td><td class="cu-age">${c.age != null ? `<b>${c.age}</b>` : '<span class="hint">—</span>'}${c.gen && c.gen !== 'unsaid' ? `<small class="ad-sm">${GL[c.gen]}</small>` : ''}</td><td>${esc(srcName(c.src))}</td><td>${c.interest ? `<span class="ad-v" style="--c:${VC[c.interest]}">${A.ico(A.VI[c.interest])}${esc(VL[c.interest])}</span>` : '—'}</td>
           <td>${c.visits}</td><td>${c.views}</td><td>${c.saves || '—'}</td><td>${c.contacts ? `<b class="cu-ok">${c.contacts}</b>` : '—'}</td><td>${NOW - c.last < 15 * 60000 ? '<span class="cu-now">Now</span>' : A.ago(c.last) + ' ago'}</td></tr>`; }).join('')}</tbody></table></div>${pager(rows.length, 'people')}`
         : `<div class="ad-empty big">${A.ico('user')}<b>Nobody here</b><small>Try another tab or a longer period.</small></div>`}</section>`;
   }
@@ -617,7 +716,7 @@
     const status = c.account ? (c.signedUp ? 'Account since ' + A.dateS(c.signedUp) : 'Has an account') : c.visits > 1 ? 'Came back · no account yet' : 'First visit · no account yet';
     const sess = c.sessions.slice().reverse();
     A.drawer(`<div class="dr-h ad-dh">${c.account ? A.av(c.label, 'ad-avl') : `<span class="av ad-avl cu-anon">${ic(c.dev === 'desktop' ? 'desktop' : 'device')}</span>`}<div style="flex:1;min-width:0"><h3>${esc(c.label)}${c.real ? ' <span class="ad-real">This browser</span>' : ''}</h3>
-        <small>${flag(c.cc)} ${esc([c.city, cname(c.cc)].filter(Boolean).join(', '))} · ${esc(DEV[c.dev] || 'Device')}${c.lang ? ' · ' + (c.lang === 'ar' ? 'Arabic' : 'English') : ''}${c.cur ? ' · prices in ' + esc(c.cur) : ''}</small>
+        <small>${flag(c.cc)} ${esc([c.city, cname(c.cc)].filter(Boolean).join(', '))}${c.age != null ? ` · ${c.age} years` : ''}${c.gen && c.gen !== 'unsaid' ? ' · ' + GL[c.gen] : ''} · ${esc(DEV[c.dev] || 'Device')}${c.lang ? ' · ' + (c.lang === 'ar' ? 'Arabic' : 'English') : ''}${c.cur ? ' · prices in ' + esc(c.cur) : ''}</small>
         <div class="ad-dh-meta">${A.st(status, c.account ? 'info' : 'mute')}<span class="hint">First seen ${A.dateS(c.first)} via ${esc(srcName(c.src))} · last seen ${NOW - c.last < 15 * 60000 ? 'now' : A.ago(c.last) + ' ago'}</span></div></div><button class="x" data-act="close">${ico('x')}</button></div>
       <div class="dr-b ad-db cu-pd">${body()}
       </div>`, 'c:' + vid);
@@ -633,7 +732,10 @@
       const seen = []; c.events.slice().reverse().forEach(e => { if (e.lid && ['view', 'save', 'contact'].includes(e.k) && !seen.includes(e.lid)) seen.push(e.lid); });
       const did = (lid, k) => c.events.some(e => e.lid === lid && e.k === k);
       const lcards = seen.map(byId).filter(Boolean).slice(0, 6);
+      const born = c.dob ? new Date(c.dob + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
       const rows = [c.account && c.uid ? ['Mobile', esc(c.uid.startsWith('+') ? c.uid.replace(/^(\+\d{1,3})(\d{2})(\d{3})(\d+)$/, '$1 $2 $3 $4') : c.uid)] : null,
+        c.account ? ['Age', c.dob ? `${c.age} years<small>${c.band} · born ${born}</small>` : 'Not given<small>Their account is from before we asked</small>'] : null,
+        c.account ? ['Gender', c.gen ? GL[c.gen] : 'Not given'] : null,
         ['From', `${flag(c.cc)} ${esc([c.city, cname(c.cc)].filter(Boolean).join(', '))}${c.ccBy ? `<small>Worked out from the ${c.ccBy === 'phone' ? 'phone code' : c.ccBy === 'timezone' ? 'device time zone' : c.ccBy === 'network' ? 'network location' : 'browser language'}</small>` : ''}`],
         ['Found UpNow', esc(srcName(c.src))], ['Device', esc(DEV[c.dev] || 'Device')], c.lang ? ['Language', c.lang === 'ar' ? 'Arabic' : 'English'] : null, c.cur ? ['Sees prices in', esc(c.cur)] : null,
         ['First seen', A.dateS(c.first)], ['Account', c.account ? (c.signedUp ? 'Since ' + A.dateS(c.signedUp) : 'Yes') : 'Not yet']].filter(Boolean);
@@ -689,6 +791,9 @@
           let a = +new Date(f + 'T00:00'), b = +new Date(t + 'T00:00'); if (a > b) [a, b] = [b, a]; // dates the wrong way round: swap, don't complain
           CR = { a: day0(a), b: dayEnd(b) }; CP = 'custom'; FOC = null; resetPg(); CAL = false; store('cuRange', JSON.stringify(CR)); store('cuPeriod', 'custom'); A.render(); },
         cuCF: k => { CF = k; resetPg(); A.render(); },
+        cuWho: k => { WHO_BY = k === 'gender' ? 'gender' : 'age'; store('cuWho', WHO_BY); A.render(); },
+        // People for an offer: each age / gender chip turns on or off (none on = everyone)
+        cuAud: a => { const [k, v] = [a[0], a.slice(2)], L = AUD[k]; if (!L) return; const i = L.indexOf(v); i < 0 ? L.push(v) : L.splice(i, 1); A.render(); },
         cuTrv: k => { TRV = k; store('cuTrv', k); A.render(); },
         // a bar in "Visitors and contacts": show that day (or hour/week) in Activity
         cuDay: a => { const [x, y] = a.split('-').map(Number); if (!x) return; CR = { a: x, b: Math.min(y - 1, NOW) }; CP = 'custom'; CAL = false; FOC = null; AF = 'all'; resetPg(); store('cuRange', JSON.stringify(CR)); store('cuPeriod', 'custom'); VIEW = 'activity'; store('cuView', 'activity'); A.render(); top(); },
@@ -699,7 +804,7 @@
       });
       // hover info: one tip that follows the mouse over anything with data-tip on this page or in the drawer
       const tipEl = document.createElement('div'); tipEl.className = 'cu-tip'; tipEl.setAttribute('role', 'tooltip'); document.body.appendChild(tipEl); let tipOn = null;
-      document.addEventListener('mousemove', e => { const t = e.target.closest && e.target.closest('[data-tip]'); if (!t || !(t.closest('.pg-customers') || t.closest('#drawer'))) { if (tipOn) { tipEl.classList.remove('on'); tipOn = null; } return; }
+      document.addEventListener('mousemove', e => { const t = e.target.closest && e.target.closest('[data-tip]'); if (!t || !(t.closest('.ad-view') || t.closest('#drawer'))) { if (tipOn) { tipEl.classList.remove('on'); tipOn = null; } return; }
         if (t !== tipOn) { tipOn = t; const [h, ...rest] = t.dataset.tip.split('\n'); tipEl.innerHTML = `<b>${A.esc(h)}</b>${rest.map(x => `<span>${A.esc(x)}</span>`).join('')}`; tipEl.classList.add('on'); }
         const r = tipEl.getBoundingClientRect(), x = Math.min(e.clientX + 14, innerWidth - r.width - 8), y = e.clientY - r.height - 12 < 8 ? e.clientY + 18 : e.clientY - r.height - 12; tipEl.style.transform = `translate(${x}px, ${y}px)`; });
       document.addEventListener('scroll', () => { if (tipOn) { tipEl.classList.remove('on'); tipOn = null; } }, true);

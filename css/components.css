@@ -5216,6 +5216,103 @@ select.is-menu-open {
   }
 }
 
+/* sign-up "A little about you": date of birth as Day · Month · Year, gender as three equal buttons */
+.auth-dob-row {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.auth-dob-s {
+  position: relative;
+  display: block;
+}
+
+.auth-body .auth-dob-s select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 46px;
+  padding: 0 30px 0 12px;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  font-size: 14.5px;
+  color: var(--color-text);
+  cursor: pointer;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.auth-body .auth-dob-s select:focus {
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 4px rgba(37, 148, 106, .12);
+}
+
+.auth-body .auth-dob-s select:has(option[value=""]:checked) {
+  color: var(--color-text-muted);
+}
+
+.auth-dob-s .icon {
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.has-error .auth-dob-s select,
+.auth-gender.has-error .choice-buttons button {
+  border-color: var(--color-danger);
+}
+
+.auth-body .auth-dob,
+.auth-body .auth-gender {
+  margin-bottom: 0;
+}
+
+.auth-body .auth-gender {
+  margin-top: 12px;
+}
+
+.auth-gender .choice-buttons {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, .8fr) minmax(0, 1.4fr);
+  gap: 8px;
+}
+
+.auth-gender .choice-buttons button {
+  height: 46px;
+  padding: 0 8px;
+  border-radius: 12px;
+  font-size: 14px;
+  white-space: nowrap;
+  transition: border-color .15s, background .15s;
+}
+
+.auth-gender .choice-buttons button:hover:not(.is-active) {
+  border-color: var(--color-text-secondary);
+}
+
+.auth-hint.auth-why {
+  margin: 12px 0 16px;
+}
+
+.auth-hint.auth-why .icon {
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 380px) {
+  .auth-gender .choice-buttons button {
+    font-size: 13px;
+    padding: 0 4px;
+  }
+}
+
 /* card tags never run into the heart: they stop before it, stay on one line each, and on narrow cards
    "Verified" shrinks to its shield (the label stays for screen readers) */
 .card .photo {

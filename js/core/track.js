@@ -8,7 +8,7 @@
    its language) — never GPS. Prototype: events are kept in this browser ('upnow.track'); in production they go to the
    server, which can also add the city from the network address.
 
-   Event: { t, vid, sid, uid, k, … }   k: visit · page · search · view · prov · save · unsave · alert · follow ·
+   Event: { t, vid, sid, uid, name, dob, gen, k, … }   dob / gen: the account's birth date and gender (given at sign-up)   k: visit · page · search · view · prov · save · unsave · alert · follow ·
    contact (ch: call | wa | email | sms | chat) · signup · login · logout */
 (function () {
   const U = window.UPUI, S0 = window.SITE; if (!U || !U.store || !S0) return;
@@ -51,7 +51,8 @@
 
   function log(k, data) {
     const u = user(), e = Object.assign({ t: Date.now(), vid, sid: sess.id, k }, data || {});
-    if (u) { e.uid = uidOf(u); if (u.name) e.name = u.name; }
+    // a signed-in customer's birth date and gender go with each event, so a change on Profile shows up in admin
+    if (u) { e.uid = uidOf(u); if (u.name) e.name = u.name; if (u.dob) e.dob = u.dob; if (u.gender) e.gen = u.gender; }
     const all = read(KEY) || []; all.push(e); if (all.length > MAX) all.splice(0, all.length - MAX); write(KEY, all); touch();
   }
 
