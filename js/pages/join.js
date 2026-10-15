@@ -688,6 +688,8 @@
       if (!S.plan) S.plan = plansNow()[0].id;
       UPUI.closeModal(); if (listingReady()) LF.submit(listing());
       if (S.review) { S.reviews = [...(S.reviews || []), S.review]; delete S.review; }
+      // how they found UpNow: the source of this browser's first recorded visit (js/core/track.js), kept with the application
+      if (!S.src) { try { const v = (JSON.parse(localStorage.getItem('upnow.track') || '[]') || []).filter(e => e.k === 'visit').sort((x, y) => x.t - y.t)[0]; if (v) { S.src = v.src || 'direct'; S.srcAt = v.t; } } catch (e) {} }
       S.status = 'submitted'; S.sent = Date.now(); save();
       // a new provider lands on their dashboard, which shows the application (and first listing) in review
       if (PATHS.href.dashboard) { location.href = `${PATHS.href.dashboard}?pack=${encodeURIComponent(S.v)}&welcome=1`; return; }

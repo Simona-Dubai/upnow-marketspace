@@ -59,6 +59,112 @@
   const digits = p => String(p || '').replace(/\D/g, '');
   const waHref = (phone, text) => 'https://wa.me/' + digits(phone) + '?text=' + encodeURIComponent(text);
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* where a provider is based (their sign-up answer: country + city) and where their listings are (each listing's area,
+     city, country). They can differ: someone living in London can have homes and permits in Dubai — the team sees both,
+     with the phone code and the ID's nationality as extra clues. Country names and flags: data/markets.js */
+  const CTRY = iso => (window.MARKETS && MARKETS.byIso(iso)) || { iso, name: iso || '', flag: '', dial: '' };
+  const cName = iso => ({ AE: 'UAE', GB: 'UK', US: 'USA' })[iso] || CTRY(iso).name;
+  const homeOf = a => (S.home && S.home[a.id]) || { cc: a.cc || 'AE', city: a.city || '' }; // the team's correction wins over the sign-up answer
+  const homeTxt = (a, short) => { const h = homeOf(a); return CTRY(h.cc).flag + ' ' + (short && h.city ? h.city : [h.city, cName(h.cc)].filter(Boolean).join(', ')); };
+  const placeOf = l => ({ area: l.loc ? areaN(l.loc) : '', city: l.city || 'Dubai', cc: l.cc || 'AE' });
+  const phoneCtry = a => { const dl = String(a.phone || '').trim().split(/\s+/)[0], all = ((window.MARKETS || {}).COUNTRIES || []).filter(c => c.dial === dl); return all.find(c => c.iso === homeOf(a).cc) || all[0] || null; };
+  // their listings grouped by city: [{ cc, city, n, areas: { name: count } }], most listings first
+  const listPlaces = a => { const M = {}; listingsOf(a).forEach(l => { const p = placeOf(l), k = p.cc + '|' + p.city, g = M[k] || (M[k] = { cc: p.cc, city: p.city, n: 0, areas: {} }); g.n++; if (p.area) g.areas[p.area] = (g.areas[p.area] || 0) + 1; }); return Object.values(M).sort((x, y) => y.n - x.n); };
+  // abroad: based in another country than their listings (no listings yet: than the UAE, where UpNow runs) · elsewhere: another city
+  const abroad = a => { const h = homeOf(a), ps = listPlaces(a); return ps.length ? ps.some(p => p.cc !== h.cc) : h.cc !== 'AE'; };
+  const elsewhere = a => { const h = homeOf(a); return listPlaces(a).some(p => p.cc !== h.cc || (h.city && p.city.toLowerCase() !== h.city.toLowerCase())); };
+  // one line for lists: "🇬🇧 London → Dubai"
+  const whereLine = a => `<span class="ad-wh ${abroad(a) ? 'far' : ''}" title="Based in ${esc(homeTxt(a).trim())}${listPlaces(a).length ? ' · listings in ' + esc(listPlaces(a).map(p => p.city + ', ' + cName(p.cc)).join(' · ')) : ''}">${esc(homeTxt(a, true))}${elsewhere(a) ? `<i>→</i>${esc(listPlaces(a).map(p => p.cc === homeOf(a).cc ? p.city : CTRY(p.cc).flag + ' ' + p.city).join(', '))}` : ''}</span>`;
+  /* a listing's location (listing page): country, city, area, building, private unit, meeting point or areas covered, the
+     permit and where it's from, where the provider is based — and a small Dubai map with the spot (data/listings.js AREAS x/y) */
+  function locBox(l, a) {
+    const p = placeOf(l), raw = l.raw || {}, cover = (raw.areas || []).map(areaN), unit = raw.unit || '', meet = raw.meet || '';
+    const pk = LEASE.includes(l.cat) ? 'DLD advertising permit (Trakheesi)' : l.cat === 'holiday' ? 'Holiday home permit (DET)' : '';
+    const h = a && a.id ? homeOf(a) : null, far = h && h.cc !== p.cc, away = h && !far && h.city && h.city.toLowerCase() !== p.city.toLowerCase();
+    const ids = new Set([l.loc, ...(raw.areas || [])].filter(Boolean)), A = (window.UP && UP.AREAS) || [], on = A.filter(x => ids.has(x.id));
+    const map = A.length && on.length ? `<div class="ad-lmap" role="img" aria-label="Map: ${esc(on.map(x => x.n).join(', '))}"><svg viewBox="0 0 100 100" preserveAspectRatio="none">${A.map(x => `<circle cx="${x.x}" cy="${x.y}" r="1.1" class="${ids.has(x.id) ? 'on' : ''}"/>`).join('')}</svg>
+        ${on.map(x => `<span class="ad-lpin" style="left:${(8 + x.x * .84).toFixed(1)}%;top:${(8 + x.y * .84).toFixed(1)}%">${ico('pin')}<b>${esc(x.n)}</b></span>`).join('')}<small class="ad-lsea">Sea</small><small class="ad-lcity">${esc(p.city)}</small></div>` : '';
+    const rows = [
+      ['Country', `${CTRY(p.cc).flag} ${esc(CTRY(p.cc).name || cName(p.cc))}`],
+      ['City', esc(p.city)],
+      cover.length ? ['Areas they cover', `<span class="ad-whareas">${cover.map(n => `<span>${esc(n)}</span>`).join('')}</span>`] : ['Area', p.area ? `<b>${esc(p.area)}</b>` : '—'],
+      l.building ? ['Building', esc(l.building)] : null,
+      unit ? ['Unit number', `${esc(unit)} <span class="hint">· private, customers don’t see it</span>`] : null,
+      meet ? ['Meeting point', esc(meet)] : null,
+      pk ? ['Permit', l.permit ? `${esc(l.permit)} <span class="hint">· ${esc(pk)}, ${esc(p.city)}</span>` : `<em class="ad-whd">Missing</em> <span class="hint">· needs a ${esc(pk)}</span>`] : null,
+      h ? ['Provider based in', `${esc(homeTxt(a))}${far ? ' <em class="ad-whd">other country</em>' : away ? ' <em class="ad-whd">other city</em>' : ''}`] : null
+    ].filter(Boolean);
+    const note = far ? `<p class="ad-note info">${ico('pin')}<span><b>The provider is based in ${esc([h.city, cName(h.cc)].filter(Boolean).join(', '))}; this listing is in ${esc(p.city)}, ${esc(cName(p.cc))}.</b> Check the permit and licence are for ${esc(p.city)}.</span></p>` : '';
+    const q = [l.building, p.area, p.city, cName(p.cc)].filter(Boolean).join(', '), fn = a && a.id ? firstName(a) : '';
+    const btns = `<div class="ad-loc-acts">${mb(`target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}"`, 'pin', 'Open in Google Maps')}
+      ${pk && l.permit && LEASE.includes(l.cat) ? mb(`target="_blank" rel="noopener" href="https://dubailand.gov.ae/en/eservices/"`, 'search', 'Check the permit (DLD)') : ''}
+      ${a && a.id ? (pk && !l.permit ? waA(a, `Hi ${fn}, this is the UpNow team. Your listing “${l.title}” needs its ${pk} number. Please add it in your dashboard or reply here with the number. Thank you!`, 'Ask for the permit', 'go')
+        : waA(a, `Hi ${fn}, this is the UpNow team about your listing “${l.title}” in ${p.area || p.city}.`, 'WhatsApp the provider')) + mb(`href="provider.html?id=${encodeURIComponent(a.id)}#dt-where"`, 'user', 'Provider’s locations') : ''}</div>`;
+    return `${note}<div class="ad-loc ${map ? '' : 'no-map'}"><div><dl class="ad-rows">${rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>${btns}</div>${map}</div>`;
+  }
+  // the full picture: the provider on the left, their listings on the right
+  // small action buttons inside the where / location boxes
+  const mb = (attrs, icon, label, cls = '') => `<a class="ad-mb ${cls}" ${attrs}>${ico(icon)}<span>${label}</span></a>`;
+  const waA = (a, text, label = 'WhatsApp', cls = '') => a.phone ? mb(`target="_blank" rel="noopener" href="${waHref(a.phone, text)}"`, 'wa', label, 'wa ' + cls) : '';
+  const permitKind = l => LEASE.includes(l.cat) ? 'DLD advertising permit (Trakheesi)' : l.cat === 'holiday' ? 'holiday home permit (DET)' : '';
+  /* the documents behind a listing. A listing has no files of its own — what allows it was uploaded with the provider's
+     application: the licence this category needs (GATE), their business licences, their ID — plus the listing's permit number */
+  function docsBoxL(l) {
+    const a = appOf(l); if (!a) return '<p class="hint">No provider found for this listing.</p>';
+    const all = docsOf(a), gate = GATE[l.cat] ? GATE[l.cat](a) : '', fn = firstName(a), cat = catLabel(l.v, l.cat).toLowerCase();
+    const lic = all.filter(x => !WHO.includes(x.k)).sort((x, y) => (y.k === gate) - (x.k === gate)), id = all.find(x => WHO.includes(x.k) && x.f) || all.find(x => WHO.includes(x.k));
+    const gateMissing = gate && !all.some(x => x.k === gate && x.f), pk = permitKind(l);
+    const why = x => x.k === gate ? `Needed to list ${esc(cat)}` : WHO.includes(x.k) ? 'Who is listing it' : 'Their business licence';
+    const row = x => { const tone = x.tone === 'ok' ? 'ok' : x.tone === 'warn' ? 'warn' : 'risk', say = !x.f ? 'Not uploaded' : x.exp ? (x.exp < NOW ? 'Expired ' : 'Valid to ') + dateY(x.exp) : 'On file';
+      return `<div class="ad-ldoc ${tone}"><i class="ad-dot ${tone}">${ico(tone === 'ok' ? 'check' : 'alert')}</i><div><b>${esc(x.D[0])}</b><small>${why(x)} · <span class="ad-ldoc-st">${esc(say)}</span>${x.f ? ` · ${x.checked ? 'checked by the team' : '<u>not checked yet</u>'}` : ''}</small></div>
+        <span class="ad-row-acts">${x.f ? mb(`role="button" data-act="viewDoc" data-arg="${a.id}|${x.k}"`, 'eye', 'View') : ''}${!x.f || tone === 'risk' ? waA(a, `Hi ${fn}, this is the UpNow team. To keep your ${cat} listing “${l.title}” on UpNow we need your ${x.D[0]}${x.f ? ' renewed' : ''}. Please upload it in your dashboard. Thank you!`, x.f ? 'Ask for the new one' : 'Ask for it', 'go') : ''}</span></div>`; };
+    const gateRow = gateMissing ? `<div class="ad-ldoc risk"><i class="ad-dot risk">${ico('alert')}</i><div><b>${esc(DOCS[gate][0])}</b><small>Needed to list ${esc(cat)} · <span class="ad-ldoc-st">Not uploaded</span></small></div><span class="ad-row-acts">${waA(a, `Hi ${fn}, this is the UpNow team. Your ${cat} listing “${l.title}” needs your ${DOCS[gate][0]} before it can go live. Please upload it in your dashboard. Thank you!`, 'Ask for it', 'go')}</span></div>` : '';
+    const permitRow = pk ? `<div class="ad-ldoc ${l.permit ? 'ok' : 'risk'}"><i class="ad-dot ${l.permit ? 'ok' : 'risk'}">${ico(l.permit ? 'check' : 'alert')}</i><div><b>${esc(pk[0].toUpperCase() + pk.slice(1))}</b><small>This listing · <span class="ad-ldoc-st">${l.permit ? 'No. ' + esc(l.permit) : 'No number given'}</span> · a number, not a file</small></div>
+        <span class="ad-row-acts">${l.permit ? mb(`target="_blank" rel="noopener" href="${LEASE.includes(l.cat) ? 'https://dubailand.gov.ae/en/eservices/' : 'https://www.dubaidet.gov.ae/'}"`, 'search', LEASE.includes(l.cat) ? 'Check on DLD' : 'Check on DET') : waA(a, `Hi ${fn}, this is the UpNow team. Your listing “${l.title}” needs its ${pk} number. Please add it in your dashboard or reply here with the number. Thank you!`, 'Ask for it', 'go')}</span></div>` : '';
+    const bad = lic.concat(id ? [id] : []).filter(x => x.tone !== 'ok').length + (gateMissing ? 1 : 0) + (pk && !l.permit ? 1 : 0);
+    return `<p class="ad-hint">${ico('doc')}<span>Uploaded with ${esc(a.name)}’s application — open each one and check it covers this ${esc(cat)} listing. ${bad ? `<b>${bad} to look at.</b>` : 'All in order.'} <a class="dt-link" href="provider.html?id=${encodeURIComponent(a.id)}#dt-docs">All their documents</a></span></p>
+      <div class="ad-ldocs">${gateRow}${lic.map(row).join('')}${id ? row(id) : ''}${permitRow}</div>`;
+  }
+  /* the provider behind a listing (listing panel and page): who they are, how they're doing, what needs attention, how to
+     reach them, and their other listings */
+  function provBoxL(l, a) {
+    if (!a || !a.id) return '';
+    const p = perfA(a), on = a.status === 'verified', h = on ? health(p, bench()) : null, plan = PLAN(a.plan || 'launch'), fn = firstName(a), href = `provider.html?id=${encodeURIComponent(a.id)}`;
+    const used = listingsOf(a).filter(x => x.status !== 'rejected').length, pu = Math.min(100, Math.round(used / Math.max(1, plan.max) * 100));
+    const soon = docsOf(a).filter(d => d.f && d.exp && d.exp < NOW + S.warnDays * DAY), od = on ? invoices().filter(i => i.a === a && i.state === 'overdue') : [], others = p.Ls.filter(x => x.id !== l.id);
+    const stat = (v, k, cls = '') => `<div class="ad-pv-s ${cls}"><b>${v}</b><small>${k}</small></div>`;
+    return `<div class="ad-pv">
+      <div class="ad-pv-h">${av(a.name, 'ad-avl')}<div class="ad-pv-t"><a href="${href}"><b>${esc(a.name)}</b></a><small>${esc(TYPE_L[a.type] || a.type || '')} · ${a.role === 'company' ? 'Company' : 'Individual'} · ${on ? 'approved ' + dateS(a.decided || a.t) : 'sent ' + dateS(a.t)}</small>
+          <div class="ad-pv-tags">${st(...APP_ST[a.status || 'submitted'])}${h ? `<span class="pf-h ${h[1]}">${h[0]}</span>` : ''}<span class="ad-wh ${abroad(a) ? 'far' : ''}">${esc(homeTxt(a))}</span></div></div>
+        <div class="ad-pv-acts">${waA(a, `Hi ${fn}, this is the UpNow team about your listing “${l.title}”.`)}${a.phone ? mb(`href="tel:+${digits(a.phone)}"`, 'phone', 'Call') : ''}${a.email ? mb(`href="mailto:${esc(a.email)}"`, 'mail', 'Email') : ''}${mb(`href="${href}"`, 'chevR', 'Open provider', 'go')}</div></div>
+      <div class="ad-pv-stats">${stat(`${p.live}<small> of ${p.Ls.length}</small>`, 'Live listings')}${stat(on ? p.leads.toLocaleString() : '—', 'Leads · 30 days')}${stat(fmtReply(p.reply), 'Typical first reply', p.reply > 60 ? 'bad' : '')}
+        <div class="ad-pv-s"><b><span class="ad-plan" data-tier="${plan.id}" style="--c:${plan.c}">${esc(plan.n)} plan</span></b><small>${used} of ${plan.max} listings used</small><div class="ad-pbar" style="--c:${pu >= 100 ? '#c2413b' : 'var(--g7)'}"><i style="--w:${pu}%"></i></div></div></div>
+      ${soon.length || od.length ? `<div class="ad-pv-warn">${soon.map(d => `<span class="dc-chip ${d.exp < NOW ? 'risk' : 'warn'}">${ico('clock')}${esc(d.D[0])} ${d.exp < NOW ? 'expired' : 'runs out ' + dateY(d.exp)}</span>`).join('')}${od.length ? `<span class="dc-chip risk">${ico('alert')}${od.length} payment${od.length > 1 ? 's' : ''} overdue</span>` : ''}</div>` : ''}
+      ${others.length ? `<div class="ad-pv-more"><small>Their other listings · ${others.length}</small><div class="ad-pv-ls">${others.slice(0, 4).map(x => `<a href="listing.html?id=${encodeURIComponent(x.id)}" class="ad-pv-l" title="${esc(x.title)}"><img src="${esc(x.img[0])}" alt=""><span><b>${esc(x.title)}</b><small>${esc(L_ST[x.status][0])}${x.loc ? ' · ' + esc(areaN(x.loc)) : ''}</small></span></a>`).join('')}${others.length > 4 ? `<a class="ad-pv-l more" href="${href}">+${others.length - 4} more</a>` : ''}</div></div>` : ''}
+    </div>`;
+  }
+  function whereBox(a) {
+    const h = homeOf(a), mine = S.home && S.home[a.id], ph = phoneCtry(a), ps = listPlaces(a), Ls = listingsOf(a), d = a.d || {}, far = abroad(a), away = elsewhere(a), fn = firstName(a);
+    const nat = d.nationality || d.passCountry || d.sigPassCountry || '', natFrom = d.nationality ? 'from their ID' : 'passport';
+    const perm = Ls.filter(l => permitKind(l)), miss = perm.filter(l => !l.permit), withP = perm.length - miss.length;
+    const fs = docsOf(a).filter(x => x.f), idDoc = fs.find(x => WHO.includes(x.k)), lic = fs.find(x => !WHO.includes(x.k));
+    const there = ps.map(p => p.city + ', ' + cName(p.cc)).join(' and '), cities = ps.map(p => p.city).join(' and ') || 'the UAE', ok = (S.locOk || {})[a.id];
+    const ask = `Hi ${fn}, this is the UpNow team. We see you’re based in ${[h.city, cName(h.cc)].filter(Boolean).join(', ')}${ps.length ? ` and your listings are in ${there}` : ''}. Please confirm your licence and permits are issued in ${cities}${perm.length ? ' and send the permit number for each listing' : ''}. Thank you!`;
+    const acts = `<div class="ad-note-acts">${waA(a, ask, 'Ask about licence & permits')}${mb(`role="button" data-act="whOk" data-arg="${a.id}"`, ok ? 'x' : 'check', ok ? 'Undo' : 'Mark location checked', ok ? '' : 'go')}</div>`;
+    const note = ok ? `<div class="ad-note ok">${ico('check')}<span><b>Location checked by the team · ${dateS(ok)}.</b> Based in ${esc([h.city, cName(h.cc)].filter(Boolean).join(', '))}${ps.length ? `, listings in ${esc(there)}` : ''}.${acts}</span></div>`
+      : far ? `<div class="ad-note info">${ico('pin')}<span><b>Based in ${esc([h.city, cName(h.cc)].filter(Boolean).join(', '))}${ps.length ? ` — listings in ${esc(there)}` : ''}.</b> ${ps.length ? `Check that their licence and permits are for ${esc(cities)}, not ${esc(cName(h.cc))}.` : 'They have no listing yet — check where their first one will be.'}${acts}</span></div>`
+      : away ? `<div class="ad-note info">${ico('pin')}<span><b>Based in ${esc(h.city)} — listings in ${esc(there)}.</b> Same country, another city.${acts}</span></div>` : '';
+    const byArea = (p, n) => Ls.filter(l => placeOf(l).city === p.city && placeOf(l).area === n);
+    return `${note}<div class="ad-whg"><div><b class="ad-whh">${ico('user')}The provider</b><dl class="ad-rows">
+        <div><dt>Based in</dt><dd><b>${esc(homeTxt(a))}</b>${mine ? ' <span class="hint">· changed by the team</span>' : ''}<span class="ad-row-acts">${mb(`role="button" data-act="whEdit" data-arg="${a.id}"`, 'edit', 'Change')}</span></dd></div>
+        <div><dt>Phone number</dt><dd>${ph ? `${ph.flag} ${esc(cName(ph.iso))} <span class="hint">(${esc(ph.dial)})</span>${ph.iso !== h.cc ? ' <em class="ad-whd">differs</em>' : ''}` : '—'}${a.phone ? `<span class="ad-row-acts">${mb(`href="tel:${esc(digits(a.phone) ? '+' + digits(a.phone) : '')}"`, 'phone', 'Call')}${waA(a, `Hi ${fn}, this is the UpNow team.`)}</span>` : ''}</dd></div>
+        ${nat ? `<div><dt>Nationality</dt><dd>${esc(nat)} <span class="hint">· ${natFrom}</span>${idDoc ? `<span class="ad-row-acts">${mb(`role="button" data-act="viewDoc" data-arg="${a.id}|${idDoc.k}"`, 'eye', 'View ID')}</span>` : ''}</dd></div>` : ''}
+        ${d.authority || lic ? `<div><dt>Licence issued by</dt><dd>${esc(d.authority || '—')}${lic ? `<span class="ad-row-acts">${mb(`role="button" data-act="viewDoc" data-arg="${a.id}|${lic.k}"`, 'doc', 'View licence')}</span>` : ''}</dd></div>` : ''}</dl></div>
+      <div><b class="ad-whh">${ico('pin')}Their listings</b>${ps.length ? `<dl class="ad-rows">${ps.map(p => `<div><dt>${CTRY(p.cc).flag} ${esc(p.city)}, ${esc(cName(p.cc))}</dt><dd><b>${p.n} listing${p.n > 1 ? 's' : ''}</b><span class="ad-whareas">${Object.entries(p.areas).sort((x, y) => y[1] - x[1]).map(([n, k]) => { const L1 = byArea(p, n)[0]; return `<a role="button" ${L1 ? `data-act="openListing" data-arg="${L1.id}"` : ''} title="Open ${k > 1 ? 'the first of ' + k + ' listings' : 'the listing'} in ${esc(n)}">${esc(n)}${k > 1 ? ` <small>× ${k}</small>` : ''}</a>`; }).join('')}</span></dd></div>`).join('')}
+        ${perm.length ? `<div><dt>Permits</dt><dd>${withP} of ${perm.length} with a permit number <span class="hint">· issued in ${esc(ps[0].city)}</span>
+          ${miss.length ? `<div class="ad-miss">${miss.map(l => `<div><span><em class="ad-whd">Missing</em> ${esc(l.title)}</span><span class="ad-row-acts">${mb(`role="button" data-act="openListing" data-arg="${l.id}"`, 'eye', 'Open')}${waA(a, `Hi ${fn}, this is the UpNow team. Your listing “${l.title}” needs its ${permitKind(l)} number. Please add it in your dashboard or reply here with the number. Thank you!`, 'Ask for it')}</span></div>`).join('')}</div>` : ''}</dd></div>` : ''}</dl>` : '<p class="hint" style="margin:12px 0 0">No listings yet.</p>'}</div></div>`;
+  }
+
   const TYPE_L = { owner: 'Owner / landlord', broker: 'Property manager', landlord: 'Landlord company', brokerage: 'Real estate brokerage', manager: 'Property management company', holidayop: 'Holiday home operator', venueop: 'Venue operator', sportsop: 'Sports facility operator', charter: 'Yacht charter company',
     freelancer: 'Freelancer', freelanceAE: 'Freelancer', svcco: 'Service company', salon: 'Salon / beauty studio', studio: 'Studio / agency', guide: 'Licensed tour guide', host: 'Workshop host / instructor', operator: 'Tour operator', activity: 'Activity / workshop company',
     tutor: 'Private tutor', trainer: 'Freelance trainer', coach: 'Sports coach', nursery: 'Nursery', school: 'School', higher: 'University / higher education', training: 'Training institute', academy: 'Sports academy', gym: 'Gym / studio / club', aggregator: 'Credit / package provider',
@@ -95,10 +201,17 @@
   const isWaitingL = l => l.status === 'review';
 
   /* ---------- periods ---------- */
-  const startOf = p => { const d = new Date(NOW); d.setHours(0, 0, 0, 0); if (p === 'week') { const k = (d.getDay() + 6) % 7; d.setDate(d.getDate() - k); } if (p === 'month') d.setDate(1); return +d; };
+  // Today / This week / This month, or Custom: a quick pick (moves with the calendar) or any two dates
+  const day0 = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return +d; };
+  const QPICK = [['7', 'Last 7 days'], ['30', 'Last 30 days'], ['90', 'Last 90 days'], ['180', 'Last 6 months'], ['ytd', 'This year'], ['365', 'Last 12 months']];
+  const quickR = k => ({ k, a: k === 'ytd' ? +new Date(new Date(NOW).getFullYear(), 0, 1) : day0(NOW) - (k - 1) * DAY, b: day0(NOW) + DAY - 1 });
+  if (S.period === 'custom') { if (S.range && S.range.k) S.range = quickR(S.range.k); if (!(S.range && S.range.a > 0 && S.range.b >= S.range.a)) S.period = 'month'; }
+  const startOf = p => { if (p === 'custom' && S.range) return S.range.a; const d = new Date(NOW); d.setHours(0, 0, 0, 0); if (p === 'week') { const k = (d.getDay() + 6) % 7; d.setDate(d.getDate() - k); } if (p === 'month') d.setDate(1); return +d; };
+  const endOf = (p = S.period) => p === 'custom' && S.range ? Math.min(S.range.b, NOW) : NOW;
   const PERIODS = [['today', 'Today'], ['week', 'This week'], ['month', 'This month']];
-  const pLabel = () => PERIODS.find(x => x[0] === S.period)[1].toLowerCase();
-  const inP = (t, p = S.period) => t && t >= startOf(p) && t <= NOW;
+  const rangeTxt = () => { const r = S.range || {}; if (r.k) return (QPICK.find(x => x[0] === r.k) || [0, ''])[1]; const f = t => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: new Date(r.a).getFullYear() !== new Date(r.b).getFullYear() ? 'numeric' : undefined }); return day0(r.a) === day0(r.b) ? f(r.a) : f(r.a) + ' – ' + f(r.b); };
+  const pLabel = () => S.period === 'custom' ? (S.range && S.range.k ? rangeTxt().toLowerCase() : rangeTxt()) : PERIODS.find(x => x[0] === S.period)[1].toLowerCase();
+  const inP = (t, p = S.period) => t && t >= startOf(p) && t <= endOf(p);
 
   /* ---------- checks: are the documents valid? can they list this? is the listing done right? ---------- */
   const expOf = v => { const t = Date.parse(v); return isNaN(t) ? null : t; };
@@ -213,10 +326,11 @@
       ${days.map((d, i) => i % Math.ceil(days.length / 6) === 0 || i === days.length - 1 ? `<text x="${i * bw + bw / 2}" y="${H - 3}" text-anchor="middle">${esc(d)}</text>` : '').join('')}
       </svg><div class="ad-legend"><span><i class="sq"></i>${esc(la)}</span><span><i class="sq b"></i>${esc(lb)}</span><span><i class="dt"></i>7-day average</span><span class="sp"></span><span>Busiest day: <b>${Math.max(...A)}</b></span></div></div>`;
   }
-  const hbars = rows => { const mx = Math.max(...rows.map(r => r.v), 1); return `<div class="ad-hb">${rows.map((r, i) => `<div class="r" ${r.go ? `data-go="${r.go}"` : ''}><span>${r.ico ? ico(r.ico) : ''}${esc(r.l)}</span><i style="--w:${Math.max(2, r.v / mx * 100)}%;--c:${r.c || 'var(--g6)'};--i:${i}"></i><b>${r.f ? r.f(r.v) : r.v}</b>${r.sub ? `<em>${r.sub}</em>` : ''}</div>`).join('')}</div>`; };
+  const sparkTip = (sp, labels, f) => `<span class="cu-spk">${spark(sp)}<span class="cu-spk-h">${sp.map((v, i) => `<i data-tip="${esc(labels[i] || '')}\n${esc(f(v))}"></i>`).join('')}</span></span>`;
+  const hbars = rows => { const mx = Math.max(...rows.map(r => r.v), 1); return `<div class="ad-hb">${rows.map((r, i) => `<div class="r" ${r.go ? `data-go="${r.go}"` : ''} data-tip="${esc(r.l)}\n${r.f ? r.f(r.v) : r.v}${r.sub ? ' · ' + esc(r.sub) : ''}"><span>${r.ico ? ico(r.ico) : ''}${esc(r.l)}</span><i style="--w:${Math.max(2, r.v / mx * 100)}%;--c:${r.c || 'var(--g6)'};--i:${i}"></i><b>${r.f ? r.f(r.v) : r.v}</b>${r.sub ? `<em>${r.sub}</em>` : ''}</div>`).join('')}</div>`; };
   function donut(parts, center, sub) {
     const tot = parts.reduce((s, p) => s + p.v, 0) || 1, C = 2 * Math.PI * 46; let acc = 0;
-    return `<div class="ad-donut"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="46" class="bg"/>${parts.map((p, i) => { const len = p.v / tot * C, s = `<circle cx="60" cy="60" r="46" stroke="${p.c}" style="--len:${len.toFixed(2)};--gap:${(C - len).toFixed(2)};--off:${(-acc).toFixed(2)};--i:${i}" class="seg"/>`; acc += len; return s; }).join('')}</svg>
+    return `<div class="ad-donut"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="46" class="bg"/>${parts.map((p, i) => { const len = p.v / tot * C, s = `<circle cx="60" cy="60" r="46" stroke="${p.c}" style="--len:${len.toFixed(2)};--gap:${(C - len).toFixed(2)};--off:${(-acc).toFixed(2)};--i:${i}" class="seg" ${p.l ? `data-tip="${esc(p.l)}\n${p.tip || ''}"` : ''}/>`; acc += len; return s; }).join('')}</svg>
       <div class="ctr"><b>${center}</b><small>${sub}</small></div></div>`;
   }
   // numbers count up when a page opens
@@ -254,7 +368,16 @@
   const fmtAdm = p => String(p).replace(/^(\d{2})(\d{3})(\d{4})$/, '$1 $2 $3');
 
   /* ---------- page head + period ---------- */
-  const periodSeg = () => `<div class="seg">${PERIODS.map(([k, l]) => `<button class="${S.period === k ? 'on' : ''}" data-act="period" data-arg="${k}">${l}</button>`).join('')}</div>`;
+  const ymd = t => { const d = new Date(t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  let perCal = false;
+  const periodSeg = () => { const on = S.period === 'custom', r = on ? S.range : quickR('30'), first = Math.min(...APPS.map(a => a.t), NOW - 365 * DAY);
+    return `<div class="cu-per"><div class="seg">${PERIODS.map(([k, l]) => `<button class="${S.period === k ? 'on' : ''}" data-act="period" data-arg="${k}">${l}</button>`).join('')}<button class="cu-cust ${on ? 'on' : ''}" data-act="perCal" aria-expanded="${perCal}">${ico('clock')}<span>${on ? esc(rangeTxt()) : 'Custom'}</span>${ico('chev')}</button></div>
+      <div class="cu-cal ${perCal ? 'on' : ''}" role="dialog" aria-label="Choose dates"><b class="cu-cal-t">Quick picks</b>
+        <div class="cu-cal-q">${QPICK.map(([k, l]) => `<button class="chip ${on && S.range.k === k ? 'on' : ''}" data-act="perQuick" data-arg="${k}">${l}</button>`).join('')}</div>
+        <b class="cu-cal-t">Or choose dates</b>
+        <div class="cu-cal-d"><label><span>From</span><input type="date" id="adFrom" min="${ymd(first)}" max="${ymd(NOW)}" value="${ymd(r.a)}"></label><label><span>To</span><input type="date" id="adTo" min="${ymd(first)}" max="${ymd(NOW)}" value="${ymd(r.b)}"></label></div>
+        <p class="hint cu-cal-n">Records start ${new Date(first).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}.</p>
+        <div class="cu-cal-f"><button class="btn btn-sm" data-act="perCal">Cancel</button><button class="btn btn-g btn-sm" data-act="perApply">Show these dates</button></div></div></div>`; };
   const head = (h, p, acts = '') => `<div class="ph ad-ph"><div><h1>${h}</h1><p>${p}</p></div><span class="sp"></span><div class="acts">${acts}</div></div>`;
   const greet = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
   const today = new Date(NOW).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -375,7 +498,7 @@
     const tab = tabs.find(t => t[0] === S.appTab) || tabs[0], inTab = APPS.filter(tab[2]).sort((a, b) => tab[0] === 'waiting' ? a.t - b.t : (b.decided || b.t) - (a.decided || a.t));
     const W = APPS.filter(isWaiting);
     const QF = { late: a => isWaiting(a) && NOW - a.t > S.sla * 36e5, ready: a => isWaiting(a) && !appChecks(a).some(c => c.tone === 'fail'), look: a => isWaiting(a) && appChecks(a).some(c => c.tone === 'fail') }[tab[0] === 'waiting' ? S.appQ : ''] || (() => true);
-    const list = inTab.filter(QF).filter(a => S.vf === 'all' || a.v === S.vf).filter(a => !S.q || [a.name, a.d.display, a.type, a.email].join(' ').toLowerCase().includes(S.q));
+    const list = inTab.filter(QF).filter(a => S.vf === 'all' || a.v === S.vf).filter(a => !S.q || [a.name, a.d.display, a.type, a.email, a.city, CTRY(homeOf(a).cc).name].join(' ').toLowerCase().includes(S.q));
     const oldest = W.slice().sort((a, b) => a.t - b.t)[0];
     return `${head('Provider requests', `Providers asking to join UpNow. Check their documents and what they want to list, then approve or send it back — they hear from us on WhatsApp.`, oldest ? `<button class="btn btn-g btn-sm" data-act="openApp" data-arg="${oldest.id}" title="${esc(oldest.name)} · waiting ${ago(oldest.t)}">${ico('chevR')}Review the oldest</button>` : '')}
     <div class="ad-q4">${(() => {
@@ -389,7 +512,7 @@
     <div class="fbar">${vChips(inTab)}<span class="sp"></span><label class="ad-find">${ico('search')}<input data-q placeholder="Find a provider" value="${esc(S.q)}"></label></div>
     ${list.length ? `<div class="pn ad-tw"><table class="tbl ad-tbl"><thead><tr><th>Provider</th><th>Wants to list</th><th>Documents</th><th>Checks</th><th>First listing</th><th>${tab[0] === 'waiting' ? 'Waiting' : 'Decided'}</th><th>Status</th><th></th></tr></thead><tbody>
       ${list.map((a, i) => { const cs = appChecks(a), ds = docsOf(a), bad = cs.filter(c => c.tone === 'fail').length, warn = cs.filter(c => c.tone === 'warn').length, L = listingsOf(a)[0], over = isWaiting(a) && NOW - a.t > S.sla * 36e5;
-        return `<tr class="ck" style="--i:${i}" data-act="openApp" data-arg="${a.id}"><td><div class="li">${av(a.name)}<div><b>${esc(a.name)}${a.real ? ' <span class="ad-real">This browser</span>' : ''}${a.added ? ' <span class="ad-tag">New business type</span>' : ''}${a.prev && isWaiting(a) ? ' <span class="ad-tag">Sent again</span>' : ''}</b><small>${esc(TYPE_L[a.type] || a.type)} · ${a.role === 'company' ? 'Company' : 'Individual'}</small></div></div></td>
+        return `<tr class="ck" style="--i:${i}" data-act="openApp" data-arg="${a.id}"><td><div class="li">${av(a.name)}<div><b>${esc(a.name)}${a.real ? ' <span class="ad-real">This browser</span>' : ''}${a.added ? ' <span class="ad-tag">New business type</span>' : ''}${a.prev && isWaiting(a) ? ' <span class="ad-tag">Sent again</span>' : ''}</b><small>${esc(TYPE_L[a.type] || a.type)} · ${a.role === 'company' ? 'Company' : 'Individual'}</small>${whereLine(a)}</div></div></td>
         <td><span class="ad-v" style="--c:${VC[a.v]}">${ico(VI[a.v])}${esc(VL[a.v])}</span><small class="ad-sm">${esc(a.cats.map(c => catLabel(a.v, c)).join(', '))}</small></td>
         <td><span class="ad-docs">${ds.map(d => `<i class="${d.tone}" title="${esc(d.D[0] + ' — ' + d.note)}"></i>`).join('')}</span><small class="ad-sm">${ds.filter(d => d.tone === 'ok').length} of ${ds.length} fine</small></td>
         <td>${mini(scoreOf(cs), bad ? 'risk' : warn ? 'warn' : '')}<small class="ad-sm">${bad ? bad + ' failed' : warn ? warn + ' to look at' : 'All clear'}</small></td>
@@ -507,6 +630,8 @@
           ${x.f ? `<div class="ad-doc-b"><button type="button" class="ad-thumb" data-act="viewDoc" data-arg="${a.id}|${x.k}" data-thumb="${a.id}|${x.k}" aria-label="Open ${esc(x.D[0])}"><span class="ad-thumb-load"></span></button><dl class="ad-rows">${x.D[2].map(([k, l, ty]) => { const v = d[k], un = a.src[k] === 'check', ex = ty === 'date' && expOf(v), flag = ex && ex < NOW ? ['bad', 'Expired'] : ex && ex < NOW + S.warnDays * DAY ? ['soon', 'Runs out soon'] : un ? ['un', 'Hard to read — compare'] : null;
               return `<div class="${flag ? flag[0] : ''}"><dt>${esc(l)}</dt><dd>${esc(ty === 'date' && ex ? dateY(ex) : v || '—')}${flag ? `<em>${flag[1]}</em>` : ''}</dd></div>`; }).join('')}</dl></div>
           <p class="ad-where">${ico('search')}How to check: <b>${esc(x.D[1])}</b></p>` : ''}</div>`).join('')}
+        <div class="sect-t">Where they’re based · where they list</div>
+        ${whereBox(a)}
         <div class="sect-t">What they want to list</div>
         <div class="ad-can">${a.cats.map(c => { const g = GATE[c], need = g && g(a), has = !need || a.docs[need]; return `<div class="${has ? 'ok' : 'warn'}"><i>${ico(has ? 'check' : 'clock')}</i><span><b>${esc(catLabel(a.v, c))}</b><small>${has ? 'Covered by their ' + (a.role === 'company' ? 'licence' : 'documents') : 'Waits for ' + DOCS[need][0]}</small></span></div>`; }).join('')}</div>
         <p class="hint" style="margin:8px 0 0">${esc(TYPE_L[a.type] || a.type)}${a.size ? ' · business size: ' + esc(a.size) : ''}${d.activity ? ' · licence activity: “' + esc(d.activity) + '”' : ''}</p>
@@ -727,11 +852,15 @@
         ${checkList(cs)}
         <div class="sect-t">Your checks</div>
         <div class="ad-man ad-unck-wrap">${man.map(([k, t]) => `<label class="ad-tick wide"><input type="checkbox" data-lcheck="${l.id}|${k}" ${tick[k] ? 'checked' : ''} ${can ? '' : 'disabled'}><span>${ico('check')}</span>${esc(t)}</label>`).join('')}</div>
+        <div class="sect-t">Documents</div>
+        ${docsBoxL(l)}
+        <div class="sect-t">Location <span class="ad-asked-h">· ${esc([placeOf(l).area, placeOf(l).city, cName(placeOf(l).cc)].filter(Boolean).join(', '))}</span></div>
+        ${locBox(l, a)}
         <div class="sect-t">Description</div><p class="ad-desc">${esc(l.desc || 'No description')}</p>
         <dl class="ad-rows">${[['Category', catLabel(l.v, l.cat)], ['Where', [l.building, l.loc && areaN(l.loc)].filter(Boolean).join(', ') || 'Areas they cover'], ['Permit', l.permit || '—'], ['Photos', l.photos]].map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
         ${l.status === 'live' ? perfBlockL(l) : ''}
         <div class="sect-t">Provider</div>
-        <div class="ad-lrow" data-act="openApp" data-arg="${a.id}">${av(a.name || '?')}<div><b>${esc(a.name || '')}</b><small>${esc(TYPE_L[a.type] || a.type || '')} · ${a.status === 'verified' ? 'Approved ' + dateS(a.decided || a.t) : 'Not approved yet'}</small></div>${st(...APP_ST[a.status || 'submitted'])}${ico('chevR')}</div>
+        ${provBoxL(l, a)}
         ${a.id ? `<p class="ad-planline"><span class="ad-plan" data-tier="${a.plan || 'launch'}" style="--c:${PLAN(a.plan || 'launch').c}">${esc(PLAN(a.plan || 'launch').n)} plan</span><span>${a.status === 'verified' ? '' : 'Starts when they’re approved · '}${planUse(a)}</span><a class="ad-full" href="provider.html?id=${encodeURIComponent(a.id)}#dt-plan">${a.status === 'verified' ? 'Change or suggest a plan' : 'Pick a plan'}${ico('chevR')}</a></p>${typeof sugLine === 'function' ? sugLine(a) : ''}` : ''}
       </div>
       <div class="dr-f ad-df">${isWaitingL(l) ? whyBlock(cs, 'put it live') : ''}${isWaitingL(l) ? `<button class="btn btn-g" data-act="liveL" data-arg="${l.id}" ${cs.some(c => c.tone === 'fail' || c.tone === 'todo') ? 'disabled title="Finish the checks first"' : ''}>${ico('check')}Put it live</button><button class="btn btn-o" data-act="changesL" data-arg="${l.id}">${ico('edit')}Ask for changes</button><button class="btn btn-o ad-danger" data-act="rejectL" data-arg="${l.id}">${ico('x')}Not approve</button>`
@@ -818,15 +947,15 @@
     // two views of the same providers: how they're doing (Performance) and their plan, documents and payments (Account)
     const view = S.provView === 'account' ? 'account' : 'perf';
     const tabs = view === 'perf'
-      ? [['all', 'All providers', () => true], ['top', 'Doing well', r => r.h[0] === 'Doing well'], ['help', 'Needs help', r => r.h[0] === 'Needs help' || r.h[0] === 'No leads yet'], ['quiet', 'Not live', r => !r.live]]
-      : [['all', 'All providers', () => true], ['docs', 'Documents running out', r => r.soon], ['pay', 'Payment overdue', r => r.od.length], ['quiet', 'No live listing', r => !r.live]];
+      ? [['all', 'All providers', () => true], ['top', 'Doing well', r => r.h[0] === 'Doing well'], ['help', 'Needs help', r => r.h[0] === 'Needs help' || r.h[0] === 'No leads yet'], ['quiet', 'Not live', r => !r.live], ['abroad', 'Based abroad', r => abroad(r.a)]]
+      : [['all', 'All providers', () => true], ['docs', 'Documents running out', r => r.soon], ['pay', 'Payment overdue', r => r.od.length], ['quiet', 'No live listing', r => !r.live], ['abroad', 'Based abroad', r => abroad(r.a)]];
     const SORT = { leads: ['Most leads', (x, y) => (y.live ? y.pf.leads : -1) - (x.live ? x.pf.leads : -1)], rate: ['Best view → lead', (x, y) => y.pf.rate - x.pf.rate], slow: ['Slowest to reply', (x, y) => (y.pf.reply ?? -1) - (x.pf.reply ?? -1)], low: ['Fewest leads', (x, y) => (x.live ? x.pf.leads : 1e9) - (y.live ? y.pf.leads : 1e9)], recent: ['Newest first', (x, y) => (y.a.decided || 0) - (x.a.decided || 0)] };
     const sortK = view === 'account' ? 'recent' : SORT[S.provSort] ? S.provSort : 'leads';
     const tab = tabs.find(t => t[0] === S.provTab) || tabs[0];
-    const list = rows.filter(tab[2]).filter(r => S.vf === 'all' || r.a.v === S.vf).filter(r => !S.q || [r.a.name, r.a.d.display, r.a.email].join(' ').toLowerCase().includes(S.q)).sort((x, y) => tab[0] === 'docs' ? x.nx.exp - y.nx.exp : SORT[sortK][1](x, y));
+    const list = rows.filter(tab[2]).filter(r => S.vf === 'all' || r.a.v === S.vf).filter(r => !S.q || [r.a.name, r.a.d.display, r.a.email, r.a.city, CTRY(homeOf(r.a).cc).name, ...listPlaces(r.a).map(p => p.city)].join(' ').toLowerCase().includes(S.q)).sort((x, y) => tab[0] === 'docs' ? x.nx.exp - y.nx.exp : SORT[sortK][1](x, y));
     const seg = `<div class="seg pf-seg">${[['perf', 'Performance', 'trend'], ['account', 'Plan & documents', 'doc']].map(([k, l, i]) => `<button class="${view === k ? 'on' : ''}" data-act="provView" data-arg="${k}">${ico(i)}${l}</button>`).join('')}</div>`;
     const empty = `<div class="pn ad-empty big">${ico('check')}<b>Nothing here</b><small>Try another tab or vertical.</small></div>`;
-    const who = r => `<div class="li">${av(r.a.name)}<div><b>${esc(r.a.name)}${r.a.real ? ' <span class="ad-real">This browser</span>' : ''}</b><small><span class="ad-v" style="--c:${VC[r.a.v]}">${ico(VI[r.a.v])}${esc(VL[r.a.v])}</span> · ${esc(TYPE_L[r.a.type] || r.a.type)}</small></div></div>`;
+    const who = r => `<div class="li">${av(r.a.name)}<div><b>${esc(r.a.name)}${r.a.real ? ' <span class="ad-real">This browser</span>' : ''}</b><small><span class="ad-v" style="--c:${VC[r.a.v]}">${ico(VI[r.a.v])}${esc(VL[r.a.v])}</span> · ${esc(TYPE_L[r.a.type] || r.a.type)}</small>${whereLine(r.a)}</div></div>`;
     let top, body;
     if (view === 'perf') {
       const liveR = rows.filter(r => r.live), tot = liveR.reduce((s, r) => s + r.pf.leads, 0), views = liveR.reduce((s, r) => s + r.pf.views, 0), help = rows.filter(r => r.h[0] === 'Needs help' || r.h[0] === 'No leads yet').length;
@@ -865,6 +994,8 @@
       <div class="dr-b ad-db">
         ${soon.length ? `<p class="ad-note warn">${ico('alert')}<span><b>${soon.length} document${soon.length > 1 ? 's' : ''} to renew:</b> ${esc(soon.map(d => d.D[0] + ' (' + d.note.toLowerCase() + ')').join(', '))}</span></p>` : ''}
         ${perfBlockA(a)}
+        <div class="sect-t">Where they’re based · where they list</div>
+        ${whereBox(a)}
         ${planBox(a, planUse(a))}
         <div class="sect-t">Documents</div>
         ${ds.map(d => `<div class="ad-lrow static"><i class="ad-dot ${d.tone === 'ok' ? 'ok' : d.tone === 'warn' ? 'warn' : 'risk'}">${ico(d.tone === 'ok' ? 'check' : 'alert')}</i><div><b>${esc(d.D[0])}</b><small>${esc(d.exp ? (d.exp < NOW ? 'Expired ' : 'Valid to ') + dateY(d.exp) : d.note)}</small></div></div>`).join('')}
@@ -950,6 +1081,7 @@
         <div class="dt-tags">${a.status === 'verified' ? `<span class="pf-h ${h[1]}">${h[0]}</span><span class="ad-plan" data-tier="${plan.id}" style="--c:${plan.c}">${esc(plan.n)} plan</span><span class="hint">${p.live} live of ${p.Ls.length} listings</span>` : `${st(...APP_ST[a.status])}${waiting ? `<span class="ad-sla ${NOW - a.t > S.sla * 36e5 ? 'late' : ''}">${ico('clock')}Waiting ${ago(a.t)}</span>` : ''}`}</div></div>
       <div class="dt-acts"><a class="btn btn-o btn-sm" href="mailto:${esc(a.email)}">${ico('mail')}Email</a><a class="btn btn-wa btn-sm" target="_blank" rel="noopener" href="${waHref(a.phone, `Hi ${fn}, this is the UpNow team.`)}">${ico('wa')}WhatsApp</a></div></section>
     ${issuesBox(I, waiting ? 'Every check passed and every document is checked — ready to approve.' : 'Listings are live, leads are coming in and documents are in date.')}
+    <section class="pn dt-card" id="dt-where"><div class="dt-h"><h2>Where they’re based · where they list</h2></div>${whereBox(a)}</section>
     ${waiting ? `${docsFull}
     <section class="pn dt-card"><div class="dt-h"><h2>All checks</h2><small>${cs.filter(c => c.tone === 'ok').length} of ${cs.length} fine</small></div>${checksUl(cs)}</section>
     <div class="dt-cols">
@@ -962,7 +1094,7 @@
       ${p.live ? `${kpis(p, B)}<div class="pf-two dt-two">${weekBars(p.weeks)}${chList(p.ch) || '<div class="pf-chs"><b>Where leads come from</b><p class="hint">No leads yet.</p></div>'}</div>` : '<p class="hint">Numbers start once a listing is live.</p>'}</section>` : ''}
     <section class="pn dt-card"><div class="dt-h"><h2>Listings</h2><small>${p.Ls.length - p.live ? `${p.live} live · ${p.Ls.length - p.live} not live yet` : `all ${p.live} live`}</small></div>
       ${lst.length ? `<table class="tbl pf-tbl dt-tbl"><thead><tr><th>Listing</th><th>Status</th><th>Views</th><th>Leads</th><th>View → lead</th><th>Reply</th><th>Trend</th><th></th></tr></thead><tbody>
-        ${lst.map(l => { const q = perfL(l), live = l.status === 'live'; return `<tr class="ck" onclick="location.href='listing.html?id=${encodeURIComponent(l.id)}'"><td><span class="pf-l"><img src="${esc(l.img[0])}" alt=""><span><b>${esc(l.title)}</b><small>${esc(catLabel(l.v, l.cat))}${l.loc ? ' · ' + esc(areaN(l.loc)) : ''}</small></span></span></td><td>${st(...L_ST[l.status])}</td><td>${live ? q.views.toLocaleString() : '—'}</td><td><b>${live ? q.leads : '—'}</b></td><td>${live ? fmtRate(q.rate) : '—'}</td><td>${live ? fmtReply(q.reply) : '—'}</td><td>${live && q.leads ? chg(change(q.weeks)) : '—'}</td><td>${ico('chevR')}</td></tr>`; }).join('')}</tbody></table>` : `<p class="hint">${waiting ? 'They chose to add their first listing later.' : 'No listings yet.'}</p>`}</section>
+        ${lst.map(l => { const q = perfL(l), live = l.status === 'live'; return `<tr class="ck" onclick="location.href='listing.html?id=${encodeURIComponent(l.id)}'"><td><span class="pf-l"><img src="${esc(l.img[0])}" alt=""><span><b>${esc(l.title)}</b><small>${esc(catLabel(l.v, l.cat))}${l.loc ? ' · ' + esc(areaN(l.loc)) + ', ' + esc(placeOf(l).city) : ''}</small></span></span></td><td>${st(...L_ST[l.status])}</td><td>${live ? q.views.toLocaleString() : '—'}</td><td><b>${live ? q.leads : '—'}</b></td><td>${live ? fmtRate(q.rate) : '—'}</td><td>${live ? fmtReply(q.reply) : '—'}</td><td>${live && q.leads ? chg(change(q.weeks)) : '—'}</td><td>${ico('chevR')}</td></tr>`; }).join('')}</tbody></table>` : `<p class="hint">${waiting ? 'They chose to add their first listing later.' : 'No listings yet.'}</p>`}</section>
     ${waiting ? '' : `${docsFull}
     <section class="pn dt-card"><div class="dt-h"><h2>Contact</h2></div><dl class="ad-rows"><div><dt>Mobile</dt><dd>${esc(a.phone)}</dd></div><div><dt>Email</dt><dd>${esc(a.email || '—')}</dd></div><div><dt>Shown to customers as</dt><dd>${esc(d.display || a.name)}</dd></div><div><dt>Languages</dt><dd>${esc((d.langs || []).join(', ') || 'English')}</dd></div></dl></section>`}
     <section class="pn dt-card" id="dt-plan">${planBox(a, a.status === 'verified' ? planUse(a) : 'Starts when they’re approved. You can pick it now or later. ' + planUse(a))}</section>
@@ -992,7 +1124,7 @@
     const imgs = [...new Set(l.img)];
     return `${crumbs(waiting ? 'listings.html' : a.id ? 'provider.html?id=' + encodeURIComponent(a.id) : 'listings.html', waiting ? 'Listing requests' : a.name || 'Listing requests', l.title)}
     <section class="pn dt-hero dt-lhero"><button type="button" class="dt-cover" data-act="viewPhotos" data-arg="${l.id}|0"><img src="${esc(l.img[0])}" alt=""><span>${ico('image')}${l.photos}</span></button><div class="dt-hero-t"><h1>${esc(l.title)}</h1>
-        <p>${esc(catLabel(l.v, l.cat))} · ${esc(VL[l.v])}${l.loc ? ' · ' + esc(areaN(l.loc)) : ''} · by ${a.id ? `<a class="dt-link" href="provider.html?id=${encodeURIComponent(a.id)}">${esc(a.name)}</a>` : '—'}</p>
+        <p>${esc(catLabel(l.v, l.cat))} · ${esc(VL[l.v])}${l.loc ? ' · ' + esc(areaN(l.loc)) + ', ' + esc(placeOf(l).city) : ''} · by ${a.id ? `<a class="dt-link" href="provider.html?id=${encodeURIComponent(a.id)}">${esc(a.name)}</a> <span class="ad-wh ${homeOf(a).cc !== placeOf(l).cc ? 'far' : ''}" title="Where the provider is based">· based in ${esc(homeTxt(a))}</span>` : '—'}</p>
         <div class="dt-tags">${st(...L_ST[l.status])}<b class="ad-price">${l.price ? aed(l.price) : 'No price'}${l.basis ? ` <small>/ ${esc(l.basis)}</small>` : ''}</b>${waiting ? `<span class="ad-sla ${NOW - l.t > S.sla * 36e5 ? 'late' : ''}">${ico('clock')}Waiting ${ago(l.t)}</span>` : ''}${rank ? `<span class="hint">${rank === 1 ? 'Most leads' : '#' + rank + ' by leads'} of ${peers.length} live ${esc(cat)} listings</span>` : ''}</div></div></section>
     ${issuesBox(I, live ? 'Leads are coming in and the listing passes every check.' : 'Every check passed and the team has ticked theirs — ready to decide.')}
     ${waiting || live ? `<section class="pn dt-card" id="dt-review"><div class="dt-h"><h2>Your checks</h2><small>${man.filter(([k]) => tick[k]).length} of ${man.length} ticked · tick each one once you’ve looked</small></div>
@@ -1003,39 +1135,178 @@
       <section class="pn dt-card"><div class="dt-h"><h2>What the listing says</h2></div><p class="ad-desc">${esc(l.desc || 'No description')}</p>
         <dl class="ad-rows">${[['Category', catLabel(l.v, l.cat)], ['Price', l.price ? aed(l.price) + (l.basis ? ' / ' + l.basis : '') : 'No price'], ['Where', [l.building, l.loc && areaN(l.loc)].filter(Boolean).join(', ') || 'Areas they cover'], ['Permit', l.permit || '—'], ['Photos', l.photos], ['Sent', dateS(l.t)], ...(l.decided ? [['Decided', dateS(l.decided)]] : [])].map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl></section>
     </div>
+    <section class="pn dt-card" id="dt-ldocs"><div class="dt-h"><h2>Documents</h2><small>From the provider’s application, plus this listing’s permit</small></div>${docsBoxL(l)}</section>
+    <section class="pn dt-card" id="dt-loc"><div class="dt-h"><h2>Location</h2><small>${esc([placeOf(l).area, placeOf(l).city, cName(placeOf(l).cc)].filter(Boolean).join(', '))}</small></div>${locBox(l, a)}</section>
     <section class="pn dt-card"><div class="dt-h"><h2>All checks</h2><small>${cs.filter(c => c.tone === 'ok').length} of ${cs.length} fine</small></div>${checksUl(cs)}</section>
     ${live ? `<section class="pn dt-card"><div class="dt-h"><h2>How it’s doing</h2><small>Last 30 days${peers.length > 1 ? ` · compared with ${peers.length - 1} other live ${esc(cat)} listings` : ''}</small></div>
       ${kpis(q, B)}<div class="pf-two dt-two">${weekBars(q.weeks)}${chList(q.ch) || '<div class="pf-chs"><b>Where leads come from</b><p class="hint">No leads yet.</p></div>'}</div>
       <table class="tbl dt-cmp"><thead><tr><th></th><th>This listing</th><th>Typical ${esc(cat)} listing</th></tr></thead><tbody>${cmp.map(([k, x, y]) => `<tr><td>${k}</td><td><b>${x}</b></td><td>${y}</td></tr>`).join('')}</tbody></table></section>` : ''}
-    ${a.id ? `<section class="pn dt-card"><div class="dt-h"><h2>Provider</h2></div><a class="ad-lrow" href="provider.html?id=${encodeURIComponent(a.id)}">${av(a.name)}<div><b>${esc(a.name)}</b><small>${esc(TYPE_L[a.type] || a.type || '')} · ${esc(PLAN(a.plan || 'launch').n)} plan · ${planUse(a)}</small></div>${st(...APP_ST[a.status || 'submitted'])}${ico('chevR')}</a></section>` : ''}
+    ${a.id ? `<section class="pn dt-card" id="dt-prov"><div class="dt-h"><h2>Provider</h2><small>Who sent this listing</small></div>${provBoxL(l, a)}</section>` : ''}
     ${waiting ? decBar(whyLine(cs, 'put it live'), `<button class="btn btn-g" data-act="liveL" data-arg="${l.id}" ${cs.some(c => c.tone === 'fail' || c.tone === 'todo') ? 'disabled title="Finish the checks first"' : ''}>${ico('check')}Put it live</button><button class="btn btn-o" data-act="changesL" data-arg="${l.id}">${ico('edit')}Ask for changes</button><button class="btn btn-o ad-danger" data-act="rejectL" data-arg="${l.id}">${ico('x')}Not approve</button>`)
       : live ? decBar('', `<button class="btn btn-o" data-act="changesL" data-arg="${l.id}">${ico('edit')}Take down and ask for changes</button>`) : ''}`;
   };
 
   /* ================= INCOME ================= */
   const INV_ST = { paid: ['Paid', ''], due: ['Due', 'warn'], overdue: ['Overdue', 'risk'] };
+  /* ---------- income: where it comes from (vertical, category, location, country, business type, plan, payment method, how they joined) ---------- */
+  const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+  const flagOf = cc => cc && cc.length === 2 ? String.fromCodePoint(...[...cc].map(c => 127397 + c.charCodeAt(0))) : '🌐';
+  // how a provider found UpNow — saved automatically with the application (join.js: the first visit's source in this browser)
+  const JOIN = [['Google search', '#4285f4'], ['Instagram', '#d6249f'], ['Came straight to UpNow', '#136142'], ['Shared on WhatsApp', '#1faa59'], ['Facebook', '#1877f2'], ['TikTok', '#111'], ['Bing search', '#008373'], ['LinkedIn', '#0a66c2'], ['X (Twitter)', '#333']];
+  const SRC_L = { google: 'Google search', instagram: 'Instagram', direct: 'Came straight to UpNow', whatsapp: 'Shared on WhatsApp', facebook: 'Facebook', tiktok: 'TikTok', bing: 'Bing search', linkedin: 'LinkedIn', x: 'X (Twitter)' };
+  const joinedVia = a => { if (a.real) { const j = D.read(PFX + '.join') || {}; return j.src ? SRC_L[j.src] || j.src : 'Not recorded'; } return JOIN[[0, 0, 0, 0, 1, 1, 1, 2, 2, 3, 3, 4, 5][Math.abs(hash(a.id + 'src')) % 13]][0]; };
+  const PAY_C = { bank: '#136142', card: '#256aa5', cheque: '#b7791f', cash: '#7b5ea7' };
+  // how a bill was paid: what admin recorded, otherwise (sample) a steady guess
+  const payMethod = i => ((S.payMeta || {})[i.id] || {}).method || (i.a.real ? 'bank' : ['bank', 'bank', 'bank', 'bank', 'bank', 'bank', 'bank', 'bank', 'bank', 'card', 'card', 'card', 'card', 'card', 'card', 'cheque', 'cheque', 'cheque', 'cash', 'cash'][Math.abs(hash(i.id)) % 20]);
+  // a provider's main area: where most of their listings are
+  const areaOfA = a => { const t = {}; listingsOf(a).forEach(l => { if (l.loc) t[l.loc] = (t[l.loc] || 0) + 1; }); const top = Object.entries(t).sort((x, y) => y[1] - x[1])[0]; return top ? top[0] : ''; };
+  const INC_DIMS = [['vertical', 'Vertical'], ['category', 'Category'], ['location', 'Location'], ['country', 'Where they’re based'], ['type', 'Business type'], ['plan', 'Plan'], ['method', 'Payment method'], ['join', 'How they found UpNow']];
+  function incKey(dim, a) {
+    if (dim === 'vertical') return { k: a.v, l: VL[a.v], c: VC[a.v], lead: `<span class="inc-ti" style="--c:${VC[a.v]}">${ico(VI[a.v])}</span>` };
+    if (dim === 'category') { const c = (a.cats || [])[0] || ''; return { k: a.v + '|' + c, l: catLabel(a.v, c), sub: VL[a.v], c: VC[a.v], lead: `<span class="inc-ti" style="--c:${VC[a.v]}">${ico(VI[a.v])}</span>` }; }
+    if (dim === 'location') { const ar = areaOfA(a), Lc = listingsOf(a).find(l => l.loc === ar) || {}; return { k: ar || 'none', l: ar ? areaN(ar) : 'No listing yet', sub: ar ? (Lc.city || 'Dubai') : '', c: '#256aa5', lead: `<span class="inc-ti" style="--c:#256aa5">${ico('pin')}</span>` }; }
+    if (dim === 'country') { const h = homeOf(a); return { k: h.cc, l: cName(h.cc), city: h.city, c: h.cc === 'AE' ? '#136142' : '#3b7fbf', lead: `<span class="inc-ti flag">${CTRY(h.cc).flag || flagOf(h.cc)}</span>` }; }
+    if (dim === 'type') return { k: a.type || '—', l: a.type || '—', sub: a.role === 'company' ? 'Company' : 'Individual', c: a.role === 'company' ? '#256aa5' : '#b7791f', lead: `<span class="inc-ti" style="--c:${a.role === 'company' ? '#256aa5' : '#b7791f'}">${ico(a.role === 'company' ? 'building' : 'user')}</span>` };
+    if (dim === 'plan') { const p = PLAN(a.plan || 'launch'); return { k: p.id, l: p.n, sub: aed(p.p) + ' a month', c: p.c, lead: `<span class="inc-ti dot" style="--c:${p.c}"></span>` }; }
+    if (dim === 'join') { const j = joinedVia(a), c = (JOIN.find(x => x[0] === j) || [0, '#9aa6a0'])[1]; return { k: j, l: j, c, lead: `<span class="inc-ti dot" style="--c:${c}"></span>` }; }
+    return null;
+  }
+  function incBreakdown(inv, act) {
+    const dim = INC_DIMS.some(d => d[0] === S.incDim) ? S.incDim : 'vertical', paidP = inv.filter(i => i.paid && inP(i.paid)), od = inv.filter(i => i.state === 'overdue');
+    let rows;
+    if (dim === 'method') {
+      // payment method is per bill: what came in this period, by how it was paid
+      const g = {}; paidP.forEach(i => { const m = payMethod(i), r = g[m] || (g[m] = { k: m, l: PAY_M[m], c: PAY_C[m], lead: `<span class="inc-ti dot" style="--c:${PAY_C[m]}"></span>`, prov: new Set(), mrr: 0, coll: 0, od: 0, leads: 0 }); r.prov.add(i.a.id); r.coll += i.amt; });
+      rows = Object.values(g).map(r => Object.assign(r, { n: r.prov.size, mrr: r.coll }));
+    } else {
+      const g = {};
+      act.forEach(a => { const x = incKey(dim, a), r = g[x.k] || (g[x.k] = Object.assign(x, { n: 0, mrr: 0, coll: 0, od: 0, leads: 0, paying: 0 })); const pp = PLAN(a.plan || 'launch').p; r.n++; r.mrr += pp; if (pp) r.paying++; r.leads += (perfA(a) || {}).leads || 0; });
+      if (dim === 'country') Object.values(g).forEach(r => { const t = {}; act.filter(a => homeOf(a).cc === r.k && homeOf(a).city).forEach(a => { const c = homeOf(a).city; t[c] = (t[c] || 0) + 1; }); r.sub = Object.entries(t).sort((x, y) => y[1] - x[1]).slice(0, 3).map(([c, n]) => `${c} ${n}`).join(' · '); });
+      paidP.forEach(i => { const x = incKey(dim, i.a); if (g[x.k]) g[x.k].coll += i.amt; });
+      od.forEach(i => { const x = incKey(dim, i.a); if (g[x.k]) g[x.k].od += i.amt; });
+      rows = Object.values(g);
+    }
+    rows.sort((a, b) => b.mrr - a.mrr || b.n - a.n);
+    const tot = rows.reduce((t, r) => t + r.mrr, 0) || 1, money = dim === 'method' ? 'Collected ' + pLabel() : 'AED a month', top = rows[0];
+    // a ring that names its slices: the biggest in the middle; hover a slice (or a row) to see that one
+    const parts = rows.slice(0, 6).map((r, i) => ({ r, i })).concat(rows.length > 6 ? [{ r: { l: 'Others', c: '#c8d2cc', mrr: rows.slice(6).reduce((t, x) => t + x.mrr, 0), n: rows.slice(6).reduce((t, x) => t + x.n, 0) }, i: -1 }] : []);
+    const R = 46, CC = 2 * Math.PI * R; let acc = 0;
+    const ring = `<div class="inc-ring"><svg viewBox="0 0 120 120">${parts.map(({ r, i }, k) => { const len = r.mrr / tot * CC, gap = parts.length > 1 ? 1.5 : 0, el = `<circle cx="60" cy="60" r="${R}" class="inc-seg" data-row="${i}" stroke="${r.c}" stroke-dasharray="${Math.max(0, len - gap).toFixed(2)} ${CC.toFixed(2)}" stroke-dashoffset="${(-acc).toFixed(2)}" style="--i:${k}" data-tip="${esc(r.l)}\n${aed(r.mrr)}${dim === 'method' ? ' collected' : ' a month'} · ${pct(r.mrr, tot)}%\n${r.n} provider${r.n === 1 ? '' : 's'}" data-mid="${pct(r.mrr, tot)}%|${esc(r.l)}"></circle>`; acc += len; return el; }).join('')}</svg>
+      <div class="inc-ring-c"><b>${top ? pct(top.mrr, tot) + '%' : '—'}</b><small>${top ? esc(top.l) : ''}</small><em>${aed(tot)}${dim === 'method' ? ' collected' : ' a month'}</em></div></div>`;
+    // Dubai map: a bubble per area, sized by monthly income
+    const map = dim !== 'location' ? '' : (() => { const mx = Math.max(...rows.filter(r => r.k !== 'none').map(r => r.mrr), 1);
+      return `<div class="inc-map"><svg class="inc-map-b" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0 L100 0 L100 8 C 80 10, 60 14, 40 22 C 25 28, 10 40, 0 48 Z" fill="#d7e9f0"/>${[20, 40, 60, 80].map(x => `<line x1="${x}" y1="0" x2="${x - 10}" y2="100" stroke="#fff" stroke-width=".6"/>`).join('')}${[30, 55, 78].map(y => `<line x1="0" y1="${y + 10}" x2="100" y2="${y - 6}" stroke="#fff" stroke-width=".9"/>`).join('')}<path d="M5 70 C 30 60, 60 44, 100 30" stroke="#f1dcae" stroke-width="1.2" fill="none"/></svg>
+        ${rows.filter(r => r.k !== 'none' && UP.areaById[r.k]).map((r, i) => { const A2 = UP.areaById[r.k], d = 20 + Math.sqrt(r.mrr / mx) * 30; return `<span class="inc-bub" style="left:${A2.x}%;top:${A2.y}%;--d:${d.toFixed(0)}px;--i:${i}" data-tip="${esc(r.l)}\n${aed(r.mrr)} a month · ${pct(r.mrr, tot)}%\n${r.n} provider${r.n === 1 ? '' : 's'} · ${r.leads} leads"><b>${r.mrr >= 1000 ? (r.mrr / 1000).toFixed(1) + 'k' : r.mrr}</b></span>${i < 5 ? `<small class="inc-bub-l" style="left:${A2.x}%;top:calc(${A2.y}% + ${(d / 2 + 3).toFixed(0)}px)">${esc(r.l)}</small>` : ''}`; }).join('')}</div>`; })();
+    const guess = dim === 'join' ? `<p class="inc-guess">${ico('alert')}<span><b>How we know:</b> when a provider sends their application, UpNow saves where their first visit came from — a Google search, an Instagram or WhatsApp link, an ad tag, or typing the address. The sample providers’ answers are made up; real providers show what was recorded (“Not recorded” for anyone who applied before this started).</span></p>`
+      : dim === 'method' ? `<p class="inc-guess">${ico('alert')}<span><b>Partly sample data.</b> Real payments show the method you pick in “Mark paid”; the sample providers’ methods are made up.</span></p>` : '';
+    const note = !top ? '' : dim === 'method' ? `Most money comes in by <b>${esc(top.l.toLowerCase())}</b> (${pct(top.mrr, tot)}%).`
+      : dim === 'country' ? (() => { const ae = rows.find(r => r.k === 'AE') || { mrr: 0, n: 0 }, ab = rows.filter(r => r.k !== 'AE'); return `Providers based in the UAE bring ${pct(ae.mrr, tot)}% of monthly income. ${ab.length ? `<b>${ab.reduce((t, r) => t + r.n, 0)} providers</b> are based abroad (${ab.slice(0, 3).map(r => esc(r.l)).join(', ')}) and pay ${aed(ab.reduce((t, r) => t + r.mrr, 0))} a month.` : 'Nobody is based abroad yet.'}`; })()
+      : `<b>${esc(top.l)}</b> brings the most — ${aed(top.mrr)} a month, ${pct(top.mrr, tot)}% of all plans.${(() => { const b = rows.filter(r => r.leads >= 20 && r.mrr).sort((x, y) => x.mrr / x.leads - y.mrr / y.leads)[0]; return b && b !== top ? ` <b>${esc(b.l)}</b> pays the least per lead (${aed(Math.round(b.mrr / b.leads))}) — room to upgrade.` : ''; })()}`;
+    const pctOf = (v, t) => t ? Math.round(v / t * 100) : 0;
+    return `<section class="pn mt" id="breakdown"><div class="pn-h"><h2>Income breakdown</h2><span class="sub">${dim === 'method' ? 'What came in ' + esc(pLabel()) : 'Monthly plans of approved providers'}</span></div>
+      <div class="inc-dims">${INC_DIMS.map(([k, l]) => `<button class="chip ${dim === k ? 'on' : ''}" data-act="incDim" data-arg="${k}">${l}</button>`).join('')}</div>
+      ${guess}<div class="inc-bd ${map ? 'has-map' : ''}"><div class="inc-bd-v">${map || ring}</div>
+        <div class="ad-tw"><table class="tbl ad-tbl inc-tbl"><thead><tr><th>${esc((INC_DIMS.find(d => d[0] === dim) || [])[1])}</th><th class="n">Providers</th><th class="n">${dim === 'method' ? 'Collected' : 'A month'}</th><th>Share</th>${dim === 'method' ? '' : `<th class="n" data-tip="Collected ${esc(pLabel())}">Collected</th><th class="n">Overdue</th><th class="n" data-tip="AED per lead
+Monthly plans ÷ leads in the last 30 days">Per lead</th>`}</tr></thead><tbody>
+        ${rows.slice(0, 10).map((r, i) => `<tr style="--i:${i}" data-row="${i}" data-tip="${esc(r.l)}\n${aed(r.mrr)} ${dim === 'method' ? 'collected' : 'a month'} · ${pctOf(r.mrr, tot)}%\n${r.n} provider${r.n === 1 ? '' : 's'}${r.paying != null ? ' · ' + r.paying + ' paying' : ''}"><td><div class="inc-nm">${r.lead}<span><b>${esc(r.l)}</b>${r.sub ? `<small>${esc(r.sub)}</small>` : ''}</span></div></td>
+          <td class="n">${r.n}</td><td class="n"><b>${aed(r.mrr)}</b></td><td><span class="inc-sh"><i style="--w:${Math.max(2, pctOf(r.mrr, top.mrr))}%;--c:${r.c}"></i><em>${pctOf(r.mrr, tot)}%</em></span></td>
+          ${dim === 'method' ? '' : `<td class="n">${r.coll ? aed(r.coll) : '—'}</td><td class="n ${r.od ? 'inc-red' : ''}">${r.od ? aed(r.od) : '—'}</td><td class="n">${r.leads && r.mrr ? aed(Math.round(r.mrr / r.leads)) : '—'}</td>`}</tr>`).join('')}</tbody></table></div></div>
+      ${note ? `<p class="inc-note">${ico('alert')}<span>${note}</span></p>` : ''}</section>`;
+  }
+  // how monthly income moved this period: start → new providers → upgrades → downgrades → stopped → now
+  function incMovement(act, inv) {
+    const t0 = startOf(S.period), now = mrr();
+    const nw = act.filter(a => inP(a.decided || a.t)).reduce((s, a) => s + PLAN(a.plan || 'launch').p, 0);
+    let up = 0, dn = 0; act.forEach(a => { const g = sugOf(a); if (g && g.state === 'accepted' && inP(g.at || g.t)) { const d = PLAN(g.to).p - PLAN(g.from).p; if (d > 0) up += d; else dn -= d; } });
+    const lost = 0, start = Math.max(0, now - nw - up + dn + lost);
+    const steps = [['Start of ' + (S.period === 'today' ? 'day' : S.period), start, 'base'], ['New providers', nw, 'up'], ['Upgrades', up, 'up'], ['Downgrades', -dn, 'down'], ['Stopped paying', -lost, 'down'], ['Now', now, 'end']];
+    const mx = Math.max(start, now, start + nw + up, 1); let run = 0;
+    const bars = steps.map(([l, v, k], i) => { let lo, hi; if (k === 'base' || k === 'end') { lo = 0; hi = v; run = v; } else { const a = run, b = run + v; lo = Math.min(a, b); hi = Math.max(a, b); run = b; }
+      return `<div class="inc-wf-c ${k}" style="--i:${i}" data-tip="${esc(l)}\n${k === 'down' && v ? '−' : k === 'up' && v ? '+' : ''}${aed(Math.abs(v))}${k === 'base' || k === 'end' ? ' a month' : ''}"><em>${k === 'up' ? (v ? '+' : '') : k === 'down' ? (v ? '−' : '') : ''}${Math.abs(v) >= 1000 ? (Math.abs(v) / 1000).toFixed(1) + 'k' : Math.abs(v)}</em><span class="inc-wf-t"><i style="bottom:${(lo / mx * 100).toFixed(1)}%;height:${Math.max(k === 'base' || k === 'end' || v ? 1.5 : 0, (hi - lo) / mx * 100).toFixed(1)}%"></i></span><small>${esc(l)}</small></div>`; }).join('');
+    const payingN = act.filter(a => PLAN(a.plan || 'launch').p > 0).length, billed = inv.filter(i => inP(i.t) || (i.t < t0 && (!i.paid || inP(i.paid)))), paidB = billed.filter(i => i.paid);
+    const days = inv.filter(i => i.paid && inP(i.paid)).map(i => (i.paid - i.t) / DAY), avgD = days.length ? Math.round(days.reduce((a, b) => a + b, 0) / days.length * 10) / 10 : 0;
+    return `<section class="pn"><div class="pn-h"><h2>How monthly income changed</h2><span class="sub">${esc(pLabel())} · AED a month</span></div>
+      <div class="inc-wf">${bars}</div>
+      <div class="ad-sum">${[['Average plan', payingN ? aed(Math.round(now / payingN)) : '—', 'per paying provider'], ['Paying', act.length ? Math.round(payingN / act.length * 100) + '%' : '—', `${payingN} of ${act.length} approved`], ['Collected on time', billed.length ? Math.round(paidB.filter(i => i.paid <= i.due).length / billed.length * 100) + '%' : '—', `${paidB.length} of ${billed.length} bills paid`], ['Days to pay', avgD ? avgD : '—', 'on average']].map(([l, v, sub]) => `<div><small>${l}</small><b>${v}</b><span>${sub}</span></div>`).join('')}</div></section>`;
+  }
+  // late money by age, and how much depends on the biggest payers
+  function incRisk(inv, act) {
+    const open = inv.filter(i => !i.paid), B = [['Not late yet', i => i.state === 'due', '#5fb68c'], ['1–7 days late', i => i.state === 'overdue' && NOW - i.due <= 7 * DAY, '#e0a526'], ['8–30 days late', i => i.state === 'overdue' && NOW - i.due > 7 * DAY && NOW - i.due <= 30 * DAY, '#d9822b'], ['Over 30 days', i => i.state === 'overdue' && NOW - i.due > 30 * DAY, '#c2413b']];
+    const bk = B.map(([l, f, c]) => { const L = open.filter(f); return { l, c, n: L.length, v: L.reduce((s, i) => s + i.amt, 0) }; }), mx = Math.max(...bk.map(b => b.v), 1), totO = bk.reduce((s, b) => s + b.v, 0);
+    const payers = act.map(a => ({ a, p: PLAN(a.plan || 'launch').p })).filter(x => x.p).sort((x, y) => y.p - x.p || (perfA(y.a).leads - perfA(x.a).leads)), now = mrr() || 1, top5 = payers.slice(0, 5).reduce((s, x) => s + x.p, 0);
+    return [`<section class="pn"><div class="pn-h"><h2>Late payments by age</h2><span class="sub">${aed(totO)} not paid yet</span></div>
+        <div class="inc-age">${bk.map((b, i) => `<div style="--c:${b.c};--i:${i}" data-tip="${esc(b.l)}\n${aed(b.v)} · ${b.n} bill${b.n === 1 ? '' : 's'}"><span class="inc-age-t"><i style="height:${Math.max(b.v ? 4 : 0, b.v / mx * 100)}%"></i></span><b>${aed(b.v)}</b><small>${b.l}</small><em>${b.n} bill${b.n === 1 ? '' : 's'}</em></div>`).join('')}</div>
+        <p class="inc-note">${ico('alert')}<span><a class="inc-go" href="#payments">See payments ${ico('chevR')}</a>${bk[3].v ? `<b>${aed(bk[3].v)}</b> is over 30 days late — call these providers rather than send another reminder.` : bk[2].v ? `<b>${aed(bk[2].v)}</b> is 8–30 days late — a WhatsApp reminder usually settles it.` : 'Nothing is seriously late.'}</span></p></section>`,
+      `<section class="pn"><div class="pn-h"><h2>Biggest payers</h2><span class="sub">Top 5 bring ${Math.round(top5 / now * 100)}% of monthly income</span></div>
+        <div class="inc-conc"><i style="--w:${Math.round(top5 / now * 100)}%"></i></div>
+        ${payers.slice(0, 5).map((x, i) => `<a class="inc-pay" style="--i:${i}" href="provider.html?id=${encodeURIComponent(x.a.id)}" data-tip="${esc(x.a.name)}\n${aed(x.p)} a month · ${Math.round(x.p / now * 100)}% of income\n${perfA(x.a).leads || 0} leads in the last 30 days">${av(x.a.name, 'sm')}<span><b>${esc(x.a.name)}</b><small>${esc(VL[x.a.v])} · ${perfA(x.a).leads || 0} leads</small></span><span class="ad-plan" data-tier="${x.a.plan}" style="--c:${PLAN(x.a.plan).c}">${esc(PLAN(x.a.plan).n)}</span><b>${aed(x.p)}</b></a>`).join('')}</section>`];
+  }
+  // providers on a low plan who get many leads: the easiest upgrades
+  function incUpsell(act) {
+    const order = S.plans.map(p => p.id), L = act.map(a => ({ a, p: PLAN(a.plan || 'launch'), leads: (perfA(a) || {}).leads || 0 })).filter(x => order.indexOf(x.p.id) < order.length - 1 && x.leads >= 15 && !sugOf(x.a)).sort((x, y) => y.leads - x.leads).slice(0, 6);
+    if (!L.length) return '';
+    return `<section class="pn" id="upsell"><div class="pn-h"><h2>Upgrade opportunities</h2><span class="sub">Providers on a lower plan who get many leads</span></div>
+      <div class="inc-ups">${L.map((x, i) => { const nx = S.plans[order.indexOf(x.p.id) + 1]; return `<div class="inc-up" style="--i:${i}">${av(x.a.name, 'sm')}<span class="inc-up-n"><b>${esc(x.a.name)}</b><small>${esc(VL[x.a.v])} · <b>${x.leads}</b> leads in 30 days</small></span>
+        <span class="inc-up-p"><span class="ad-plan" data-tier="${x.p.id}" style="--c:${x.p.c}">${esc(x.p.n)}</span>${ico('chevR')}<span class="ad-plan" data-tier="${nx.id}" style="--c:${nx.c}">${esc(nx.n)}</span><em>+${aed(nx.p - x.p.p)}/mo</em></span>
+        <a class="btn btn-o btn-sm" href="provider.html?id=${encodeURIComponent(x.a.id)}#dt-plan">Suggest ${esc(nx.n)}</a></div>`; }).join('')}</div></section>`;
+  }
+  // what needs attention first: overdue, upgrades, concentration, new paying providers
+  function incAtt(inv, act) {
+    const od = inv.filter(i => i.state === 'overdue'), odv = od.reduce((s, i) => s + i.amt, 0), order = S.plans.map(p => p.id);
+    const ups = act.filter(a => order.indexOf((a.plan || 'launch')) < order.length - 1 && ((perfA(a) || {}).leads || 0) >= 15 && !sugOf(a));
+    const pays = act.map(a => PLAN(a.plan || 'launch').p).filter(Boolean).sort((a, b) => b - a), top5 = pays.slice(0, 5).reduce((s, v) => s + v, 0), now = mrr() || 1;
+    const nw = act.filter(a => inP(a.decided || a.t) && PLAN(a.plan || 'launch').p);
+    return `<div class="att inc-att">
+      <div class="hl" data-act="payTab" data-arg="overdue" onclick="setTimeout(()=>{const p=document.getElementById('payments');if(p)p.scrollIntoView({behavior:'smooth'})},50)"><small>Overdue</small><b>${aed(odv)}</b><span>${new Set(od.map(i => i.a.id)).size} providers late · remind them</span></div>
+      <div onclick="document.getElementById('upsell')&&document.getElementById('upsell').scrollIntoView({behavior:'smooth'})"><small>Ready to upgrade</small><b>${ups.length} provider${ups.length === 1 ? '' : 's'}</b><span>on a lower plan with 15+ leads</span></div>
+      <div onclick="document.getElementById('breakdown').scrollIntoView({behavior:'smooth'})"><small>Top 5 payers</small><b>${Math.round(top5 / now * 100)}% of income</b><span>${Math.round(top5 / now * 100) > 40 ? 'a lot rides on a few providers' : 'income is well spread'}</span></div>
+      <div><small>New paying providers</small><b>${nw.length}</b><span>${aed(nw.reduce((s, a) => s + PLAN(a.plan || 'launch').p, 0))} a month added ${esc(pLabel())}</span></div>
+    </div>`;
+  }
+
+  // collected and billed over the chosen period (at least the last 14 days, so "Today" has context): facts, bars, the usual level
+  function incCollected(inv) {
+    const e0 = endOf(), s0 = Math.min(startOf(S.period), day0(e0) - 13 * DAY), span = e0 - s0, B = [], mk = (a, b, l) => B.push({ a, b, l });
+    if (span <= 62 * DAY) for (let a = day0(s0); a <= e0; a += DAY) mk(a, a + DAY, dateS(a));
+    else if (span <= 200 * DAY) for (let a = day0(s0); a <= e0; a += 7 * DAY) mk(a, a + 7 * DAY, 'Week of ' + dateS(a));
+    else { const d = new Date(s0); d.setDate(1); d.setHours(0, 0, 0, 0); while (+d <= e0) { const a = +d; d.setMonth(d.getMonth() + 1); mk(a, +d, new Date(a).toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })); } }
+    const unit = span <= 62 * DAY ? 'day' : span <= 200 * DAY ? 'week' : 'month';
+    B.forEach(b => { const P2 = inv.filter(i => i.paid >= b.a && i.paid < b.b), Bi = inv.filter(i => i.t >= b.a && i.t < b.b); b.c = P2.reduce((t, i) => t + i.amt, 0); b.np = P2.length; b.bi = Bi.reduce((t, i) => t + i.amt, 0); b.nb = Bi.length; b.in = inP(b.a) || inP(b.b - 1); });
+    const inB = B.filter(b => b.in), coll = inB.reduce((t, b) => t + b.c, 0), billed = inB.reduce((t, b) => t + b.bi, 0), best = inB.slice().sort((x, y) => y.c - x.c)[0];
+    const mx = Math.max(...B.map(b => Math.max(b.c, b.bi)), 1), avg = B.reduce((t, b) => t + b.c, 0) / (B.length || 1), every = Math.max(1, Math.ceil(B.length / 8)), k = v => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v;
+    const fact = (l, v, sub, cls = '') => `<div class="cu-tr-s ${cls}"><small>${l}</small><b>${v}</b><span>${sub}</span></div>`;
+    return `<section class="pn inc-col"><div class="pn-h"><h2>Collected</h2><span class="sub">${esc(pLabel())} · by ${unit}</span><span class="sp"></span><span class="cu-lgd"><i class="inc-lg-b"></i>Billed</span><span class="cu-lgd b"><i></i>Collected</span></div>
+      <div class="cu-tr-st">${fact('Collected', aed(coll), `${inB.reduce((t, b) => t + b.np, 0)} payments`)}${fact('Billed', aed(billed), billed ? `${Math.round(coll / billed * 100)}% of it collected so far` : 'nothing billed', billed && coll / billed >= .8 ? 'up' : billed ? 'down' : '')}${fact('Best ' + unit, best && best.c ? aed(best.c) : '—', best && best.c ? esc(best.l) : 'no payments yet')}</div>
+      <div class="inc-cb"><span class="inc-cb-avg" style="bottom:${(avg / mx * 100).toFixed(1)}%"><em>usual ${aed(Math.round(avg))}</em></span>
+        ${B.map((b, i) => `<div class="inc-cb-c ${b.in ? 'in' : ''}" style="--i:${Math.min(i, 30)}" data-tip="${esc(b.l)}\n${aed(b.c)} collected · ${b.np} payment${b.np === 1 ? '' : 's'}\n${aed(b.bi)} billed · ${b.nb} bill${b.nb === 1 ? '' : 's'}${b.in ? '' : '\nBefore the chosen period'}"><i class="b" style="height:${(b.bi / mx * 100).toFixed(1)}%"></i><i class="c" style="height:${(b.c / mx * 100).toFixed(1)}%"></i></div>`).join('')}</div>
+      <div class="inc-cb-x">${B.map((b, i) => `<span>${i % every === 0 || i === B.length - 1 ? esc(b.l.replace('Week of ', '')) : ''}</span>`).join('')}</div>
+      <p class="inc-note">${ico('alert')}<span>${!billed ? 'Nothing was billed in this period.' : coll >= billed ? `Everything billed ${esc(pLabel())} has been collected.` : `<b>${aed(billed - coll)}</b> billed ${esc(pLabel())} is still to come in.`}</span></p></section>`;
+  }
   pages.income = () => {
     const inv = invoices(), act = mainApps().filter(a => a.status === 'verified');
     const coll = inv.filter(i => i.paid && inP(i.paid)), out = inv.filter(i => !i.paid), od = inv.filter(i => i.state === 'overdue');
     const paying = act.filter(a => PLAN(a.plan || 'launch').p > 0);
-    const weeks = [...Array(12)].map((_, i) => { const e = NOW - (11 - i) * 7 * DAY, s = e - 7 * DAY; return { l: dateS(s), v: inv.filter(x => x.paid >= s && x.paid < e).reduce((t, x) => t + x.amt, 0) }; });
+    const weeks = [...Array(12)].map((_, i) => { const e = NOW - (11 - i) * 7 * DAY, s = e - 7 * DAY; return { l: 'Week of ' + dateS(s), v: inv.filter(x => x.paid >= s && x.paid < e).reduce((t, x) => t + x.amt, 0), m: mainApps().filter(a => a.status === 'verified' && (a.decided || a.t) < e).reduce((t, a) => t + PLAN(a.plan || 'launch').p, 0) }; });
+    const wkL = weeks.map(w => w.l);
     const mxW = Math.max(...weeks.map(w => w.v), 1);
-    const planMix = S.plans.filter(p => p.p).map(p => ({ c: p.c, v: act.filter(a => (a.plan || 'launch') === p.id).length * p.p, n: p.n, k: act.filter(a => (a.plan || 'launch') === p.id).length }));
+    const planMix = S.plans.filter(p => p.p).map(p => { const k = act.filter(a => (a.plan || 'launch') === p.id).length, v = k * p.p; return { c: p.c, v, n: p.n, k, l: p.n + ' plan', tip: `${aed(v)} a month · ${k} providers × ${aed(p.p)}` }; });
     const byV = Object.keys(VL).map(v => ({ l: VL[v], ico: VI[v], c: VC[v], v: act.filter(a => a.v === v).reduce((s, a) => s + PLAN(a.plan || 'launch').p, 0), sub: act.filter(a => a.v === v).length + ' providers' })).filter(r => r.sub !== '0 providers').sort((a, b) => b.v - a.v);
     return `${head('Income', 'UpNow charges providers a monthly plan to list. Customers never pay — they contact providers directly.', periodSeg())}
+    ${incAtt(inv, act)}
     <div class="g4 ad-kpis">
-      <div class="kpi ad-kpi static"><small>Monthly plans (MRR)</small><b data-count="${mrr()}" data-pre="AED ">${aed(mrr())}</b><span class="d">${paying.length} paying · ${act.length - paying.length} on Launch (${aed(0)}, not billed)</span>${spark(weeks.map(w => w.v))}</div>
-      <div class="kpi ad-kpi static"><small>Collected ${esc(pLabel())}</small><b data-count="${coll.reduce((s, i) => s + i.amt, 0)}" data-pre="AED ">${aed(coll.reduce((s, i) => s + i.amt, 0))}</b><span class="d">${coll.length} payments</span>${spark(weeks.map(w => w.v))}</div>
+      <div class="kpi ad-kpi static"><small>Monthly plans (MRR)</small><b data-count="${mrr()}" data-pre="AED ">${aed(mrr())}</b><span class="d">${paying.length} paying · ${act.length - paying.length} on Launch (${aed(0)}, not billed)</span>${sparkTip(weeks.map(w => w.m), wkL, v => aed(v) + ' a month in plans')}</div>
+      <div class="kpi ad-kpi static"><small>Collected ${esc(pLabel())}</small><b data-count="${coll.reduce((s, i) => s + i.amt, 0)}" data-pre="AED ">${aed(coll.reduce((s, i) => s + i.amt, 0))}</b><span class="d">${coll.length} payments</span>${sparkTip(weeks.map(w => w.v), wkL, v => aed(v) + ' collected')}</div>
       <div class="kpi ad-kpi static"><small>Due, not late yet</small><b data-count="${out.filter(i => i.state === 'due').reduce((s, i) => s + i.amt, 0)}" data-pre="AED ">${aed(out.filter(i => i.state === 'due').reduce((s, i) => s + i.amt, 0))}</b><span class="d" style="color:var(--amber)">${out.length - od.length} payment${out.length - od.length === 1 ? '' : 's'} due within 7 days</span></div>
       <div class="kpi ad-kpi static"><small>Overdue</small><b data-count="${od.reduce((s, i) => s + i.amt, 0)}" data-pre="AED ">${aed(od.reduce((s, i) => s + i.amt, 0))}</b><span class="d" style="color:var(--red)">${od.length} provider${od.length === 1 ? '' : 's'} more than 7 days late</span></div>
     </div>
     <div class="gd mt">
-      <section class="pn"><div class="pn-h"><h2>Collected per week</h2><span class="sub">Last 12 weeks</span></div>
-        <div class="ad-wk">${weeks.map((w, i) => `<div style="--i:${i}"><em>${w.v ? (w.v >= 1000 ? (w.v / 1000).toFixed(1) + 'k' : w.v) : ''}</em><i style="--h:${Math.max(2, w.v / mxW * 100)}%"></i><small>${i % 2 ? '' : esc(w.l)}</small></div>`).join('')}</div></section>
+      ${incCollected(inv)}
       <section class="pn"><div class="pn-h"><h2>Where it comes from</h2><span class="sub">Monthly plans</span></div>
         <div class="ad-mix">${donut(planMix, (mrr() >= 1000 ? (mrr() / 1000).toFixed(1) + 'k' : mrr()), 'AED a month')}<div class="ad-mix-l">${planMix.map(p => `<div><i style="background:${p.c}"></i><span><b>${esc(p.n)}</b><small>${p.k} providers</small></span><b>${aed(p.v)}</b></div>`).join('')}</div></div>
         <div class="sect-t">By vertical</div>${hbars(byV.map(r => Object.assign(r, { f: aed })))}</section>
     </div>
+    ${incBreakdown(inv, act)}
+    ${(() => { const [late, big] = incRisk(inv, act), up = incUpsell(act); return `<div class="gd mt">${incMovement(act, inv)}${late}</div><div class="gd mt inc-row2">${up || ''}${big}</div>`; })()}
     ${payments(inv)}`;
   };
   // Payments: one row per monthly bill. Tabs by state, verticals and search like the other pages;
@@ -1120,8 +1391,31 @@
   const openFromHash = () => { const h = location.hash.slice(1); if (/^(a|l|p|c):/.test(h)) v2(h); };
 
   /* ---------- actions ---------- */
+  // income ring ↔ table: hovering one highlights the other and names the slice in the middle
+  document.addEventListener('mouseover', e => { const t = e.target.closest && e.target.closest('#breakdown [data-row]'); const box = document.getElementById('breakdown'); if (!box) return;
+    box.querySelectorAll('.on-hl').forEach(x => x.classList.remove('on-hl')); const c = box.querySelector('.inc-ring-c'); const def = c && (c.dataset.def || (c.dataset.def = c.innerHTML));
+    if (!t) { if (c) c.innerHTML = def; box.classList.remove('hl-any'); return; }
+    const k = t.dataset.row; box.classList.add('hl-any'); box.querySelectorAll(`[data-row="${k}"]`).forEach(x => x.classList.add('on-hl'));
+    const seg = box.querySelector(`.inc-seg[data-row="${k}"]`); if (c && seg) { const [p, l] = seg.dataset.mid.split('|'); c.innerHTML = `<b>${p}</b><small>${l}</small><em>${(seg.dataset.tip.split('\n')[1] || '').split(' · ')[0]}</em>`; } });
+  document.addEventListener('click', e => { if (perCal && !e.target.closest('.cu-per')) { perCal = false; const el = $('.ad-view .cu-cal'); if (el) el.classList.remove('on'); } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && perCal) { perCal = false; const el = $('.ad-view .cu-cal'); if (el) el.classList.remove('on'); } });
   const acts = {
-    period: k => { S.period = k; save(); render(); }, appTab: k => { S.appTab = k; save(); render(); }, lstTab: k => { S.lstTab = k; save(); render(); }, provTab: k => { S.provTab = k; save(); render(); }, provSort: k => { S.provSort = k; save(); render(); }, appQ: k => { S.appQ = S.appQ === k ? '' : k; S.appTab = 'waiting'; save(); render(); }, lstQ: k => { S.lstQ = S.lstQ === k ? '' : k; S.lstTab = 'review'; save(); render(); }, bigDrawer: () => { S.big = !S.big; save(); const d = $('#drawer'); d.classList.toggle('ad-big', S.big); const b = $('.ad-big-btn', d); if (b) b.outerHTML = bigBtn(); }, provView: k => { S.provView = k; S.provTab = 'all'; save(); render(); },
+    // where a provider is based: the team marks it checked, or corrects it
+    whOk: id => { S.locOk = S.locOk || {}; if (S.locOk[id]) { delete S.locOk[id]; toast('Location check undone'); } else { S.locOk[id] = Date.now(); toast('Location marked as checked'); } save(); refresh(); },
+    whEdit: id => { const a = APPS.find(x => x.id === id); if (!a) return; const h = homeOf(a), orig = [a.city, cName(a.cc || 'AE')].filter(Boolean).join(', ');
+      modal(`<div class="ad-dm-h"><span class="ad-dm-i is-ok">${ico('pin')}</span><div><h3>Where is ${esc(a.name)} based?</h3><small>When they joined: ${esc(orig)}</small></div><button class="x" data-act="closeModal" aria-label="Close">${ico('x')}</button></div>
+        <div class="ad-dm-b"><div class="ad-whf"><label><span>Country</span><select data-whcc>${((window.MARKETS || {}).COUNTRIES || []).map(c => `<option value="${c.iso}" ${c.iso === h.cc ? 'selected' : ''}>${c.flag} ${esc(c.name)}</option>`).join('')}</select></label>
+          <label><span>City</span><input data-whcity value="${esc(h.city)}" placeholder="e.g. London"></label></div></div>
+        <div class="ad-dm-f">${S.home && S.home[id] ? `<button class="btn btn-o" data-act="whReset" data-arg="${id}" style="margin-right:auto">Use their answer</button>` : ''}<button class="btn btn-o" data-act="closeModal">Cancel</button><button class="btn btn-g" data-act="whSave" data-arg="${id}">${ico('check')}Save</button></div>`);
+      setTimeout(() => { const i = $('#scrim [data-whcity]'); if (i) i.focus(); }, 50); },
+    whSave: id => { const cc = ($('#scrim [data-whcc]') || {}).value, city = (($('#scrim [data-whcity]') || {}).value || '').trim(); if (!cc) return;
+      S.home = S.home || {}; S.home[id] = { cc, city, t: Date.now() }; save(); closeModal(); refresh(); toast('Saved — based in ' + [city, cName(cc)].filter(Boolean).join(', ')); },
+    whReset: id => { if (S.home) delete S.home[id]; save(); closeModal(); refresh(); toast('Back to what they said when they joined'); },
+    incDim: k => { S.incDim = k; save(); render(); },
+    period: k => { S.period = k; perCal = false; save(); render(); },
+    perCal: () => { perCal = !perCal; const el = $('.cu-cal'); if (el) el.classList.toggle('on', perCal); const b = $('.cu-cust'); if (b) b.setAttribute('aria-expanded', perCal); },
+    perQuick: k => { S.range = quickR(k); S.period = 'custom'; perCal = false; save(); render(); },
+    perApply: () => { const f = ($('#adFrom') || {}).value, t = ($('#adTo') || {}).value; if (!f || !t) return; let a = +new Date(f + 'T00:00'), b = +new Date(t + 'T00:00'); if (a > b) [a, b] = [b, a]; S.range = { a: day0(a), b: day0(b) + DAY - 1 }; S.period = 'custom'; perCal = false; save(); render(); }, appTab: k => { S.appTab = k; save(); render(); }, lstTab: k => { S.lstTab = k; save(); render(); }, provTab: k => { S.provTab = k; save(); render(); }, provSort: k => { S.provSort = k; save(); render(); }, appQ: k => { S.appQ = S.appQ === k ? '' : k; S.appTab = 'waiting'; save(); render(); }, lstQ: k => { S.lstQ = S.lstQ === k ? '' : k; S.lstTab = 'review'; save(); render(); }, bigDrawer: () => { S.big = !S.big; save(); const d = $('#drawer'); d.classList.toggle('ad-big', S.big); const b = $('.ad-big-btn', d); if (b) b.outerHTML = bigBtn(); }, provView: k => { S.provView = k; S.provTab = 'all'; save(); render(); },
     vf: v => { S.vf = v; save(); render(); }, close: closeDrawer, closeModal,
     openApp: id => { const a = APPS.find(x => x.id === id); if (a && a.status === 'verified' && PAGE === 'providers') openProv(id); else openApp(id); }, openListing, openProv,
     approveApp: id => decide('approveApp', id), changesApp: id => decide('changesApp', id), rejectApp: id => decide('rejectApp', id),
